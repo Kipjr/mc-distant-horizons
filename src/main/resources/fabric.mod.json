@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "id": "lod",
+  "version": "${version}",
+
+  "name": "Distant Horizons Fabric",
+  "description": "Adds level of detail to Fabric",
+  "authors": [
+    "coolGi2007",
+    "Original LOD Creators"
+  ],
+  "contact": {
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/lod-level-of-detail",
+    "sources": "https://gitlab.com/jeseibel/minecraft-lod-mod"
+  },
+
+  "license": "CC0-1.0",
+  "icon": "assets/lod/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.coolGi.lod.LodMain"
+    ]
+  },
+  "mixins": [
+    "lod.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.11.3",
+    "fabric": "*",
+    "minecraft": "1.17.x",
+    "java": ">=16"
+  },
+  "suggests": {
+    "another-mod": "*"
+  },
+  "accessWidener" : "assets/lod/lod.accesswidener",
+  "custom": {
+    "modmenu": {
+      "links": {
+        "modmenu.discord": "https://discord.gg/xAB8G4cENx"
+      },
+      "parent": {
+        "id": "lod",
+        "name": "Distant Horizons",
+        "description": "Adds level of detail to fabric",
+        "icon": "assets/lod/icon.png"
+      }
+    }
+  }
+}

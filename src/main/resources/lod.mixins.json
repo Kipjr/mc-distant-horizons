@@ -1,10 +1,14 @@
 {
-	"required": true,
-	"package": "com.seibel.lod.mixin",
-	"compatibilityLevel": "JAVA_8",
-	"refmap": "lod.refmap.json",
-	"mixins": [
-	           "MixinWorldRenderer"
-	],
-	"minVersion": "0.8"
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.coolGi.lod.mixin",
+  "compatibilityLevel": "JAVA_16",
+  "mixins": [
+  ],
+  "client": [
+    "MixinWorldRenderer"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }
