@@ -16,7 +16,7 @@ ModMenu version: 2.0.14
 
 Notes:\
 This version has been confirmed to work in Intellij and Fabric Minecraft.\
-(Retail running forge version 1.16.5-36.1.0)
+(Retail running Fabric version 0.39.2+1.17)
 
 
 ## source code installation
@@ -24,7 +24,7 @@ This version has been confirmed to work in Intellij and Fabric Minecraft.\
 See the Forge Documentation online for more detailed instructions:\
 http://mcforge.readthedocs.io/en/latest/gettingstarted/
 
-1. Create a system variable called "JAVA_MC_HOME" with the location of the JDK 1.8.0_251 (This is needed for gradle to work correctly)
+1. Create a system variable called "JAVA_MC_HOME" with the location of the JDK 16 (This is needed for gradle to work correctly)
 2. replace JAVA_HOME with JAVA_MC_HOME in gradle.bat
 3. open a command line in the project folder
 
