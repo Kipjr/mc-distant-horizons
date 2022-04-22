@@ -1,0 +1,27 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.seibel.lod.quilt.mixins",
+  "mixins": [
+    "unsafe.MixinThreadingDectector",
+    "MixinUtilBackgroudThread",
+    "events.MixinServerLevel"
+  ],
+  "client": [
+    "MixinMinecraft",
+    "MixinOptionsScreen",
+    "MixinWorldRenderer",
+    "MixinFogRenderer",
+    "MixinChunkGenerator",
+    "events.MixinClientLevel",
+    "events.MixinMinecraft",
+    "events.MixinBlockUpdate",
+    "events.MixinLightmap"
+  ],
+  "server": [
+    "MixinDedicatedServer"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

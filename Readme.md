@@ -14,6 +14,9 @@ If you want to see a quick demo, check out a video covering the mod here:
 
 <a href="https://www.youtube.com/watch?v=H2tnvEVbO1c" target="_blank">![Minecraft Level Of Detail (LOD) mod - Alpha 1.5](https://i.ytimg.com/vi_webp/H2tnvEVbO1c/mqdefault.webp)</a>
 
+## About this branch
+This is a test branch to add support for the quilt mod loader (https://quiltmc.org/)
+
 ### Versions
 
 This branch is for these versions of Minecraft

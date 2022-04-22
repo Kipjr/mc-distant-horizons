@@ -189,12 +189,18 @@ allprojects { p ->
                 includeGroup "forge-mod"
             }
         }
+        flatDir {
+            dirs "${rootDir}/mods/quilt"
+            content {
+                includeGroup "quilt-mod"
+            }
+        }
     }
 
 
     // Put stuff from gradle.properties into the mod info
     processResources {
-        def resourceTargets = ["fabric.mod.json", "META-INF/mods.toml"] // Location of where to put
+        def resourceTargets = ["fabric.mod.json", "quilt.mod.json", "META-INF/mods.toml"] // Location of where to put
         def intoTargets = ["$buildDir/resources/main/"] // Location of the built resources folder
         def replaceProperties = [
                 version                      : mod_version,
@@ -256,6 +262,13 @@ allprojects { p ->
         copy {
             from project(":common").file("src/main/resources/${acsessWidenerVersion}.lod.accesswidener")
             into project(":fabric").file("build/resources/main")
+            rename "${acsessWidenerVersion}.lod.accesswidener", "lod.accesswidener"
+        }
+
+        println "Copying [common/src/main/resources/${acsessWidenerVersion}.lod.accesswidner] to [quilt/build/resources/main]."
+        copy {
+            from project(":common").file("src/main/resources/${acsessWidenerVersion}.lod.accesswidener")
+            into project(":quilt").file("build/resources/main")
             rename "${acsessWidenerVersion}.lod.accesswidener", "lod.accesswidener"
         }
     }
