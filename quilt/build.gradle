@@ -42,10 +42,10 @@ def addMod(path, enabled) {
 
 dependencies {
     // Quilt loader
-    modImplementation "org.quiltmc:quilt-loader:0.16.0-beta.7"
+    modImplementation "org.quiltmc:quilt-loader:${rootProject.quilt_loader_version}"
 
     // Quilt API
-    modImplementation "org.quiltmc.quilted-fabric-api:quilted-fabric-api:1.0.0-beta.7+0.51.1-1.18.2"
+    modImplementation "org.quiltmc.quilted-fabric-api:quilted-fabric-api:${rootProject.quilt_api_version}"
 
     // Mod Menu
     modImplementation("com.terraformersmc:modmenu:${rootProject.modmenu_version}")
