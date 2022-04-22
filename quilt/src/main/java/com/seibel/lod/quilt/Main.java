@@ -30,6 +30,7 @@ import com.seibel.lod.core.wrapperInterfaces.modAccessor.IOptifineAccessor;
 import com.seibel.lod.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
 import com.seibel.lod.core.wrapperInterfaces.modAccessor.IStarlightAccessor;
 import com.seibel.lod.quilt.networking.NetworkHandler;
+import com.seibel.lod.quilt.wrappers.FabricDependencySetup;
 import com.seibel.lod.quilt.wrappers.modAccessor.ModChecker;
 import com.seibel.lod.quilt.wrappers.modAccessor.OptifineAccessor;
 import com.seibel.lod.quilt.wrappers.modAccessor.SodiumAccessor;

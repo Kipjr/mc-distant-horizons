@@ -15,6 +15,8 @@ architectury {
 configurations {
     compileClasspath.extendsFrom common
     runtimeClasspath.extendsFrom common
+    compileClasspath.extendsFrom fabric
+    runtimeClasspath.extendsFrom fabric
 
     addModJar
     include.extendsFrom addModJar
@@ -90,7 +92,7 @@ shadowJar {
     relocate 'org.apache.commons.compress', 'shaded.apache.commons.compress'
     relocate 'com.electronwill.nightconfig', 'shaded.electronwill.nightconfig'
 
-    relocate 'com.seibel.lod.common', 'quilt.com.seibel.lod.common'
+//    relocate 'com.seibel.lod.common', 'quilt.com.seibel.lod.common' // Dose quilt use its own mappings?
 
     classifier "dev-shadow"
 }

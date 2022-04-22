@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "accessWidener": "lod.accesswidener",
   "quilt_loader": {
     "id": "lod",
     "version": "${version}",
@@ -14,7 +15,7 @@
         "issues": "${issues}"
       },
       "license": "CC0-1.0",
-      "icon": "icon.png",
+      "icon": "icon.png"
     },
     "environment": "client",
     "entrypoints": {
@@ -30,18 +31,9 @@
     ],
     "accessWidener": "lod.accesswidener",
     "depends": {
-      {
-        "id": "quilt_loader",
-        "versions": "*"
-      },
-      {
-        "id": "quilted_fabric_api",
-        "versions": "*"
-      },
-      {
-        "id": "minecraft",
-        "versions": ${compatible_minecraft_versions}
-      }
+      "quilt_loader": "*",
+      "quilted_fabric_api": "*",
+      "minecraft": ${compatible_minecraft_versions}
     },
     "custom": {
       "modmenu": {
