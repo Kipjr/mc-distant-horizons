@@ -211,12 +211,12 @@ allprojects { p ->
             authorCounter = !authorCounter
             if (!authorCounter) {
                 currentAuthor = currentAuthor.substring(0, currentAuthor.length() - 1); // Delete the qotation mark at the end of the authors name
-                quiltAuthors = quiltAuthors + "\"" + currentAuthor + "\":\"Developer\"" + "," // Add the author to the string
+                quiltAuthors = quiltAuthors + "\"" + currentAuthor + "\":\"Developer\"," // Add the author to the string
                 currentAuthor = ""
             }
         }
     }
-    quiltAuthors.substring(0, quiltAuthors.length() - 1); // Delete the final comma
+    quiltAuthors = quiltAuthors.substring(0, quiltAuthors.length() - 1); // Delete the final comma
     quiltAuthors = quiltAuthors + "}";
 
 
