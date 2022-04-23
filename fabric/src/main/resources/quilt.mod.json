@@ -1,13 +1,16 @@
 {
   "schema_version": 1,
   "quilt_loader": {
-    "group": "com.example",
+    "group": "com.seibel.lod",
     "id": "lod",
     "version": "${version}",
     "metadata": {
       "name": "${mod_name}",
       "description": "${description}",
-      "contributors": ${authors},
+      "contributors": {
+        "This needs to be": "an object",
+        "I Already Don't Like": "Quilt"
+      },
       "icon": "icon.png"
     },
     "entrypoints": {
@@ -37,5 +40,6 @@
       }
     ]
   },
-  "mixin": "fabric.lod.mixins.json"
-}
+  "mixin": "fabric.lod.mixins.json",
+  "accessWidener" : "lod.accesswidener"
+  }
