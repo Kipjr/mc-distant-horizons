@@ -22,6 +22,12 @@ configurations {
 repositories {
     // Required for ModMenu
     maven { url "https://maven.terraformersmc.com/" }
+
+    // Required for Quilt
+    maven {
+        name 'Quilt'
+        url 'https://maven.quiltmc.org/repository/release'
+    }
 }
 
 def addMod(path, enabled) {
@@ -32,8 +38,13 @@ def addMod(path, enabled) {
 }
 
 dependencies {
-    // Fabric loader
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    if (rootProject.use_quilt_rather_than_fabric == "true") {
+        // Quilt loader
+        modImplementation "org.quiltmc:quilt-loader:${rootProject.quilt_loader_version}"
+    } else {
+        // Fabric loader
+        modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    }
 
     // Fabric API
     addModJar(fabricApi.module("fabric-lifecycle-events-v1", rootProject.fabric_api_version))

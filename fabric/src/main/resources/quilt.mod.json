@@ -4,13 +4,11 @@
     "group": "com.seibel.lod",
     "id": "lod",
     "version": "${version}",
+    "environment": "client",
     "metadata": {
       "name": "${mod_name}",
       "description": "${description}",
-      "contributors": {
-        "This needs to be": "an object",
-        "I Already Don't Like": "Quilt"
-      },
+      "contributors": ${quilt_authors},
       "icon": "icon.png"
     },
     "entrypoints": {
@@ -42,4 +40,4 @@
   },
   "mixin": "fabric.lod.mixins.json",
   "accessWidener" : "lod.accesswidener"
-  }
+}

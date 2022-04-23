@@ -198,6 +198,28 @@ allprojects { p ->
     }
 
 
+    // Make a new author thing for quilt as quilt uses a different layout for their authors
+    // The output to look something like this {"James":"Developer","coolGi":"Developer}
+    def currentAuthor = ""
+    def quiltAuthors = "{"
+    def authorCounter = false;
+    for (reader in rootProject.mod_authors) {
+        if (authorCounter)
+            currentAuthor = currentAuthor + reader
+
+        if (reader == "\"") {
+            authorCounter = !authorCounter
+            if (!authorCounter) {
+                currentAuthor = currentAuthor.substring(0, currentAuthor.length() - 1); // Delete the qotation mark at the end of the authors name
+                quiltAuthors = quiltAuthors + "\"" + currentAuthor + "\":\"Developer\"" + "," // Add the author to the string
+                currentAuthor = ""
+            }
+        }
+    }
+    quiltAuthors.substring(0, quiltAuthors.length() - 1); // Delete the final comma
+    quiltAuthors = quiltAuthors + "}";
+
+
     // Put stuff from gradle.properties into the mod info
     processResources {
         def resourceTargets = ["fabric.mod.json", "quilt.mod.json", "META-INF/mods.toml"] // Location of where to put
@@ -206,6 +228,7 @@ allprojects { p ->
                 version                      : mod_version,
                 mod_name                     : mod_name,
                 authors                      : mod_authors,
+                quilt_authors                : quiltAuthors,
                 description                  : mod_description,
                 homepage                     : mod_homepage,
                 source                       : mod_source,
