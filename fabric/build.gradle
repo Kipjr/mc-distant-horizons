@@ -41,6 +41,7 @@ dependencies {
     if (rootProject.use_quilt_rather_than_fabric == "true") {
         // Quilt loader
         modImplementation "org.quiltmc:quilt-loader:${rootProject.quilt_loader_version}"
+        modImplementation "org.quiltmc:quilt-json5:1.0.0" // Needed for quilt loader but for some reason it dosnt come with it
     } else {
         // Fabric loader
         modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
@@ -159,9 +160,15 @@ components.java {
 
 publishing {
     publications {
-        mavenFabric(MavenPublication) {
-            artifactId = rootProject.archives_base_name + "-" + project.name
-            from components.java
+        if (rootProject.use_quilt_rather_than_fabric == "false") {
+            mavenFabric(MavenPublication) {
+                artifactId = rootProject.archives_base_name + "-" + project.name
+                from components.java
+            }
+        } else {
+            mavenJava(MavenPublication) {
+                from components.java
+            }
         }
     }
 
