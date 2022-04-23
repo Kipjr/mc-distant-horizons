@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "quilt_loader": {
+    "group": "com.example",
+    "id": "lod",
+    "version": "${version}",
+    "metadata": {
+      "name": "${mod_name}",
+      "description": "${description}",
+      "contributors": ${authors},
+      "icon": "icon.png"
+    },
+    "entrypoints": {
+      "modmenu": "com.seibel.lod.fabric.wrappers.config.ModMenuIntegration"
+    },
+    "intermediate_mappings": "net.fabricmc:intermediary",
+    "depends": [
+      {
+        "id": "quilt_loader",
+        "versions": "*"
+      },
+      {
+        "id": "fabric-lifecycle-events-v1",
+        "versions": "*"
+      },
+      {
+        "id": "fabric-key-binding-api-v1",
+        "versions": "*"
+      },
+      {
+        "id": "fabric-networking-api-v1",
+        "versions": "*"
+      },
+      {
+        "id": "minecraft",
+        "versions": ${compatible_minecraft_versions}
+      }
+    ]
+  },
+  "mixin": "fabric.lod.mixins.json"
+}

@@ -18,9 +18,6 @@
 
   "environment": "client",
   "entrypoints": {
-    "client": [
-      "com.seibel.lod.fabric.Main"
-    ],
     "modmenu": [
       "com.seibel.lod.fabric.wrappers.config.ModMenuIntegration"
     ]

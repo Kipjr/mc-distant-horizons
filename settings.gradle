@@ -17,7 +17,6 @@ pluginManagement {
 include("common")
 include("fabric")
 include("forge")
-include("quilt")
 include("core")
 
 rootProject.name = "DistantHorizons"

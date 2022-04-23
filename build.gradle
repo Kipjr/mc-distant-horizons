@@ -264,13 +264,6 @@ allprojects { p ->
             into project(":fabric").file("build/resources/main")
             rename "${acsessWidenerVersion}.lod.accesswidener", "lod.accesswidener"
         }
-
-        println "Copying [common/src/main/resources/${acsessWidenerVersion}.lod.accesswidner] to [quilt/build/resources/main]."
-        copy {
-            from project(":common").file("src/main/resources/${acsessWidenerVersion}.lod.accesswidener")
-            into project(":quilt").file("build/resources/main")
-            rename "${acsessWidenerVersion}.lod.accesswidener", "lod.accesswidener"
-        }
     }
 
     tasks.withType(JavaCompile) {
