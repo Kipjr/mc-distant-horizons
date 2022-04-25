@@ -9,7 +9,7 @@ buildscript {
 
 plugins {
     id "architectury-plugin" version "3.4-SNAPSHOT"
-    id "dev.architectury.loom" version "0.10.0-SNAPSHOT" apply false
+    id "dev.architectury.loom" version "0.11.0-SNAPSHOT" apply false
 }
 
 def writeBuildGradlePredefine(List<String> mcVers, int mcIndex) {
@@ -89,7 +89,7 @@ subprojects { p ->
         silentMojangMappingsLicense()
 
         if (p != project(":core")) {
-            accessWidenerPath.set(project(":common").file("src/main/resources/${acsessWidenerVersion}.lod.accesswidener"))
+            accessWidenerPath = project(":common").file("src/main/resources/${acsessWidenerVersion}.lod.accesswidener")
         }
     }
 
@@ -159,6 +159,10 @@ allprojects { p ->
         // For Manifold Preprocessor
         maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
 
+
+        // Required for ModMenu
+        maven { url "https://maven.terraformersmc.com/" }
+
         // Required for importing Modrinth mods
         maven {
             name = "Modrinth"
@@ -216,8 +220,8 @@ allprojects { p ->
             }
         }
     }
-    quiltAuthors = quiltAuthors.substring(0, quiltAuthors.length() - 1); // Delete the final comma
-    quiltAuthors = quiltAuthors + "}";
+    quiltAuthors = quiltAuthors.substring(0, quiltAuthors.length() - 1) // Delete the final comma
+    quiltAuthors = quiltAuthors + "}"
 
 
     // Put stuff from gradle.properties into the mod info
@@ -304,6 +308,7 @@ allprojects { p ->
 
         // println options.compilerArgs
 
+        options.encoding = "UTF-8"
         // Set the java version
         if (p != project(":core")) {
             options.compilerArgs += ['-Xplugin:Manifold']

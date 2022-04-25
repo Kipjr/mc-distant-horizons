@@ -1,5 +1,10 @@
 {
   "schema_version": 1,
+  "mixins": [
+    "quilt.lod.mixins.json",
+    "fabric-like.lod.mixins.json"
+  ],
+  "accessWidener" : "lod.accesswidener",
   "quilt_loader": {
     "group": "com.seibel.lod",
     "id": "lod",
@@ -8,7 +13,7 @@
     "metadata": {
       "name": "${mod_name}",
       "description": "${description}",
-      "contributors": ${quilt_authors},
+      "contributors": $quilt_authors,
       "icon": "icon.png"
     },
     "entrypoints": {
@@ -34,10 +39,8 @@
       },
       {
         "id": "minecraft",
-        "versions": ${compatible_minecraft_versions}
+        "versions": $compatible_minecraft_versions
       }
     ]
-  },
-  "mixin": "fabric.lod.mixins.json",
-  "accessWidener" : "lod.accesswidener"
+  }
 }

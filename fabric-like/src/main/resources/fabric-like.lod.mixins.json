@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.seibel.lod.fabric_like.mixins",
+  "mixins": [
+    "unsafe.MixinThreadingDectector"
+  ],
+  "client": [
+    "MixinOptionsScreen",
+    "MixinWorldRenderer",
+    "MixinFogRenderer",
+    "MixinChunkGenerator",
+    "events.MixinLightmap"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

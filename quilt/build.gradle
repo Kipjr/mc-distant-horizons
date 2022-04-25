@@ -4,15 +4,21 @@ plugins {
 
 version = rootProject.mod_version+"-"+rootProject.minecraft_version+"-"+new Date().format("yyyy_MM_dd_HH_mm")
 
+repositories {
+    maven { url "https://maven.quiltmc.org/repository/release/" }
+}
+
 architectury {
     platformSetupLoomIde()
-    fabric()
+    loader("quilt")
 }
 
 configurations {
+    common
+    shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
     compileClasspath.extendsFrom common
     runtimeClasspath.extendsFrom common
-    developmentFabric.extendsFrom common
+    developmentQuilt.extendsFrom common
 
     addModJar
     include.extendsFrom addModJar
@@ -27,8 +33,8 @@ def addMod(path, enabled) {
 }
 
 dependencies {
-    // Fabric loader
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    // Quilt loader
+    modImplementation "org.quiltmc:quilt-loader:${rootProject.quilt_loader_version}"
 
     // Fabric API
     addModJar(fabricApi.module("fabric-lifecycle-events-v1", rootProject.fabric_api_version))
@@ -38,50 +44,20 @@ dependencies {
     // Mod Menu
     modImplementation("com.terraformersmc:modmenu:${rootProject.modmenu_version}")
 
-    // Starlight
-    addMod("curse.maven:starlight-521783:${rootProject.starlight_version_fabric}", rootProject.enable_starlight)
-
-    // Phosphor
-    addMod("curse.maven:phosphor-372124:${rootProject.phosphor_version_fabric}", rootProject.enable_phosphor)
-
     // Sodium
     addMod("curse.maven:sodium-394468:${rootProject.sodium_version}", rootProject.enable_sodium)
     implementation "org.joml:joml:1.10.2"
     modImplementation(fabricApi.module("fabric-rendering-data-attachment-v1", rootProject.fabric_api_version))
     modImplementation(fabricApi.module("fabric-rendering-fluids-v1", rootProject.fabric_api_version))
 
-	// Lithium
-    addMod("maven.modrinth:lithium:${rootProject.lithium_version}", rootProject.enable_lithium)
-
-    // Iris
-    addMod("maven.modrinth:iris:${rootProject.iris_version}", rootProject.enable_iris)
-
-    // BCLib
-    addMod("com.github.paulevsGitch:BCLib:${rootProject.bclib_version}", rootProject.enable_bclib)
-
-    // Immersive Portals
-    /*
-    modImplementation("com.github.qouteall.ImmersivePortalsMod:build:${rootProject.immersive_portals_version}") {
-        exclude(group: "net.fabricmc.fabric-api")
-        transitive(false)
-    }
-    modImplementation("com.github.qouteall.ImmersivePortalsMod:imm_ptl_core:${rootProject.immersive_portals_version}") {
-        exclude(group: "net.fabricmc.fabric-api")
-        transitive(false)
-    }
-    modImplementation("com.github.qouteall.ImmersivePortalsMod:q_misc_util:${rootProject.immersive_portals_version}") {
-        exclude(group: "net.fabricmc.fabric-api")
-        transitive(false)
-    }
-    */
-
-
 
     // Toml
     shadowMe("com.electronwill.night-config:toml:${rootProject.toml_version}") {}
 
     common(project(path: ":common", configuration: "namedElements")) { transitive false }
-    shadowMe(project(path: ":common", configuration: "transformProductionFabric")) { transitive false }
+    shadowCommon(project(path: ":common", configuration: "transformProductionQuilt")) { transitive false }
+    common(project(path: ":fabric-like", configuration: "namedElements")) { transitive false }
+    shadowCommon(project(path: ":fabric-like", configuration: "transformProductionQuilt")) { transitive false }
 
     // Compression
     common 'org.tukaani:xz:1.9'
@@ -110,17 +86,18 @@ runClient {
 
 shadowJar {
     exclude "architectury.common.json"
-    configurations = [project.configurations.shadowMe]
+    configurations = [project.configurations.shadowCommon]
     relocate 'org.tukaani', 'shaded.tukaani'
     relocate 'org.apache.commons.compress', 'shaded.apache.commons.compress'
     relocate 'com.electronwill.nightconfig', 'shaded.electronwill.nightconfig'
 
-    relocate 'com.seibel.lod.common', 'fabric.com.seibel.lod.common'
+    relocate 'com.seibel.lod.common', 'quilt.com.seibel.lod.common'
 
     classifier "dev-shadow"
 }
 
 remapJar {
+    injectAccessWidener = true // Quilt is weird with access wideners
     input.set shadowJar.archiveFile
     dependsOn shadowJar
     classifier null
@@ -144,7 +121,7 @@ components.java {
 
 publishing {
     publications {
-        mavenFabric(MavenPublication) {
+        mavenQuilt(MavenPublication) {
             artifactId = rootProject.archives_base_name + "-" + project.name
             from components.java
         }

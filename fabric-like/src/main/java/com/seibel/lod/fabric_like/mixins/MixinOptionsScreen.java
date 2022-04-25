@@ -17,7 +17,7 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.lod.fabric.mixins;
+package com.seibel.lod.fabric_like.mixins;
 
 import com.seibel.lod.common.wrappers.config.ConfigGui;
 import com.seibel.lod.common.wrappers.config.TexturedButtonWidget;

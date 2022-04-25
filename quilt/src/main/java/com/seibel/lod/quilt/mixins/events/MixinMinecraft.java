@@ -17,37 +17,35 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
  
-package com.seibel.lod.fabric.mixins.unsafe;
+package com.seibel.lod.quilt.mixins.events;
 
-import net.minecraft.server.level.ServerLevel;
+import com.seibel.lod.quilt.Main;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.multiplayer.ClientLevel;
+
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
-
-#if POST_MC_1_18_1
-
-import net.minecraft.util.ThreadingDetector;
-import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.util.concurrent.Semaphore;
-
 /**
- * Why does this exist? But okay! (Will be probably removed when the experimental generator is done)
+ * This class is used for world unloading events
+ * @author Ran
  */
-@Mixin(ThreadingDetector.class)
-public class MixinThreadingDectector {
-    @Mutable
-    @Shadow
-    private Semaphore lock;
+@Mixin(Minecraft.class)
+public class MixinMinecraft {
+    @Shadow @Nullable public ClientLevel level;
 
-    @Inject(method = "<init>", at = @At("RETURN"))
-    private void setSemaphore(CallbackInfo ci) {
-        this.lock = new Semaphore(2);
+    @Inject(method = "setLevel", at = @At("HEAD"))
+    private void unloadWorldEvent_sL(ClientLevel clientLevel, CallbackInfo ci) {
+        if (level != null) Main.client_proxy.worldUnloadEvent(level);
+    }
+
+    @Inject(method = "clearLevel(Lnet/minecraft/client/gui/screens/Screen;)V", at = @At("HEAD"))
+    private void unloadWorldEvent_cL(Screen screen, CallbackInfo ci) {
+        if (this.level != null) Main.client_proxy.worldUnloadEvent(this.level);
     }
 }
-#else
-@Mixin(ServerLevel.class)
-    public class MixinThreadingDectector {} //FIXME: Is there some way to make this file just not be added?
-#endif
