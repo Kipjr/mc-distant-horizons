@@ -53,9 +53,11 @@ public class Main
 	// Once it works on servers change the implement to ModInitializer and in fabric.mod.json it should be "environment": "*"
 
 	public static ClientProxy client_proxy;
+	public static boolean isQuilt;
 
 	// This loads the mod after minecraft loads which doesn't causes a lot of issues
 	public static void init() {
+		scuffedQuiltChecker();
 		LodCommonMain.initConfig();
 		LodCommonMain.startup(null, false, new NetworkHandler());
 		FabricDependencySetup.createInitialBindings();
@@ -84,5 +86,14 @@ public class Main
 		FabricDependencySetup.createInitialBindings();
 		FabricDependencySetup.finishBinding();
 		ApiShared.LOGGER.info(ModInfo.READABLE_NAME + ", Version: " + ModInfo.VERSION);
+	}
+
+	public static void scuffedQuiltChecker() {
+		try {
+			Class.forName("org.quiltmc.loader.api.QuiltLoader");
+			isQuilt = true;
+		} catch (ClassNotFoundException e) {
+			isQuilt = false;
+		}
 	}
 }

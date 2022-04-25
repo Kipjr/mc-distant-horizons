@@ -20,6 +20,8 @@
 package com.seibel.lod.fabric.wrappers.modAccessor;
 
 import com.seibel.lod.core.wrapperInterfaces.modAccessor.IModChecker;
+import com.seibel.lod.fabric.Main;
+import com.seibel.lod.fabric.quilt.QuiltUtils;
 import net.fabricmc.loader.api.FabricLoader;
 
 public class ModChecker implements IModChecker {
@@ -27,6 +29,10 @@ public class ModChecker implements IModChecker {
 
     @Override
     public boolean isModLoaded(String modid) {
-        return FabricLoader.getInstance().isModLoaded(modid);
+        if (Main.isQuilt) {
+            return QuiltUtils.isModLoaded(modid);
+        } else {
+            return FabricLoader.getInstance().isModLoaded(modid);
+        }
     }
 }

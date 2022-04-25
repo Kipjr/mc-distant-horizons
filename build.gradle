@@ -115,10 +115,23 @@ subprojects { p ->
         // Toml
         implementation("com.electronwill.night-config:toml:${rootProject.toml_version}")
 
-        if (p != project(":forge")) {
+        if (p != project(":forge") && p != project(":fabric")) {
             // We depend on fabric loader here to use the fabric @Environment annotations and get the mixin dependencies
             // Do NOT use other classes from fabric loader unless working with fabric
             modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+        }
+
+        if (p == project(":fabric")) {
+            // We depend on fabric loader here to use the fabric @Environment annotations and get the mixin dependencies
+            // Do NOT use other classes from fabric loader unless working with fabric
+            if (rootProject.use_quilt_rather_than_fabric == "true") {
+                // Quilt loader
+                modImplementation "org.quiltmc:quilt-loader:${rootProject.quilt_loader_version}"
+                modImplementation "org.quiltmc:quilt-json5:1.0.0" // Needed for quilt loader but for some reason it dosnt come with it
+            } else {
+                // Fabric loader
+                modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+            }
         }
 
         if (p != project(":core")) {
@@ -178,6 +191,12 @@ allprojects { p ->
             content {
                 includeGroup "curse.maven"
             }
+        }
+
+        // Required for Quilt
+        maven {
+            name 'Quilt'
+            url 'https://maven.quiltmc.org/repository/release'
         }
 
         // These 2 are for importing mods that arnt on CursedForge, Modrinth, GitHub, GitLab or anywhere opensource
