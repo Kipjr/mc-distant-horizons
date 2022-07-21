@@ -157,13 +157,14 @@ public class BlockDetailWrapper extends IBlockDetailWrapper
 	                (int) (Math.sqrt(blue / count)*255.));
 	    }
 	    // TODO: Remove this when transparency is added!
+		/*
 	    double colorAlpha = ColorUtil.getAlpha(tempColor)/255.;
 	    tempColor = ColorUtil.rgbToInt(
 	    		ColorUtil.getAlpha(tempColor),
 	    		(int)(ColorUtil.getRed(tempColor) * colorAlpha),
 	    		(int)(ColorUtil.getGreen(tempColor) * colorAlpha),
 	    		(int)(ColorUtil.getBlue(tempColor) * colorAlpha)
-	    		);
+	    		);*/
 		return tempColor;
 	}
 
@@ -244,6 +245,7 @@ public class BlockDetailWrapper extends IBlockDetailWrapper
             }
 		} else { // Liquid Block
 			dontOccludeFaces = new boolean[6];
+			Arrays.fill(dontOccludeFaces, true);
 		}
 	}
 	
