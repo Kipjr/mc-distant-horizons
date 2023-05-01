@@ -35,7 +35,7 @@ import com.seibel.lod.common.wrappers.world.WorldWrapper;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.event.TickEvent;
-#if PRE_MC_1_19_1
+#if PRE_MC_1_19
 import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
@@ -70,7 +70,7 @@ public class ForgeClientProxy
 	@SubscribeEvent
 	public void chunkLoadEvent(ChunkEvent.Load event)
 	{
-		#if PRE_MC_1_19_1
+		#if PRE_MC_1_19
 		clientApi.clientChunkLoadEvent(new ChunkWrapper(event.getChunk(), event.getWorld()), WorldWrapper.getWorldWrapper(event.getWorld()));
 		#else
 		clientApi.clientChunkLoadEvent(new ChunkWrapper(event.getChunk(), event.getLevel()), WorldWrapper.getWorldWrapper(event.getLevel()));
@@ -78,7 +78,7 @@ public class ForgeClientProxy
 	}
 	
 	@SubscribeEvent
-	#if PRE_MC_1_19_1
+	#if PRE_MC_1_19
 	public void worldSaveEvent(WorldEvent.Save event)
 	#else
 	public void worldSaveEvent(LevelEvent.Save event)
@@ -89,7 +89,7 @@ public class ForgeClientProxy
 	
 	/** This is also called when a new dimension loads */
 	@SubscribeEvent
-	#if PRE_MC_1_19_1
+	#if PRE_MC_1_19
 	public void worldLoadEvent(WorldEvent.Load event)
 	#else
 	public void worldLoadEvent(LevelEvent.Load event)
@@ -97,7 +97,7 @@ public class ForgeClientProxy
 	{
 		if (Minecraft.getInstance().screen instanceof TitleScreen) return;
 		if (Minecraft.getInstance().getConnection() == null) return; // In 1.19.3, the multiplayer world load is called twice. The first time is before it actually connects to the multiplayer server (so stuff like ip and name arent sent out yet)
-		#if PRE_MC_1_19_1
+		#if PRE_MC_1_19
 		if (event.getWorld() != null) {
 			eventApi.worldLoadEvent(WorldWrapper.getWorldWrapper(event.getWorld()));
 		}
@@ -109,7 +109,7 @@ public class ForgeClientProxy
 	}
 	
 	@SubscribeEvent
-	#if PRE_MC_1_19_1
+	#if PRE_MC_1_19
 	public void worldUnloadEvent(WorldEvent.Unload event)
 	{
 		eventApi.worldUnloadEvent(WorldWrapper.getWorldWrapper(event.getWorld()));
@@ -131,7 +131,7 @@ public class ForgeClientProxy
 				event.getClass() == BlockEvent.FluidPlaceBlockEvent.class ||
 				event.getClass() == BlockEvent.PortalSpawnEvent.class)
 		{
-			#if PRE_MC_1_19_1
+			#if PRE_MC_1_19
 			IChunkWrapper chunk = new ChunkWrapper(event.getWorld().getChunk(event.getPos()), event.getWorld());
 			DimensionTypeWrapper dimType = DimensionTypeWrapper.getDimensionTypeWrapper(event.getWorld().dimensionType());
 			#else
@@ -145,7 +145,7 @@ public class ForgeClientProxy
 	}
 	
 	@SubscribeEvent
-	public void onKeyInput(#if PRE_MC_1_19_1 InputEvent.KeyInputEvent event #else InputEvent.Key event #endif)
+	public void onKeyInput(#if PRE_MC_1_19 InputEvent.KeyInputEvent event #else InputEvent.Key event #endif)
 	{
 		if (Minecraft.getInstance().player == null) return;
 		if (event.getAction() != GLFW.GLFW_PRESS) return;

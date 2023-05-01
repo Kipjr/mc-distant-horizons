@@ -120,7 +120,7 @@ https://fabricmc.net/wiki/tutorial:setup
 4. Import the project into eclipse
 
 ## Switching Versions
-This branch support 6 built versions:
+This branch support 9 built versions:
  - 1.19.4
  - 1.19.3
  - 1.19.2
