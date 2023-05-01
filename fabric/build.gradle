@@ -153,7 +153,7 @@ dependencies {
     addMod("curse.maven:phosphor-372124:${rootProject.phosphor_version_fabric}", rootProject.enable_phosphor)
 
     // Sodium
-    addMod("curse.maven:sodium-394468:${rootProject.sodium_version}", rootProject.enable_sodium)
+    addMod("maven.modrinth:sodium:${rootProject.sodium_version}", rootProject.enable_sodium)
     implementation "org.joml:joml:1.10.2"
     modImplementation(fabricApi.module("fabric-rendering-data-attachment-v1", rootProject.fabric_api_version))
     modImplementation(fabricApi.module("fabric-rendering-fluids-v1", rootProject.fabric_api_version))
