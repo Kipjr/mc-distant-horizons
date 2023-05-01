@@ -2,6 +2,8 @@
 
 > A mod that adds a Level of Detail System to Minecraft
 
+## Please move to main branch, this branch is mainly used for porting to newer versions of Minecraft until main becomes stable
+
 # What is Distant Horizons?
 
 This mod adds a Level Of Detail (LOD) system to Minecraft.\
@@ -28,6 +30,12 @@ Architectury version: 3.4-SNAPSHOT\
 Architectury loom version: 0.12.0-SNAPSHOT\
 Java Compiler plugin: Manifold Preprocessor
 
+
+#### 1.19.4 mods
+Forge version: 45.0.0\
+Fabric version: 0.14.17\
+Fabric API version: 0.75.3+1.19.4\
+Modmenu version: 6.1.0-rc.1
 
 #### 1.19.3 mods
 Forge version: 44.0.6\
@@ -81,12 +89,15 @@ This version has been confirmed to work in IDE and Retail Minecraft with ether t
 
 #### Nightlly builds
 This mod has an autobuild system to automatically build the mod on each commit
-- 1.19.1:   https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/1.6.4a_dev/download?job=build_19_1
-- 1.19:   https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/1.6.4a_dev/download?job=build_19
-- 1.18.2: https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/1.6.4a_dev/download?job=build_18_2
-- 1.18.1: https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/1.6.4a_dev/download?job=build_18_1
-- 1.17.1: https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/1.6.4a_dev/download?job=build_17_1
-- 1.16.5: https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/1.6.4a_dev/download?job=build_16_5
+- 1.19.1: https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/stable/download?job=build_19_4
+- 1.19.1: https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/stable/download?job=build_19_3
+- 1.19.1: https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/stable/download?job=build_19_2
+- 1.19.1: https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/stable/download?job=build_19_1
+- 1.19:   https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/stable/download?job=build_19
+- 1.18.2: https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/stable/download?job=build_18_2
+- 1.18.1: https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/stable/download?job=build_18_1
+- 1.17.1: https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/stable/download?job=build_17_1
+- 1.16.5: https://gitlab.com/jeseibel/minecraft-lod-mod/-/jobs/artifacts/stable/download?job=build_16_5
 
 See the Fabric Documentation online for more detailed instructions:\
 https://fabricmc.net/wiki/tutorial:setup
@@ -110,6 +121,9 @@ https://fabricmc.net/wiki/tutorial:setup
 
 ## Switching Versions
 This branch support 6 built versions:
+ - 1.19.4
+ - 1.19.3
+ - 1.19.2
  - 1.19.1
  - 1.19
  - 1.18.2
@@ -133,7 +147,7 @@ If running on IDE, to ensure IDE pickup the changed versions, you will need to r
 6. The compiled jar file will be in the folder `Merged`
 
 **If in terminal:**
-1. `git clone -b 1.6.4a_dev --recurse-submodules https://gitlab.com/jeseibel/minecraft-lod-mod.git`
+1. `git clone -b stable --recurse-submodules https://gitlab.com/jeseibel/minecraft-lod-mod.git`
 2. `cd minecraft-lod-mod`
 3. `./gradlew assemble`
 4. `./gradlew mergeJars`
