@@ -26,8 +26,10 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
+import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Holder;
 #if POST_MC_1_19_2
@@ -35,6 +37,7 @@ import net.minecraft.data.worldgen.biome.EndBiomes;
 import net.minecraft.data.worldgen.biome.NetherBiomes;
 #endif
 import net.minecraft.resources.RegistryOps;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 
@@ -71,9 +74,8 @@ public class BiomeWrapper implements IBiomeWrapper
     }
 
     @Override
-    public String serialize() {
-        //FIXME: Pass in a level obj
-        String data = Biome.CODEC.encodeStart(RegistryOps.create(JsonOps.INSTANCE, Minecraft.getInstance().level.registryAccess()),
+    public String serialize(ILevelWrapper levelWrapper) {
+        String data = Biome.CODEC.encodeStart(RegistryOps.create(JsonOps.INSTANCE, ((Level)levelWrapper.getWrappedMcObject()).registryAccess()),
                 biome).get().orThrow().toString();
         return data;
     }
@@ -91,13 +93,13 @@ public class BiomeWrapper implements IBiomeWrapper
         return Objects.hash(biome);
     }
 	
-	public static IBiomeWrapper deserialize(String str) throws IOException
+	public static IBiomeWrapper deserialize(String str, ILevelWrapper levelWrapper) throws IOException
 	{
 		try
 		{
          #if PRE_MC_1_18_2 Biome #else
 			Holder<Biome> #endif
-					biome = Biome.CODEC.decode(RegistryOps.create(JsonOps.INSTANCE, Minecraft.getInstance().level.registryAccess()),
+					biome = Biome.CODEC.decode(RegistryOps.create(JsonOps.INSTANCE, ((Level)levelWrapper.getWrappedMcObject()).registryAccess()),
 					JsonParser.parseString(str)).get().orThrow().getFirst();
 			return getBiomeWrapper(biome);
 		}

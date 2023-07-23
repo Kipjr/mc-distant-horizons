@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrappe
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -201,7 +202,7 @@ public class ChunkWrapper implements IChunkWrapper
 		if (this.chunk instanceof LevelChunk)
 		{
 			LevelChunk levelChunk = (LevelChunk) this.chunk;
-			if (levelChunk.getLevel() instanceof ClientLevel)
+			if (this.wrappedLevel instanceof IClientLevelWrapper)
 			{
 				weakMapLock.readLock().lock();
 				boolean fixedIsClientLightReady = chunksToUpdateClientLightReady.get(this.chunk);
