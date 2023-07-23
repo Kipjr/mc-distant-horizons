@@ -21,9 +21,10 @@ package com.seibel.distanthorizons.common.wrappers.worldGeneration.step;
 
 import java.util.ArrayList;
 
+import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.ThreadedParameters;
-import com.seibel.distanthorizons.common.wrappers.worldGeneration.mimicObject.LightedWorldGenRegion;
+import com.seibel.distanthorizons.common.wrappers.worldGeneration.mimicObject.DhLitWorldGenRegion;
 import com.seibel.distanthorizons.core.util.gridList.ArrayGridList;
 
 import net.minecraft.ReportedException;
@@ -50,11 +51,13 @@ public final class StepFeatures {
 
 	public final ChunkStatus STATUS = ChunkStatus.FEATURES;
 
-	public void generateGroup(ThreadedParameters tParams, LightedWorldGenRegion worldGenRegion,
-			ArrayGridList<ChunkAccess> chunks) {
+	public void generateGroup(ThreadedParameters tParams, DhLitWorldGenRegion worldGenRegion,
+			ArrayGridList<ChunkWrapper> chunkWrappers) {
 		ArrayList<ChunkAccess> chunksToDo = new ArrayList<ChunkAccess>();
 		
-		for (ChunkAccess chunk : chunks) {
+		for (ChunkWrapper chunkWrapper : chunkWrappers)
+		{
+			ChunkAccess chunk = chunkWrapper.getChunk();
 			if (chunk.getStatus().isOrAfter(STATUS)) continue;
 			((ProtoChunk) chunk).setStatus(STATUS);
 			chunksToDo.add(chunk);
