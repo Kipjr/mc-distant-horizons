@@ -4,6 +4,7 @@ import com.google.common.collect.MapMaker;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
+import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.UUID;
@@ -35,6 +36,11 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper {
 		#else
 		return ServerLevelWrapper.getWrapper(this.serverPlayer.serverLevel());
 		#endif
+    }
+    
+    public Vec3d getPosition() {
+        var position = serverPlayer.position();
+        return new Vec3d(position.x, position.y, position.z);
     }
 
     public Object getWrappedMcObject() {
