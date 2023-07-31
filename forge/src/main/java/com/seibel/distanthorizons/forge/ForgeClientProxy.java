@@ -21,10 +21,15 @@ package com.seibel.distanthorizons.forge;
 
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
+import com.seibel.distanthorizons.coreapi.ModInfo;
+import io.netty.buffer.ByteBuf;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.LevelAccessor;
 
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -36,6 +41,12 @@ import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.event.level.LevelEvent;
 #endif
 
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraft.world.level.chunk.ChunkAccess;
+
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.simple.SimpleChannel;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 
@@ -51,18 +62,28 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
  * and is the starting point for most of the mod.
  * 
  * @author James_Seibel
- * @version 11-12-2021
+ * @version 2023-7-27
  */
 public class ForgeClientProxy
 {
+	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	private static SimpleChannel multiversePluginChannel;
+	
+	
 	#if PRE_MC_1_19_2
 	private static LevelAccessor GetLevel(WorldEvent e) { return e.getWorld(); }
 	#else
 	private static LevelAccessor GetLevel(LevelEvent e) { return e.getLevel(); }
 	#endif
-
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-
+	
+	
+	
+	//=============//
+	// tick events //
+	//=============//
+	
 	@SubscribeEvent
 	public void clientTickEvent(TickEvent.ClientTickEvent event)
 	{
@@ -71,26 +92,111 @@ public class ForgeClientProxy
 			ClientApi.INSTANCE.clientTickEvent();
 		}
 	}
-
-	// ClientLevelLoadEvent - Done in MixinClientPacketListener
-//	@SubscribeEvent
-//	public void clientLevelLoadEvent(WorldEvent.Load event)
-//	{
-//		if (event.getWorld() instanceof ClientLevel)
-//		{
-//			ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper((ClientLevel) event.getWorld()));
-//		}
-//	}
-	// ClientLevelUnloadEvent - Done in MixinClientPacketListener
-//	@SubscribeEvent
-//	public void clientLevelUnloadEvent(WorldEvent.Unload event)
-//	{
-//		if (event.getWorld() instanceof ClientLevel)
-//		{
-//			ClientApi.INSTANCE.clientLevelUnloadEvent(ClientLevelWrapper.getWrapper((ClientLevel) event.getWorld()));
-//		}
-//	}
-
+	
+	
+	
+	//==============//
+	// world events //
+	//==============//
+	
+	@SubscribeEvent
+	#if PRE_MC_1_19_2
+	public void clientLevelLoadEvent(WorldEvent.Load event)
+	#else
+	public void clientLevelLoadEvent(LevelEvent.Load event)
+	#endif
+	{
+		LOGGER.info("level load");
+		
+		#if PRE_MC_1_19_2
+		LevelAccessor level = event.getWorld();
+		#else
+		LevelAccessor level = event.getLevel();
+		#endif
+		if (!(level instanceof ClientLevel))
+		{
+			return;
+		}
+		
+		ClientLevel clientLevel = (ClientLevel) level;
+		IClientLevelWrapper clientLevelWrapper = ClientLevelWrapper.getWrapper(clientLevel);
+		// TODO this causes a crash due to level being set to null somewhere
+		ClientApi.INSTANCE.clientLevelLoadEvent(clientLevelWrapper);
+	}
+	@SubscribeEvent
+	#if PRE_MC_1_19_2
+	public void clientLevelUnloadEvent(WorldEvent.Unload event)
+	#else
+	public void clientLevelUnloadEvent(LevelEvent.Load event)
+	#endif
+	{
+		LOGGER.info("level unload");
+		
+		#if PRE_MC_1_19_2
+		LevelAccessor level = event.getWorld();
+		#else
+		LevelAccessor level = event.getLevel();
+		#endif
+		if (!(level instanceof ClientLevel))
+		{
+			return;
+		}
+		
+		ClientLevel clientLevel = (ClientLevel) level;
+		IClientLevelWrapper clientLevelWrapper = ClientLevelWrapper.getWrapper(clientLevel);
+		ClientApi.INSTANCE.clientLevelUnloadEvent(clientLevelWrapper);
+	}
+	
+	
+	
+	//==============//
+	// chunk events //
+	//==============//
+	
+	@SubscribeEvent
+	public void rightClickBlockEvent(PlayerInteractEvent.RightClickBlock event)
+	{
+		LOGGER.trace("interact or block place event at blockPos: " + event.getPos());
+		
+		#if PRE_MC_1_19_2
+		LevelAccessor level = event.getWorld();
+		#else
+		LevelAccessor level = event.getLevel();
+		#endif
+		
+		ChunkAccess chunk = level.getChunk(event.getPos());
+		this.onClientBlockChangeEvent(level, chunk);
+	}
+	@SubscribeEvent
+	public void leftClickBlockEvent(PlayerInteractEvent.LeftClickBlock event)
+	{
+		LOGGER.trace("break or block attack at blockPos: " + event.getPos());
+		
+		#if PRE_MC_1_19_2
+		LevelAccessor level = event.getWorld();
+		#else
+		LevelAccessor level = event.getLevel();
+		#endif
+		
+		ChunkAccess chunk = level.getChunk(event.getPos());
+		this.onClientBlockChangeEvent(level, chunk);
+	}
+	private void onClientBlockChangeEvent(LevelAccessor level, ChunkAccess chunk)
+	{
+		// TODO rate limit this event per blockPos to prevent spam
+		
+		// if we have access to the server, use the chunk save event instead 
+		if (MC.clientConnectedToDedicatedServer())
+		{
+			if (chunk != null)
+			{
+				IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
+				ClientApi.INSTANCE.clientChunkLoadEvent(new ChunkWrapper(chunk, level, wrappedLevel), wrappedLevel);
+			}
+		}
+	}
+	
+	
 	@SubscribeEvent
 	public void clientChunkLoadEvent(ChunkEvent.Load event)
 	{
@@ -102,7 +208,7 @@ public class ForgeClientProxy
 		}
 	}
 	@SubscribeEvent
-	public void clientChunkSaveEvent(ChunkEvent.Unload event)
+	public void clientChunkUnloadEvent(ChunkEvent.Unload event)
 	{
 		if (GetLevel(event) instanceof ClientLevel)
 		{
@@ -111,82 +217,86 @@ public class ForgeClientProxy
 			ClientApi.INSTANCE.clientChunkSaveEvent(chunk, ClientLevelWrapper.getWrapper((ClientLevel) GetLevel(event)));
 		}
 	}
-
-	// RendererStartupEvent - Done in MixinGameRenderer
-	// RendererShutdownEvent - Done in MixinGameRenderer
-	// ClientRenderLevelTerrainEvent - Done in MixinGameRenderer
-
-	// Register KeyBindings
+	
+	
+	
+	//==============//
+	// key bindings //
+	//==============//
+	
 	@SubscribeEvent
 	public void registerKeyBindings(#if PRE_MC_1_19_2 InputEvent.KeyInputEvent #else InputEvent.Key #endif event)
 	{
-		if (Minecraft.getInstance().player == null) return;
-		if (event.getAction() != GLFW.GLFW_PRESS) return;
+		if (Minecraft.getInstance().player == null)
+		{
+			return;
+		}
+		if (event.getAction() != GLFW.GLFW_PRESS)
+		{
+			return;
+		}
+		
 		ClientApi.INSTANCE.keyPressedEvent(event.getKey());
 	}
-
-//	@SubscribeEvent
-//	public void serverTickEvent(TickEvent.ServerTickEvent event)
-//	{
-//		if (event.phase != TickEvent.Phase.START) return;
-//		eventApi.serverTickEvent();
-//	}
-////
-//
-//	@SubscribeEvent
-//	public void chunkLoadEvent(ChunkEvent.Load event)
-//	{
-//		clientApi.clientChunkLoadEvent(new ChunkWrapper(event.getChunk(), event.getWorld()), LevelWrapper.getWorldWrapper(event.getWorld()));
-//	}
-//
-//	@SubscribeEvent
-//	public void worldSaveEvent(WorldEvent.Save event)
-//	{
-//		eventApi.worldSaveEvent();
-//	}
-//
-//	/** This is also called when a new dimension loads */
-//	@SubscribeEvent
-//	public void worldLoadEvent(WorldEvent.Load event)
-//	{
-//		if (Minecraft.getInstance().screen instanceof TitleScreen) return;
-//		if (event.getWorld() != null) {
-//			eventApi.worldLoadEvent(LevelWrapper.getWorldWrapper(event.getWorld()));
-//		}
-//	}
-//
-//	@SubscribeEvent
-//	public void worldUnloadEvent(WorldEvent.Unload event)
-//	{
-//		eventApi.worldUnloadEvent(LevelWrapper.getWorldWrapper(event.getWorld()));
-//	}
-//
-//	@SubscribeEvent
-//	public void blockChangeEvent(BlockEvent event)
-//	{
-//		// we only care about certain block events
-//		if (event.getClass() == BlockEvent.BreakEvent.class ||
-//				event.getClass() == BlockEvent.EntityPlaceEvent.class ||
-//				event.getClass() == BlockEvent.EntityMultiPlaceEvent.class ||
-//				event.getClass() == BlockEvent.FluidPlaceBlockEvent.class ||
-//				event.getClass() == BlockEvent.PortalSpawnEvent.class)
-//		{
-//			IChunkWrapper chunk = new ChunkWrapper(event.getWorld().getChunk(event.getPos()), event.getWorld());
-//			DimensionTypeWrapper dimType = DimensionTypeWrapper.getDimensionTypeWrapper(event.getWorld().dimensionType());
-//
-//			// recreate the LOD where the blocks were changed
-//			eventApi.blockChangeEvent(chunk, dimType);
-//		}
-//	}
-//
-//	@SubscribeEvent
-//	public void onKeyInput(InputEvent.KeyInputEvent event)
-//	{
-//		if (Minecraft.getInstance().player == null) return;
-//		if (event.getAction() != GLFW.GLFW_PRESS) return;
-//		clientApi.keyPressedEvent(event.getKey());
-//	}
-//
 	
+	
+	
+	//============//
+	// networking //
+	//============//
+	
+	/** @param event this is just to ensure the event is called at the right time, if it is called outside the {@link FMLClientSetupEvent} event, the binding may fail */
+	public static void setupNetworkingListeners(FMLClientSetupEvent event)
+	{
+		multiversePluginChannel = NetworkRegistry.newSimpleChannel(
+				new ResourceLocation(ModInfo.NETWORKING_RESOURCE_NAMESPACE, ModInfo.MULTIVERSE_PLUGIN_NAMESPACE),
+				// network protocol version
+				() -> ModInfo.MULTIVERSE_PLUGIN_PROTOCOL_VERSION +"",
+				// client accepted versions
+				ForgeClientProxy::isReceivedProtocolVersionAcceptable,
+				// server accepted versions
+				ForgeClientProxy::isReceivedProtocolVersionAcceptable
+		);
+		
+		multiversePluginChannel.registerMessage(0/*should be incremented for each simple channel we listen to*/, ByteBuf.class,
+				// encoder
+				(pack, friendlyByteBuf) -> { },
+				// decoder
+				(friendlyByteBuf) -> friendlyByteBuf.asByteBuf(),
+				// message consumer
+				(nettyByteBuf, contextRef) ->
+				{
+					ClientApi.INSTANCE.serverMessageReceived(nettyByteBuf);
+					contextRef.get().setPacketHandled(true);
+				}
+		);
+	}
+	
+	public static boolean isReceivedProtocolVersionAcceptable(String versionString)
+	{
+		if (versionString.toLowerCase().contains("allowvanilla"))
+		{
+			// allow using networking on vanilla servers
+			return true;
+		}
+		else if (versionString.toLowerCase().contains("absent"))
+		{
+			// allow using networking even if DH isn't installed on the server
+			return true;
+		}
+		else
+		{
+			// DH is installed on the server, check if the version is valid to use
+			try
+			{
+				int version = Integer.parseInt(versionString);
+				return ModInfo.MULTIVERSE_PLUGIN_PROTOCOL_VERSION == version;
+			}
+			catch (NumberFormatException ignored)
+			{
+				return false;
+			}
+		}
+	}
 	
 }
