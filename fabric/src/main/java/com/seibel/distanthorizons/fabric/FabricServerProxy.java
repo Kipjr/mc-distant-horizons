@@ -10,6 +10,7 @@ import com.seibel.distanthorizons.core.api.internal.ServerApi;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -135,6 +136,17 @@ public class FabricServerProxy
 			if (isValidTime())
 			{
 				ServerApi.INSTANCE.serverPlayerDisconnectEvent(getServerPlayerWrapper(handler.player));
+			}
+		});
+		ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, dest) ->
+		{
+			if (isValidTime())
+			{
+				ServerApi.INSTANCE.serverPlayerLevelChangeEvent(
+						getServerPlayerWrapper(player),
+						getServerLevelWrapper(origin),
+						getServerLevelWrapper(dest)
+				);
 			}
 		});
 	}
