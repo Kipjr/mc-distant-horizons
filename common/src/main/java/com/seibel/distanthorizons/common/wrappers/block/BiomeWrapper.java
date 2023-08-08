@@ -24,23 +24,38 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.google.gson.JsonParser;
-import com.mojang.serialization.JsonOps;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import net.minecraft.client.Minecraft;
+#if POST_MC_1_17
 import net.minecraft.core.Holder;
+import net.minecraft.resources.RegistryOps;
+#endif
+
 #if POST_MC_1_19_2
 import net.minecraft.data.worldgen.biome.EndBiomes;
 import net.minecraft.data.worldgen.biome.NetherBiomes;
 #endif
+
+
+#if MC_1_16_5 || MC_1_17_1
 import net.minecraft.core.Registry;
-import net.minecraft.resources.RegistryOps;
+#elif MC_1_18_2 || MC_1_19_2
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
+#else
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
+#endif
+
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
+#if !PRE_MC_1_18_2
 import net.minecraft.world.level.biome.Biomes;
+#endif
+
 
 
 /** This class wraps the minecraft BlockPos.Mutable (and BlockPos) class */
