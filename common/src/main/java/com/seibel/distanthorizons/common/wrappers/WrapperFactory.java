@@ -95,23 +95,25 @@ public class WrapperFactory implements IWrapperFactory
 			}
 		}
 		
-		// MC 1.18, 1.19, 1.20
-		#if POST_MC_1_17_1
+		// MC 1.16, 1.18, 1.19, 1.20
+		#if POST_MC_1_17_1 || MC_1_16_5
 		else if (objectArray.length == 2)
 		{
 			// correct number of parameters from the API
 			
 			// chunk
-			if (!(objectArray[0] instanceof ChunkAccess chunk))
+			if (!(objectArray[0] instanceof ChunkAccess))
 			{
 				throw new ClassCastException(createChunkWrapperErrorMessage(objectArray));
 			}
+			ChunkAccess chunk = (ChunkAccess)objectArray[0];
 			
 			// light source
-			if (!(objectArray[1] instanceof LevelReader lightSource))
+			if (!(objectArray[1] instanceof LevelReader))
 			{
 				throw new ClassCastException(createChunkWrapperErrorMessage(objectArray));
 			}
+			LevelReader lightSource = (LevelReader)objectArray[1];
 			
 			
 			return new ChunkWrapper(chunk, lightSource, /*A DH wrapped level isn't necessary*/null);
@@ -142,8 +144,8 @@ public class WrapperFactory implements IWrapperFactory
 				"Chunk wrapper creation failed. \n" +
 						"Expected parameters: \n");
 		
-		// MC 1.18, 1.19, 1.20
-		#if POST_MC_1_17_1
+		// MC 1.16, 1.18, 1.19, 1.20
+		#if POST_MC_1_17_1 || MC_1_16_5
 		message.append("["+ChunkAccess.class.getName()+"], \n");
 		message.append("["+LevelReader.class.getName()+"]. \n");
 		#else

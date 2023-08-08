@@ -64,7 +64,14 @@ public class SodiumAccessor implements ISodiumAccessor {
 		SodiumWorldRenderer renderer = SodiumWorldRenderer.instance();
 		LevelHeightAccessor height =  Minecraft.getInstance().level;
 
-		#if POST_MC_1_18_2
+		#if POST_MC_1_20_1
+		// TODO: This is just a tmp solution, use a proper solution later
+		return MC_RENDER.getMaximumRenderedChunks().stream().filter((DhChunkPos chunk) -> {
+			return (renderer.isBoxVisible(
+					chunk.getMinBlockX()+1, height.getMinBuildHeight()+1, chunk.getMinBlockZ()+1,
+					chunk.getMinBlockX()+15, height.getMaxBuildHeight()-1, chunk.getMinBlockZ()+15));
+		}).collect(Collectors.toCollection(HashSet::new));
+		#elif POST_MC_1_18_2
 		// 0b11 = Lighted chunk & loaded chunk
 		return renderer.getChunkTracker().getChunks(0b00).filter(
 			(long l) -> {
@@ -72,7 +79,7 @@ public class SodiumAccessor implements ISodiumAccessor {
 			}).mapToObj(DhChunkPos::new).collect(Collectors.toCollection(HashSet::new));
 		#else
 		// TODO: Maybe use a mixin to make this more efficient, and maybe ignore changes behind the camera
-		return MC_RENDER.getMaximumRenderedChunks().stream().filter((DHChunkPos chunk) -> {
+		return MC_RENDER.getMaximumRenderedChunks().stream().filter((DhChunkPos chunk) -> {
 			return (renderer.isBoxVisible(
 					chunk.getMinBlockX()+1, height.getMinBuildHeight()+1, chunk.getMinBlockZ()+1,
 					chunk.getMinBlockX()+15, height.getMaxBuildHeight()-1, chunk.getMinBlockZ()+15));
@@ -81,11 +88,11 @@ public class SodiumAccessor implements ISodiumAccessor {
 	}
 	#else
 	@Override
-	public HashSet<DHChunkPos> getNormalRenderedChunks() {
+	public HashSet<DhChunkPos> getNormalRenderedChunks() {
 		SodiumWorldRenderer renderer = SodiumWorldRenderer.getInstance();
 		LevelAccessor height = Minecraft.getInstance().level;
 		// TODO: Maybe use a mixin to make this more efficient
-		return MC_RENDER.getMaximumRenderedChunks().stream().filter((DHChunkPos chunk) -> {
+		return MC_RENDER.getMaximumRenderedChunks().stream().filter((DhChunkPos chunk) -> {
 			FakeChunkEntity AABB = new FakeChunkEntity(chunk.getX(), chunk.getZ(), height.getMaxBuildHeight());
 			return (renderer.isEntityVisible(AABB));
 		}).collect(Collectors.toCollection(HashSet::new));

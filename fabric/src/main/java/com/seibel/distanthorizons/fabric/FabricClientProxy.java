@@ -62,6 +62,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.phys.HitResult;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.opengl.GL15;
 
 /**
  * This handles all events sent to the client,
@@ -211,7 +212,9 @@ public class FabricClientProxy
 				{
 					float[] matrixFloatArray = SeamlessOverdraw.overwriteMinecraftNearFarClipPlanes(renderContext.projectionMatrix(), renderContext.tickDelta());
 					
-					#if PRE_MC_1_19_4
+					#if MC_1_16_5
+					SeamlessOverdraw.applyLegacyProjectionMatrix(matrixFloatArray);
+					#elif PRE_MC_1_19_4
 					renderContext.projectionMatrix().load(FloatBuffer.wrap(matrixFloatArray));
 					#else
 					renderContext.projectionMatrix().set(matrixFloatArray);

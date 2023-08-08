@@ -32,7 +32,7 @@ import java.util.concurrent.Semaphore;
 
 /**
  * Why does this exist? But okay! (Will be probably removed when the experimental generator is done)
- * FIXME: Recheck this
+ * FIXME: Recheck this // STILL check this
  */
 @Mixin(ThreadingDetector.class)
 public class MixinThreadingDetector {
@@ -47,6 +47,9 @@ public class MixinThreadingDetector {
 }
 
 #else
+
+import net.minecraft.world.level.chunk.ChunkGenerator;
+
 @Mixin(ChunkGenerator.class)
-public class MixinThreadingDectector {}
+public class MixinThreadingDetector { }
 #endif

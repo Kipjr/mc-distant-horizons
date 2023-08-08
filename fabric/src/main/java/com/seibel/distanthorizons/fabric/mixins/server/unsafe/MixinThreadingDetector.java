@@ -35,6 +35,7 @@ import java.util.concurrent.Semaphore;
 
 /**
  * Why does this exist? But okay! (Will be probably removed when the experimental generator is done)
+ * FIXME: Recheck this
  */
 @Mixin(ThreadingDetector.class)
 public class MixinThreadingDetector {
@@ -48,6 +49,9 @@ public class MixinThreadingDetector {
     }
 }
 #else
+
+import net.minecraft.server.level.ServerLevel;
+
 @Mixin(ServerLevel.class)
-    public class MixinThreadingDectector {} //FIXME: Is there some way to make this file just not be added?
+public class MixinThreadingDetector { } //FIXME: Is there some way to make this file just not be added?
 #endif

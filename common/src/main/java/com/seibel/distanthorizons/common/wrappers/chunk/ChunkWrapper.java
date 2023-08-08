@@ -74,18 +74,20 @@ public class ChunkWrapper implements IChunkWrapper
 	
 	private LinkedList<DhBlockPos> blockLightPosList = null;
 	
-	private final boolean useDhLightingEngine;
+	private boolean useDhLighting;
 	
-	// Due to vanilla `isClientLightReady()` not designed to be used by non-render thread, that value may return 'true'
-	// just before the light engine is ticked, (right after all light changes is marked to the engine to be processed).
-	// To fix this, on client-only mode, we mixin-redirect the `isClientLightReady()` so that after the call, it will
-	// trigger a synchronous update of this flag here on all chunks that are wrapped.
-	//
-	// Note: Using a static weak hash map to store the chunks that need to be updated, as instance of chunk wrapper
-	// can be duplicated, with same chunk instance. And the data stored here are all temporary, and thus will not be
-	// visible when a chunk is re-wrapped later.
-	// (Also, thread safety done via a reader writer lock)
-	private final static WeakHashMap<ChunkAccess, Boolean> chunksToUpdateClientLightReady = new WeakHashMap<>();
+	/**
+	 * Due to vanilla `isClientLightReady()` not designed to be used by non-render thread, that value may return 'true'
+	 * just before the light engine is ticked, (right after all light changes is marked to the engine to be processed).
+	 * To fix this, on client-only mode, we mixin-redirect the `isClientLightReady()` so that after the call, it will
+	 * trigger a synchronous update of this flag here on all chunks that are wrapped. <br><br>
+	 * 
+	 * Note: Using a static weak hash map to store the chunks that need to be updated, as instance of chunk wrapper
+	 * can be duplicated, with same chunk instance. And the data stored here are all temporary, and thus will not be
+	 * visible when a chunk is re-wrapped later. <br>
+	 * (Also, thread safety done via a reader writer lock)
+	 */
+	private final static WeakHashMap<ChunkAccess, Boolean> chunksToUpdateClientLightReady = new WeakHashMap<>(); // TODO this is never cleared
 	private final static ReentrantReadWriteLock weakMapLock = new ReentrantReadWriteLock();
 	
 	
@@ -103,7 +105,7 @@ public class ChunkWrapper implements IChunkWrapper
 		
 		// TODO is this the best way to differentiate between when we are generating chunks and when MC gave us a chunk?
 		boolean isDhGeneratedChunk = (this.lightSource.getClass() == DhLitWorldGenRegion.class);
-		this.useDhLightingEngine = isDhGeneratedChunk && (Config.Client.Advanced.WorldGenerator.worldGenLightingEngine.get() == ELightGenerationMode.DISTANT_HORIZONS);
+		this.useDhLighting = isDhGeneratedChunk && (Config.Client.Advanced.WorldGenerator.worldGenLightingEngine.get() == ELightGenerationMode.DISTANT_HORIZONS);
 		
 		weakMapLock.writeLock().lock();
 		chunksToUpdateClientLightReady.put(chunk, false);
@@ -153,16 +155,16 @@ public class ChunkWrapper implements IChunkWrapper
 		//if (wrappedLevel != null) return wrappedLevel.getBiome(new DhBlockPos(x + getMinX(), y, z + getMinZ()));
 
 		#if PRE_MC_1_17_1
-		return BiomeWrapper.getBiomeWrapper(chunk.getBiomes().getNoiseBiome(
-				x >> 2, y >> 2, z >> 2));
+		return BiomeWrapper.getBiomeWrapper(this.chunk.getBiomes().getNoiseBiome(
+				relX >> 2, relY >> 2, relZ >> 2));
 		#elif PRE_MC_1_18_2
-		return BiomeWrapper.getBiomeWrapper(chunk.getBiomes().getNoiseBiome(
-				QuartPos.fromBlock(x), QuartPos.fromBlock(y), QuartPos.fromBlock(z)));
+		return BiomeWrapper.getBiomeWrapper(this.chunk.getBiomes().getNoiseBiome(
+				QuartPos.fromBlock(relX), QuartPos.fromBlock(relY), QuartPos.fromBlock(relZ)));
 		#elif PRE_MC_1_18_2
-		return BiomeWrapper.getBiomeWrapper(chunk.getNoiseBiome(
-				QuartPos.fromBlock(x), QuartPos.fromBlock(y), QuartPos.fromBlock(z)));
+		return BiomeWrapper.getBiomeWrapper(this.chunk.getNoiseBiome(
+				QuartPos.fromBlock(relX), QuartPos.fromBlock(relY), QuartPos.fromBlock(relZ)));
 		#else //Now returns a Holder<Biome> instead of Biome
-		return BiomeWrapper.getBiomeWrapper(chunk.getNoiseBiome(
+		return BiomeWrapper.getBiomeWrapper(this.chunk.getNoiseBiome(
 				QuartPos.fromBlock(relX), QuartPos.fromBlock(relY), QuartPos.fromBlock(relZ)));
 		#endif
 	}
@@ -188,9 +190,14 @@ public class ChunkWrapper implements IChunkWrapper
 	public void setIsDhLightCorrect(boolean isDhLightCorrect) { this.isDhLightCorrect = isDhLightCorrect; }
 	
 	@Override
+	public void setUseDhLighting(boolean useDhLighting) { this.useDhLighting = useDhLighting; }
+	
+	
+	
+	@Override
 	public boolean isLightCorrect()
 	{
-		if (this.useDhLightingEngine)
+		if (this.useDhLighting)
 		{
 			return this.isDhLightCorrect;
 		}
@@ -255,7 +262,7 @@ public class ChunkWrapper implements IChunkWrapper
 		throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(relX, relY, relZ);
 		
 		// use the full lighting engine when the chunks are within render distance or the config requests it
-		if (this.useDhLightingEngine)
+		if (this.useDhLighting)
 		{
 			// DH lighting method
 			return this.blockLightAtRelBlockPos.getOrDefault(new DhBlockPos(relX, relY, relZ), 0);
@@ -275,7 +282,7 @@ public class ChunkWrapper implements IChunkWrapper
 		throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(relX, relY, relZ);
 		
 		// use the full lighting engine when the chunks are within render distance or the config requests it
-		if (this.useDhLightingEngine)
+		if (this.useDhLighting)
 		{
 			// DH lighting method
 			return this.skyLightAtRelBlockPos.getOrDefault(new DhBlockPos(relX, relY, relZ), 0);
@@ -370,15 +377,20 @@ public class ChunkWrapper implements IChunkWrapper
 	#endif
 
 	// Should be called after client light updates are triggered.
-	private static boolean updateClientLightReady(ChunkAccess chunk, boolean oldValue) {
+	private static boolean updateClientLightReady(ChunkAccess chunk, boolean oldValue)
+	{
 		if (chunk instanceof LevelChunk && ((LevelChunk)chunk).getLevel() instanceof ClientLevel)
 		{
 			LevelChunk levelChunk = (LevelChunk)chunk;
 			ClientChunkCache clientChunkCache = ((ClientLevel)levelChunk.getLevel()).getChunkSource();
 			return clientChunkCache.getChunkForLighting(chunk.getPos().x, chunk.getPos().z) != null &&
-					#if PRE_MC_1_20_1 levelChunk.isClientLightReady()
-					#else checkLightSectionsOnChunk(levelChunk, levelChunk.getLevel().getLightEngine())
-					#endif;
+					#if MC_1_16_5 || MC_1_17_1
+					levelChunk.isLightCorrect();
+					#elif PRE_MC_1_20_1 
+					levelChunk.isClientLightReady();
+					#else 
+					checkLightSectionsOnChunk(levelChunk, levelChunk.getLevel().getLightEngine());
+					#endif
 		}
 		else
 		{
@@ -396,7 +408,8 @@ public class ChunkWrapper implements IChunkWrapper
 		{
 			chunksToUpdateClientLightReady.replaceAll(ChunkWrapper::updateClientLightReady);
 		}
-		finally {
+		finally 
+		{
 			weakMapLock.writeLock().unlock();
 		}
 		#endif

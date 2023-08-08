@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
-import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -36,7 +35,9 @@ import net.minecraft.core.Holder;
 import net.minecraft.data.worldgen.biome.EndBiomes;
 import net.minecraft.data.worldgen.biome.NetherBiomes;
 #endif
+import net.minecraft.core.Registry;
 import net.minecraft.resources.RegistryOps;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
@@ -72,14 +73,7 @@ public class BiomeWrapper implements IBiomeWrapper
         return biome.unwrapKey().orElse(Biomes.THE_VOID).registry().toString();
         #endif
     }
-
-    @Override
-    public String serialize(ILevelWrapper levelWrapper) {
-        String data = Biome.CODEC.encodeStart(RegistryOps.create(JsonOps.INSTANCE, ((Level)levelWrapper.getWrappedMcObject()).registryAccess()),
-                biome).get().orThrow().toString();
-        return data;
-    }
-
+	
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -93,19 +87,70 @@ public class BiomeWrapper implements IBiomeWrapper
         return Objects.hash(biome);
     }
 	
-	public static IBiomeWrapper deserialize(String str, ILevelWrapper levelWrapper) throws IOException
+	@Override
+	public String serialize(ILevelWrapper levelWrapper) // FIXME pass in level to prevent null pointers (or maybe just RegistryAccess?)
 	{
+		
+		net.minecraft.core.RegistryAccess registryAccess = ((Level)levelWrapper.getWrappedMcObject()).registryAccess();
+		
+		ResourceLocation resourceLocation;
+		#if MC_1_16_5 || MC_1_17_1
+		resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome);
+		#elif MC_1_18_2 || MC_1_19_2
+		resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome.value());
+		#else
+		resourceLocation = registryAccess.registryOrThrow(Registries.BIOME).getKey(this.biome.value());
+		#endif
+		
+		if (resourceLocation == null)
+		{
+			// shouldn't normally happen, but just in case
+			return "";
+		}
+		else
+		{
+			String resourceLocationString = resourceLocation.getNamespace()+":"+resourceLocation.getPath();
+			return resourceLocationString;
+		}
+	}
+	
+	public static IBiomeWrapper deserialize(String resourceLocationString, ILevelWrapper levelWrapper) throws IOException // FIXME pass in level to prevent null pointers (or maybe just RegistryAccess?)
+	{
+		if (resourceLocationString.trim().isEmpty() || resourceLocationString.equals(""))
+		{
+			// shouldn't normally happen, but just in case
+			new ResourceLocation("minecraft", "the_void"); // just "void" in MC 1.12 through 1.9 (inclusive)
+		}
+		
+		
+		// parse the resource location
+		int separatorIndex = resourceLocationString.indexOf(":");
+		if (separatorIndex == -1)
+		{
+			throw new IOException("Unable to parse resource location string: ["+resourceLocationString+"].");
+		}
+		ResourceLocation resourceLocation = new ResourceLocation(resourceLocationString.substring(0, separatorIndex), resourceLocationString.substring(separatorIndex+1));
+		
+		
 		try
 		{
-         #if PRE_MC_1_18_2 Biome #else
-			Holder<Biome> #endif
-					biome = Biome.CODEC.decode(RegistryOps.create(JsonOps.INSTANCE, ((Level)levelWrapper.getWrappedMcObject()).registryAccess()),
-					JsonParser.parseString(str)).get().orThrow().getFirst();
+			net.minecraft.core.RegistryAccess registryAccess = ((Level)levelWrapper.getWrappedMcObject()).registryAccess();
+			
+			#if MC_1_16_5 || MC_1_17_1
+			Biome biome = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).get(resourceLocation);
+			#elif MC_1_18_2 || MC_1_19_2
+			Biome unwrappedBiome = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).get(resourceLocation);
+			Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
+			#else
+			Biome unwrappedBiome = registryAccess.registryOrThrow(Registries.BIOME).get(resourceLocation);
+			Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
+			#endif
+			
 			return getBiomeWrapper(biome);
 		}
 		catch (Exception e)
 		{
-			throw new IOException("Failed to deserialize the string ["+str+"] into a BiomeWrapper: "+e.getMessage(), e);
+			throw new IOException("Failed to deserialize the string ["+resourceLocationString+"] into a BiomeWrapper: "+e.getMessage(), e);
 		}
 	}
 	

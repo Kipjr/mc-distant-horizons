@@ -26,6 +26,7 @@ import com.seibel.distanthorizons.common.forge.LodForgeMethodCaller;
 import com.seibel.distanthorizons.common.wrappers.DependencySetup;
 import com.seibel.distanthorizons.common.wrappers.gui.GetConfigScreen;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftClientWrapper;
+import com.seibel.distanthorizons.core.jar.ModGitInfo;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.ReflectionHandler;
@@ -112,6 +113,11 @@ public class ForgeMain implements LodForgeMethodCaller
 		ForgeDependencySetup.createInitialBindings();
 		LOGGER.info(ModInfo.READABLE_NAME + ", Version: " + ModInfo.VERSION);
 
+		// Print git info (Useful for dev builds)
+		LOGGER.info("DH Branch: "+ ModGitInfo.Git_Main_Branch);
+		LOGGER.info("DH Commit: "+ ModGitInfo.Git_Main_Commit);
+		LOGGER.info("DH-Core Commit: "+ ModGitInfo.Git_Core_Commit);
+
 		client_proxy = new ForgeClientProxy();
 		MinecraftForge.EVENT_BUS.register(client_proxy);
 		server_proxy = new ForgeServerProxy(false);
@@ -124,7 +130,7 @@ public class ForgeMain implements LodForgeMethodCaller
 		#if PRE_MC_1_17_1
 		ModLoadingContext.get().registerExtensionPoint(ExtensionPoint.CONFIGGUIFACTORY,
 				() -> (client, parent) -> GetConfigScreen.getScreen(parent));
-		#elif POST_MC_1_18_2 && PRE_MC_1_19_2
+		#elif MC_1_17_1 || MC_1_18_2 || PRE_MC_1_19_2
 		ModLoadingContext.get().registerExtensionPoint(ConfigGuiHandler.ConfigGuiFactory.class,
 				() -> new ConfigGuiHandler.ConfigGuiFactory((client, parent) -> GetConfigScreen.getScreen(parent)));
 		#else
