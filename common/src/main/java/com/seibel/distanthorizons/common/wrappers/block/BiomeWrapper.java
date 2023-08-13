@@ -107,7 +107,7 @@ public class BiomeWrapper implements IBiomeWrapper {
 
 		BiomeWrapper that = (BiomeWrapper) obj;
 		// the serialized value is used so we can test the contents instead of the references
-		return Objects.equals(this.serialize(), that.serialize(Minecraft.getInstance().level));
+		return Objects.equals(this.serialize(), that.serialize());
 	}
 
 	@Override
@@ -119,6 +119,33 @@ public class BiomeWrapper implements IBiomeWrapper {
 	public String serialize(ILevelWrapper levelWrapper) {
 		if (this.serializationResult == null) {
 			net.minecraft.core.RegistryAccess registryAccess = ((Level) levelWrapper.getWrappedMcObject()).registryAccess();
+
+			ResourceLocation resourceLocation;
+			#if MC_1_16_5 || MC_1_17_1
+			resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome);
+			#elif MC_1_18_2 || MC_1_19_2
+			resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome.value());
+			#else
+			resourceLocation = registryAccess.registryOrThrow(Registries.BIOME).getKey(this.biome.value());
+			#endif
+
+			if (resourceLocation == null) {
+				LOGGER.warn("unable to serialize: " + this.biome.value());
+				// shouldn't normally happen, but just in case
+				this.serializationResult = "";
+			} else {
+				this.serializationResult = resourceLocation.getNamespace() + ":" + resourceLocation.getPath();
+			}
+		}
+
+		return this.serializationResult;
+	}
+
+	// FIXME: Old code that might create a nullpointer exception
+	@Override
+	public String serialize() {
+		if (this.serializationResult == null) {
+			net.minecraft.core.RegistryAccess registryAccess = Minecraft.getInstance().level.registryAccess();
 
 			ResourceLocation resourceLocation;
 			#if MC_1_16_5 || MC_1_17_1

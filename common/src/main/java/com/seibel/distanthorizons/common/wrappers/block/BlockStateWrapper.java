@@ -97,7 +97,6 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	@Override
 	public int getLightEmission() { return (this.blockState != null) ? this.blockState.getLightEmission() : 0; }
 	
-	
 	@Override
     public String serialize(ILevelWrapper levelWrapper)
 	{
@@ -129,6 +128,39 @@ public class BlockStateWrapper implements IBlockStateWrapper
 					+ STATE_STRING_SEPARATOR + serializeBlockStateProperties(this.blockState);
 		}
 
+		return this.serializationResult;
+	}
+
+	// FIXME: Old code that might create a nullpointer exception
+	@Override
+	public String serialize() {
+		// cache the serialization result so it can be quickly used as a semi-stable hashing method
+		if (this.serializationResult == null)
+		{
+			if (this.blockState == null)
+			{
+				return "AIR";
+			}
+
+			ResourceLocation resourceLocation;
+			#if MC_1_16_5 || MC_1_17_1
+			resourceLocation = Registry.BLOCK.getKey(this.blockState.getBlock());
+			#elif MC_1_18_2 || MC_1_19_2
+			net.minecraft.core.RegistryAccess registryAccess = Minecraft.getInstance().level.registryAccess();
+			resourceLocation = registryAccess.registryOrThrow(Registry.BLOCK_REGISTRY).getKey(this.blockState.getBlock());
+			#else
+			net.minecraft.core.RegistryAccess registryAccess = ((Level)levelWrapper.getWrappedMcObject()).registryAccess();
+			resourceLocation = registryAccess.registryOrThrow(Registries.BLOCK).getKey(this.blockState.getBlock());
+			#endif
+
+			if (resourceLocation == null)
+			{
+				LOGGER.warn("unable to serialize: "+this.blockState);
+			}
+
+			this.serializationResult = resourceLocation.getNamespace() + RESOURCE_LOCATION_SEPARATOR + resourceLocation.getPath()
+					+ STATE_STRING_SEPARATOR + serializeBlockStateProperties(this.blockState);
+		}
 
 		return this.serializationResult;
 	}
