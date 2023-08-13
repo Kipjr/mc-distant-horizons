@@ -66,7 +66,7 @@ public class WrapperFactory implements IWrapperFactory
 	public IBiomeWrapper deserializeBiomeWrapper(String str, ILevelWrapper levelWrapper) throws IOException { return BiomeWrapper.deserialize(str, levelWrapper); }
 	
 	@Override
-	public IBlockStateWrapper deserializeBlockStateWrapper(String str) throws IOException { return BlockStateWrapper.deserialize(str); }
+	public IBlockStateWrapper deserializeBlockStateWrapper(String str, ILevelWrapper levelWrapper) throws IOException { return BlockStateWrapper.deserialize(str, levelWrapper); }
 	
 	@Override
 	public IBlockStateWrapper getAirBlockStateWrapper() { return BlockStateWrapper.AIR; }

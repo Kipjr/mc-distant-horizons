@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentMap;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import net.minecraft.client.Minecraft;
 #if POST_MC_1_17
 import net.minecraft.core.Holder;
 import net.minecraft.resources.RegistryOps;
@@ -103,7 +102,7 @@ public class BiomeWrapper implements IBiomeWrapper
     }
 	
 	@Override
-	public String serialize(ILevelWrapper levelWrapper) // FIXME pass in level to prevent null pointers (or maybe just RegistryAccess?)
+	public String serialize(ILevelWrapper levelWrapper)
 	{
 		
 		net.minecraft.core.RegistryAccess registryAccess = ((Level)levelWrapper.getWrappedMcObject()).registryAccess();
@@ -129,7 +128,7 @@ public class BiomeWrapper implements IBiomeWrapper
 		}
 	}
 	
-	public static IBiomeWrapper deserialize(String resourceLocationString, ILevelWrapper levelWrapper) throws IOException // FIXME pass in level to prevent null pointers (or maybe just RegistryAccess?)
+	public static IBiomeWrapper deserialize(String resourceLocationString, ILevelWrapper levelWrapper) throws IOException
 	{
 		if (resourceLocationString.trim().isEmpty() || resourceLocationString.equals(""))
 		{
