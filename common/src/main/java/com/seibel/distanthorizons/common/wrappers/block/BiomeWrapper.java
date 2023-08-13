@@ -19,136 +19,146 @@
 
 package com.seibel.distanthorizons.common.wrappers.block;
 
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
-
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 #if POST_MC_1_17
 import net.minecraft.core.Holder;
 import net.minecraft.resources.RegistryOps;
 #endif
-
 #if POST_MC_1_19_2
 import net.minecraft.data.worldgen.biome.EndBiomes;
 import net.minecraft.data.worldgen.biome.NetherBiomes;
 #endif
-
-
 #if MC_1_16_5 || MC_1_17_1
 import net.minecraft.core.Registry;
 #elif MC_1_18_2 || MC_1_19_2
-import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
 #else
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 #endif
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
-#if !PRE_MC_1_18_2
-import net.minecraft.world.level.biome.Biomes;
-#endif
+/**
+ * This class wraps the minecraft BlockPos.Mutable (and BlockPos) class
+ */
+public class BiomeWrapper implements IBiomeWrapper {
+	private static final Logger LOGGER = LogManager.getLogger();
 
-
-
-/** This class wraps the minecraft BlockPos.Mutable (and BlockPos) class */
-public class BiomeWrapper implements IBiomeWrapper
-{
-    #if PRE_MC_1_18_2
-    public static final ConcurrentMap<Biome, BiomeWrapper> biomeWrapperMap = new ConcurrentHashMap<>();
-    public final Biome biome;
-    #else
-    public static final ConcurrentMap<Holder<Biome>, BiomeWrapper> biomeWrapperMap = new ConcurrentHashMap<>();
-    public final Holder<Biome> biome;
+	#if PRE_MC_1_18_2
+	public static final ConcurrentMap<Biome, BiomeWrapper> biomeWrapperMap = new ConcurrentHashMap<>();
+	public final Biome biome;
+	#else
+	public static final ConcurrentMap<Holder<Biome>, BiomeWrapper> biomeWrapperMap = new ConcurrentHashMap<>();
+	public final Holder<Biome> biome;
     #endif
 
-    static public IBiomeWrapper getBiomeWrapper(#if PRE_MC_1_18_2 Biome #else Holder<Biome> #endif biome)
-    {
-        return biomeWrapperMap.computeIfAbsent(biome, BiomeWrapper::new);
-    }
+	/**
+	 * Cached so it can be quickly used as a semi-stable hashing method. <br>
+	 * This may also fix the issue where we can serialize and save after a level has been shut down.
+	 */
+	private String serializationResult = null;
 
-    private BiomeWrapper(#if PRE_MC_1_18_2 Biome #else Holder<Biome> #endif biome)
-    {
-        this.biome = biome;
-    }
+	//==============//
+	// constructors //
+	//==============//
 
-    @Override
-    public String getName()
-    {
+	static public IBiomeWrapper getBiomeWrapper(#if PRE_MC_1_18_2 Biome #else Holder<Biome> #endif biome) {
+		return biomeWrapperMap.computeIfAbsent(biome, BiomeWrapper::new);
+	}
+
+	private BiomeWrapper(#if PRE_MC_1_18_2 Biome #else Holder<Biome> #endif biome) {
+		this.biome = biome;
+	}
+
+	//=========//
+	// methods //
+	//=========//
+
+	@Override
+	public String getName() {
         #if PRE_MC_1_18_2
         return biome.toString();
         #else
-        return biome.unwrapKey().orElse(Biomes.THE_VOID).registry().toString();
+		return this.biome.unwrapKey().orElse(Biomes.THE_VOID).registry().toString();
         #endif
-    }
-	
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        BiomeWrapper that = (BiomeWrapper) o;
-        return Objects.equals(biome, that.biome);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(biome);
-    }
-	
-	@Override
-	public String serialize(ILevelWrapper levelWrapper)
-	{
-		
-		net.minecraft.core.RegistryAccess registryAccess = ((Level)levelWrapper.getWrappedMcObject()).registryAccess();
-		
-		ResourceLocation resourceLocation;
-		#if MC_1_16_5 || MC_1_17_1
-		resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome);
-		#elif MC_1_18_2 || MC_1_19_2
-		resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome.value());
-		#else
-		resourceLocation = registryAccess.registryOrThrow(Registries.BIOME).getKey(this.biome.value());
-		#endif
-		
-		if (resourceLocation == null)
-		{
-			// shouldn't normally happen, but just in case
-			return "";
-		}
-		else
-		{
-			String resourceLocationString = resourceLocation.getNamespace()+":"+resourceLocation.getPath();
-			return resourceLocationString;
-		}
 	}
-	
-	public static IBiomeWrapper deserialize(String resourceLocationString, ILevelWrapper levelWrapper) throws IOException
-	{
-		if (resourceLocationString.trim().isEmpty() || resourceLocationString.equals(""))
-		{
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		} else if (obj == null || this.getClass() != obj.getClass()) {
+			return false;
+		}
+
+		BiomeWrapper that = (BiomeWrapper) obj;
+		// the serialized value is used so we can test the contents instead of the references
+		return Objects.equals(this.serialize(), that.serialize(Minecraft.getInstance().level));
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.serialize());
+	}
+
+	@Override
+	public String serialize(ILevelWrapper levelWrapper) {
+		if (this.serializationResult == null) {
+			net.minecraft.core.RegistryAccess registryAccess = ((Level) levelWrapper.getWrappedMcObject()).registryAccess();
+
+			ResourceLocation resourceLocation;
+			#if MC_1_16_5 || MC_1_17_1
+			resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome);
+			#elif MC_1_18_2 || MC_1_19_2
+			resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome.value());
+			#else
+			resourceLocation = registryAccess.registryOrThrow(Registries.BIOME).getKey(this.biome.value());
+			#endif
+
+			if (resourceLocation == null) {
+				LOGGER.warn("unable to serialize: " + this.biome.value());
+				// shouldn't normally happen, but just in case
+				this.serializationResult = "";
+			} else {
+				this.serializationResult = resourceLocation.getNamespace() + ":" + resourceLocation.getPath();
+			}
+		}
+
+		return this.serializationResult;
+	}
+
+	public static IBiomeWrapper deserialize(String resourceLocationString, ILevelWrapper levelWrapper) throws IOException {
+		if (resourceLocationString.trim().isEmpty() || resourceLocationString.equals("")) {
+			LOGGER.warn("null biome string deserialized");
+
 			// shouldn't normally happen, but just in case
 			new ResourceLocation("minecraft", "the_void"); // just "void" in MC 1.12 through 1.9 (inclusive)
 		}
-		
-		
+
 		// parse the resource location
 		int separatorIndex = resourceLocationString.indexOf(":");
-		if (separatorIndex == -1)
-		{
-			throw new IOException("Unable to parse resource location string: ["+resourceLocationString+"].");
+		if (separatorIndex == -1) {
+			throw new IOException("Unable to parse resource location string: [" + resourceLocationString + "].");
 		}
-		ResourceLocation resourceLocation = new ResourceLocation(resourceLocationString.substring(0, separatorIndex), resourceLocationString.substring(separatorIndex+1));
-		
-		
-		try
-		{
-			net.minecraft.core.RegistryAccess registryAccess = ((Level)levelWrapper.getWrappedMcObject()).registryAccess();
+		ResourceLocation resourceLocation = new ResourceLocation(
+				resourceLocationString.substring(0, separatorIndex), resourceLocationString.substring(separatorIndex + 1));
+
+		try {
+			net.minecraft.core.RegistryAccess registryAccess = ((Level) levelWrapper.getWrappedMcObject()).registryAccess();
 			
 			#if MC_1_16_5 || MC_1_17_1
 			Biome biome = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).get(resourceLocation);
@@ -157,19 +167,24 @@ public class BiomeWrapper implements IBiomeWrapper
 			Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
 			#else
 			Biome unwrappedBiome = registryAccess.registryOrThrow(Registries.BIOME).get(resourceLocation);
+			if (unwrappedBiome == null)
+			{
+				LOGGER.warn("null biome string deserialized from string: "+resourceLocationString);
+			}
 			Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
 			#endif
-			
+
 			return getBiomeWrapper(biome);
-		}
-		catch (Exception e)
-		{
-			throw new IOException("Failed to deserialize the string ["+resourceLocationString+"] into a BiomeWrapper: "+e.getMessage(), e);
+		} catch (Exception e) {
+			throw new IOException(
+					"Failed to deserialize the string [" + resourceLocationString + "] into a BiomeWrapper: " + e.getMessage(), e);
 		}
 	}
-	
-	
-	@Override 
-	public Object getWrappedMcObject() { return this.biome; }
-	
+
+	@Override
+	public Object getWrappedMcObject() {return this.biome;}
+
+	@Override
+	public String toString() {return this.serialize();}
+
 }

@@ -8,6 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
@@ -19,8 +20,11 @@ import java.util.concurrent.ConcurrentHashMap;
 #if MC_1_16_5 || MC_1_17_1
 import net.minecraft.core.Registry;
 #elif MC_1_18_2 || MC_1_19_2
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 #else
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.EmptyBlockGetter;
@@ -38,10 +42,13 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	public static final BlockStateWrapper AIR = new BlockStateWrapper(null);
+    public static final ConcurrentHashMap<BlockState, BlockStateWrapper> cache = new ConcurrentHashMap<>();
 	
-	
-    public static ConcurrentHashMap<BlockState, BlockStateWrapper> cache = new ConcurrentHashMap<>();
-	
+	/**
+	 * Cached so it can be quickly used as a semi-stable hashing method. <br>
+	 * This may also fix the issue where we can serialize and save after a level has been shut down.
+	 */
+	private String serializationResult = null;
 	
 	
 	//==============//
@@ -94,25 +101,36 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	@Override
     public String serialize(ILevelWrapper levelWrapper)
 	{
-		if (this.blockState == null)
+		// cache the serialization result so it can be quickly used as a semi-stable hashing method
+		if (this.serializationResult == null)
 		{
-			return "AIR";
+			if (this.blockState == null)
+			{
+				return "AIR";
+			}
+
+			ResourceLocation resourceLocation;
+			#if MC_1_16_5 || MC_1_17_1
+			resourceLocation = Registry.BLOCK.getKey(this.blockState.getBlock());
+			#elif MC_1_18_2 || MC_1_19_2
+			net.minecraft.core.RegistryAccess registryAccess = ((Level)levelWrapper.getWrappedMcObject()).registryAccess();
+			resourceLocation = registryAccess.registryOrThrow(Registry.BLOCK_REGISTRY).getKey(this.blockState.getBlock());
+			#else
+			net.minecraft.core.RegistryAccess registryAccess = ((Level)levelWrapper.getWrappedMcObject()).registryAccess();
+			resourceLocation = registryAccess.registryOrThrow(Registries.BLOCK).getKey(this.blockState.getBlock());
+			#endif
+
+			if (resourceLocation == null)
+			{
+				LOGGER.warn("unable to serialize: "+this.blockState);
+			}
+
+			this.serializationResult = resourceLocation.getNamespace() + RESOURCE_LOCATION_SEPARATOR + resourceLocation.getPath()
+					+ STATE_STRING_SEPARATOR + serializeBlockStateProperties(this.blockState);
 		}
-		
-		ResourceLocation resourceLocation;
-		#if MC_1_16_5 || MC_1_17_1
-		resourceLocation = Registry.BLOCK.getKey(this.blockState.getBlock());
-		#elif MC_1_18_2 || MC_1_19_2
-		net.minecraft.core.RegistryAccess registryAccess = ((Level)levelWrapper.getWrappedMcObject()).registryAccess();
-		resourceLocation = registryAccess.registryOrThrow(Registry.BLOCK_REGISTRY).getKey(this.blockState.getBlock());
-		#else
-		net.minecraft.core.RegistryAccess registryAccess = ((Level)levelWrapper.getWrappedMcObject()).registryAccess();
-		resourceLocation = registryAccess.registryOrThrow(Registries.BLOCK).getKey(this.blockState.getBlock());
-		#endif
-		
-		String resourceStateString = resourceLocation.getNamespace() + RESOURCE_LOCATION_SEPARATOR + resourceLocation.getPath()
-										+ STATE_STRING_SEPARATOR + serializeBlockStateProperties(this.blockState);
-		return resourceStateString;
+
+
+		return this.serializationResult;
 	}
 	
 	public static BlockStateWrapper deserialize(String resourceStateString, ILevelWrapper levelWrapper) throws IOException
@@ -174,7 +192,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 			// use the default if no state was found
 			if (foundState == null)
 			{
-				LOGGER.debug("Unable to find BlockState for Block ["+resourceLocation+"] with properties: ["+blockStatePropertiesString+"].");
+				LOGGER.warn("Unable to find BlockState for Block ["+resourceLocation+"] with properties: ["+blockStatePropertiesString+"].");
 				foundState = block.defaultBlockState();
 			}
 			return new BlockStateWrapper(foundState);
@@ -230,11 +248,12 @@ public class BlockStateWrapper implements IBlockStateWrapper
         }
 		
         BlockStateWrapper that = (BlockStateWrapper) obj;
-        return Objects.equals(this.blockState, that.blockState);
+	    // the serialized value is used so we can test the contents instead of the references
+        return Objects.equals(this.serialize(), that.serialize());
     }
 
     @Override
-    public int hashCode() { return Objects.hash(this.blockState); }
+    public int hashCode() { return Objects.hash(this.serialize()); }
 	
 	
 	@Override
@@ -269,4 +288,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
         #endif
     }
 	
+	@Override
+	public String toString() { return this.serialize(); }
+
 }
