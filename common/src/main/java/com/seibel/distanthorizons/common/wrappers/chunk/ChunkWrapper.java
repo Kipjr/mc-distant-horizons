@@ -167,7 +167,7 @@ public class ChunkWrapper implements IChunkWrapper
 				QuartPos.fromBlock(relX), QuartPos.fromBlock(relY), QuartPos.fromBlock(relZ)));
 		#else //Now returns a Holder<Biome> instead of Biome
 		return BiomeWrapper.getBiomeWrapper(this.chunk.getNoiseBiome(
-				QuartPos.fromBlock(relX), QuartPos.fromBlock(relY), QuartPos.fromBlock(relZ)));
+				QuartPos.fromBlock(relX), QuartPos.fromBlock(relY), QuartPos.fromBlock(relZ)), wrappedLevel);
 		#endif
 	}
 
@@ -366,7 +366,7 @@ public class ChunkWrapper implements IChunkWrapper
 	public IBlockStateWrapper getBlockState(int relX, int relY, int relZ)
 	{
 		//if (wrappedLevel != null) return wrappedLevel.getBlockState(new DhBlockPos(x + getMinX(), y, z + getMinZ()));
-		return BlockStateWrapper.fromBlockState(this.chunk.getBlockState(new BlockPos(relX, relY, relZ)));
+		return BlockStateWrapper.fromBlockState(this.chunk.getBlockState(new BlockPos(relX, relY, relZ)), wrappedLevel);
 	}
 
 	@Override

@@ -4,11 +4,11 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
@@ -20,11 +20,9 @@ import java.util.concurrent.ConcurrentHashMap;
 #if MC_1_16_5 || MC_1_17_1
 import net.minecraft.core.Registry;
 #elif MC_1_18_2 || MC_1_19_2
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 #else
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.EmptyBlockGetter;
@@ -41,7 +39,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	// must be defined before AIR, otherwise a null pointer will be thrown
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	public static final BlockStateWrapper AIR = new BlockStateWrapper(null);
+	public static final BlockStateWrapper AIR = new BlockStateWrapper(null, null);
     public static final ConcurrentHashMap<BlockState, BlockStateWrapper> cache = new ConcurrentHashMap<>();
 	
 	/**
@@ -55,20 +53,23 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	// constructors //
 	//==============//
 	
-    public static BlockStateWrapper fromBlockState(BlockState blockState)
+    public static BlockStateWrapper fromBlockState(BlockState blockState, ILevelWrapper levelWrapper)
 	{
         if (blockState == null || blockState.isAir())
         {
 	        return AIR;
         }
 		
-        return cache.computeIfAbsent(blockState, BlockStateWrapper::new);
+        return cache.computeIfAbsent(blockState, blockState1 -> new BlockStateWrapper(blockState1, levelWrapper));
     }
 
     public final BlockState blockState;
-    BlockStateWrapper(BlockState blockState)
+	public final ILevelWrapper levelWrapper;
+
+    BlockStateWrapper(BlockState blockState, ILevelWrapper levelWrapper)
     {
         this.blockState = blockState;
+        this.levelWrapper = levelWrapper;
         LOGGER.trace("Created BlockStateWrapper for ["+blockState+"]");
     }
 	
@@ -108,14 +109,21 @@ public class BlockStateWrapper implements IBlockStateWrapper
 				return "AIR";
 			}
 
+			// FIXME: Workaround for serverside support
+			RegistryAccess registryAccess;
+			try {
+				registryAccess = ((Level) levelWrapper.getWrappedMcObject()).registryAccess();
+			} catch (Exception ignored) {
+				this.serializationResult = "";
+				return this.serializationResult;
+			}
+
 			ResourceLocation resourceLocation;
 			#if MC_1_16_5 || MC_1_17_1
 			resourceLocation = Registry.BLOCK.getKey(this.blockState.getBlock());
 			#elif MC_1_18_2 || MC_1_19_2
-			net.minecraft.core.RegistryAccess registryAccess = ((Level)levelWrapper.getWrappedMcObject()).registryAccess();
 			resourceLocation = registryAccess.registryOrThrow(Registry.BLOCK_REGISTRY).getKey(this.blockState.getBlock());
 			#else
-			net.minecraft.core.RegistryAccess registryAccess = ((Level)levelWrapper.getWrappedMcObject()).registryAccess();
 			resourceLocation = registryAccess.registryOrThrow(Registries.BLOCK).getKey(this.blockState.getBlock());
 			#endif
 
@@ -131,40 +139,11 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		return this.serializationResult;
 	}
 
-	// FIXME: Old code that might create a nullpointer exception
 	@Override
-	public String serialize() {
-		// cache the serialization result so it can be quickly used as a semi-stable hashing method
-		if (this.serializationResult == null)
-		{
-			if (this.blockState == null)
-			{
-				return "AIR";
-			}
-
-			ResourceLocation resourceLocation;
-			#if MC_1_16_5 || MC_1_17_1
-			resourceLocation = Registry.BLOCK.getKey(this.blockState.getBlock());
-			#elif MC_1_18_2 || MC_1_19_2
-			net.minecraft.core.RegistryAccess registryAccess = Minecraft.getInstance().level.registryAccess();
-			resourceLocation = registryAccess.registryOrThrow(Registry.BLOCK_REGISTRY).getKey(this.blockState.getBlock());
-			#else
-			net.minecraft.core.RegistryAccess registryAccess = Minecraft.getInstance().level.registryAccess();
-			resourceLocation = registryAccess.registryOrThrow(Registries.BLOCK).getKey(this.blockState.getBlock());
-			#endif
-
-			if (resourceLocation == null)
-			{
-				LOGGER.warn("unable to serialize: "+this.blockState);
-			}
-
-			this.serializationResult = resourceLocation.getNamespace() + RESOURCE_LOCATION_SEPARATOR + resourceLocation.getPath()
-					+ STATE_STRING_SEPARATOR + serializeBlockStateProperties(this.blockState);
-		}
-
-		return this.serializationResult;
+	public ILevelWrapper getLevelWrapper() {
+		return levelWrapper;
 	}
-	
+
 	public static BlockStateWrapper deserialize(String resourceStateString, ILevelWrapper levelWrapper) throws IOException
 	{
 		if (resourceStateString.equals("AIR") || resourceStateString.equals("")) // the empty string shouldn't normally happen, but just in case
@@ -227,7 +206,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 				LOGGER.warn("Unable to find BlockState for Block ["+resourceLocation+"] with properties: ["+blockStatePropertiesString+"].");
 				foundState = block.defaultBlockState();
 			}
-			return new BlockStateWrapper(foundState);
+			return new BlockStateWrapper(foundState, levelWrapper);
 		}
 		catch (Exception e)
 		{
@@ -281,12 +260,13 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		
         BlockStateWrapper that = (BlockStateWrapper) obj;
 	    // the serialized value is used so we can test the contents instead of the references
-        return Objects.equals(this.serialize(), that.serialize());
+        return Objects.equals(this.serialize(this.getLevelWrapper()), that.serialize(this.getLevelWrapper()));
     }
 
     @Override
-    public int hashCode() { return Objects.hash(this.serialize()); }
-	
+    public int hashCode() {
+		return Objects.hash(this.serialize(this.getLevelWrapper()));
+	}
 	
 	@Override
 	public Object getWrappedMcObject() { return this.blockState; }
@@ -321,6 +301,8 @@ public class BlockStateWrapper implements IBlockStateWrapper
     }
 	
 	@Override
-	public String toString() { return this.serialize(); }
+	public String toString() {
+		return this.serialize(this.getLevelWrapper());
+	}
 
 }

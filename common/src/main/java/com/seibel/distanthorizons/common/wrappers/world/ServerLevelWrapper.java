@@ -171,12 +171,12 @@ public class ServerLevelWrapper implements IServerLevelWrapper
 
     @Override
     public IBlockStateWrapper getBlockState(DhBlockPos pos) {
-        return BlockStateWrapper.fromBlockState(level.getBlockState(McObjectConverter.Convert(pos)));
+        return BlockStateWrapper.fromBlockState(level.getBlockState(McObjectConverter.Convert(pos)), getWrapper(level));
     }
 
     @Override
     public IBiomeWrapper getBiome(DhBlockPos pos) {
-        return BiomeWrapper.getBiomeWrapper(level.getBiome(McObjectConverter.Convert(pos)));
+        return BiomeWrapper.getBiomeWrapper(level.getBiome(McObjectConverter.Convert(pos)), this);
     }
 
     @Override
