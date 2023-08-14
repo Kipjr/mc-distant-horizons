@@ -149,7 +149,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 			net.minecraft.core.RegistryAccess registryAccess = Minecraft.getInstance().level.registryAccess();
 			resourceLocation = registryAccess.registryOrThrow(Registry.BLOCK_REGISTRY).getKey(this.blockState.getBlock());
 			#else
-			net.minecraft.core.RegistryAccess registryAccess = ((Level)levelWrapper.getWrappedMcObject()).registryAccess();
+			net.minecraft.core.RegistryAccess registryAccess = Minecraft.getInstance().level.registryAccess();
 			resourceLocation = registryAccess.registryOrThrow(Registries.BLOCK).getKey(this.blockState.getBlock());
 			#endif
 
