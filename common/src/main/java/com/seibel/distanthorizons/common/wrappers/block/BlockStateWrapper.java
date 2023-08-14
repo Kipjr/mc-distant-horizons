@@ -114,7 +114,8 @@ public class BlockStateWrapper implements IBlockStateWrapper
 			try {
 				registryAccess = ((Level) levelWrapper.getWrappedMcObject()).registryAccess();
 			} catch (Exception ignored) {
-				this.serializationResult = "";
+				// Shouldn't normally happen, but just in case
+				this.serializationResult = "AIR";
 				return this.serializationResult;
 			}
 
@@ -129,11 +130,13 @@ public class BlockStateWrapper implements IBlockStateWrapper
 
 			if (resourceLocation == null)
 			{
-				LOGGER.warn("unable to serialize: "+this.blockState);
+				LOGGER.warn("unable to serialize (resourceLocation is null): {}", this.blockState);
+				// Shouldn't normally happen, but just in case
+				this.serializationResult = "AIR";
+			} else {
+				this.serializationResult = resourceLocation.getNamespace() + RESOURCE_LOCATION_SEPARATOR + resourceLocation.getPath()
+						+ STATE_STRING_SEPARATOR + serializeBlockStateProperties(this.blockState);
 			}
-
-			this.serializationResult = resourceLocation.getNamespace() + RESOURCE_LOCATION_SEPARATOR + resourceLocation.getPath()
-					+ STATE_STRING_SEPARATOR + serializeBlockStateProperties(this.blockState);
 		}
 
 		return this.serializationResult;
@@ -146,14 +149,12 @@ public class BlockStateWrapper implements IBlockStateWrapper
 
 	public static BlockStateWrapper deserialize(String resourceStateString, ILevelWrapper levelWrapper) throws IOException
 	{
-		if (resourceStateString.equals("AIR") || resourceStateString.equals("")) // the empty string shouldn't normally happen, but just in case
+		if (resourceStateString.equals("AIR") || resourceStateString.equals("")) // The empty string shouldn't normally happen, but just in case
 		{
 			return AIR;
 		}
 		
-		
-		
-		// parse the BlockState
+		// Parse the BlockState
 		int stateSeparatorIndex = resourceStateString.indexOf(STATE_STRING_SEPARATOR);
 		if (stateSeparatorIndex == -1)
 		{

@@ -19,10 +19,10 @@
 
 package com.seibel.distanthorizons.common.wrappers.block;
 
-import com.seibel.distanthorizons.api.enums.config.ELoggerMode;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
@@ -57,6 +57,8 @@ import net.minecraft.core.registries.Registries;
 /** This class wraps the minecraft BlockPos.Mutable (and BlockPos) class */
 public class BiomeWrapper implements IBiomeWrapper
 {
+	public static final String THE_VOID = ModInfo.ID + ":the_void";
+	public static final String PLAINS = "minecraft:plains";
 	private static final Logger LOGGER = LogManager.getLogger();
 
 	#if PRE_MC_1_18_2
@@ -127,7 +129,8 @@ public class BiomeWrapper implements IBiomeWrapper
 			try {
 				registryAccess = ((Level) levelWrapper.getWrappedMcObject()).registryAccess();
 			} catch (Exception ignored) {
-				this.serializationResult = "";
+				// Shouldn't normally happen, but just in case
+				this.serializationResult = THE_VOID;
 				return this.serializationResult;
 			}
 
@@ -148,9 +151,9 @@ public class BiomeWrapper implements IBiomeWrapper
 				biomeName = this.biome.value().toString();
 				#endif
 
-				LOGGER.warn("unable to serialize: "+biomeName);
-				// shouldn't normally happen, but just in case
-				this.serializationResult = "";
+				LOGGER.warn("unable to serialize (resourceLocation is null): {}", biomeName);
+				// Shouldn't normally happen, but just in case
+				this.serializationResult = THE_VOID;
 			} else {
 				this.serializationResult = resourceLocation.getNamespace() + ":" + resourceLocation.getPath();
 			}
@@ -165,13 +168,14 @@ public class BiomeWrapper implements IBiomeWrapper
 	}
 
 	public static IBiomeWrapper deserialize(String resourceLocationString, ILevelWrapper levelWrapper) throws IOException {
-		if (resourceLocationString.trim().isEmpty() || resourceLocationString.equals("")) {
-			if (Config.Client.Advanced.Logging.logWorldGenEvent.get() == ELoggerMode.LOG_WARNING_TO_CHAT_AND_FILE) {
+		if (resourceLocationString.trim().isEmpty() || resourceLocationString.equals("") || resourceLocationString.equals(THE_VOID)) {
+			if (Config.Client.Advanced.Logging.logWorldGenEvent.get().levelForFile == org.apache.logging.log4j.Level.WARN) {
 				LOGGER.warn("null biome string deserialized");
 			}
 
-			// shouldn't normally happen, but just in case
-			resourceLocationString = new ResourceLocation("minecraft", "the_void").toString(); // just "void" in MC 1.12 through 1.9 (inclusive)
+			// Shouldn't normally happen, but just in case
+			// Deserialize to minecraft:plains, otherwise the FullDataPointIdMap.Entry#deserialize function errors out
+			resourceLocationString = PLAINS;
 		}
 
 		// parse the resource location
