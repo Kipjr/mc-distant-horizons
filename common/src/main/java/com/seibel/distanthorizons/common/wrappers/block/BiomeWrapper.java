@@ -35,6 +35,8 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 #if POST_MC_1_17
 import net.minecraft.core.Holder;
@@ -52,10 +54,18 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 #endif
 
-/**
- * This class wraps the minecraft BlockPos.Mutable (and BlockPos) class
- */
-public class BiomeWrapper implements IBiomeWrapper {
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.biome.Biome;
+#if !PRE_MC_1_18_2
+import net.minecraft.world.level.biome.Biomes;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+#endif
+
+
+/** This class wraps the minecraft BlockPos.Mutable (and BlockPos) class */
+public class BiomeWrapper implements IBiomeWrapper
+{
 	private static final Logger LOGGER = LogManager.getLogger();
 
 	#if PRE_MC_1_18_2
@@ -155,9 +165,17 @@ public class BiomeWrapper implements IBiomeWrapper {
 			#else
 			resourceLocation = registryAccess.registryOrThrow(Registries.BIOME).getKey(this.biome.value());
 			#endif
+			
+			if (resourceLocation == null)
+			{
+				String biomeName;
+				#if MC_1_16_5 || MC_1_17_1
+				biomeName = this.biome.toString();
+				#else
+				biomeName = this.biome.value().toString();
+				#endif
 
-			if (resourceLocation == null) {
-				LOGGER.warn("unable to serialize: " + this.biome.value());
+				LOGGER.warn("unable to serialize: "+biomeName);
 				// shouldn't normally happen, but just in case
 				this.serializationResult = "";
 			} else {
