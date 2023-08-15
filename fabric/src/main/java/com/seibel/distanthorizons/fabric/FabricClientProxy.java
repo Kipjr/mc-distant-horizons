@@ -31,6 +31,8 @@ import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IImmersivePortalsAccessor;
+import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.fabric.wrappers.modAccessor.ImmersivePortalsAccessor;
@@ -93,7 +95,17 @@ public class FabricClientProxy
 	{
 		LOGGER.info("Registering Fabric Client Events");
 		
-
+		
+		
+		//========================//
+		// register mod accessors //
+		//========================//
+		
+		SodiumAccessor sodiumAccessor = (SodiumAccessor) ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class);
+		ImmersivePortalsAccessor immersivePortalsAccessor = (ImmersivePortalsAccessor) ModAccessorInjector.INSTANCE.get(IImmersivePortalsAccessor.class);
+		
+		
+		
 		//=============//
 		// tick events //
 		//=============//
@@ -179,10 +191,8 @@ public class FabricClientProxy
 		// render event //
 		//==============//
 
-        //Define this in the MixinLevelRenderer so that it works with sodium without any changes to the code
-        // TODO: If all else is fine, can we remove these commented code
+
 		// Client Render Level
-		/*
 		WorldRenderEvents.AFTER_SETUP.register((renderContext) ->
 		{
 			if (sodiumAccessor != null)
@@ -214,8 +224,12 @@ public class FabricClientProxy
 					#endif
 				}
 			}
+
+			if (immersivePortalsAccessor != null)
+			{
+				immersivePortalsAccessor.partialTicks = renderContext.tickDelta();
+			}
 		});
-		 */
 
 		// Debug keyboard event
 		// FIXME: Use better hooks so it doesn't trigger key press events in text boxes
