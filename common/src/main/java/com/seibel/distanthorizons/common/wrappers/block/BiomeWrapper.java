@@ -36,6 +36,8 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 #if POST_MC_1_17
 import net.minecraft.core.Holder;
@@ -97,7 +99,7 @@ public class BiomeWrapper implements IBiomeWrapper
 	@Override
 	public String getName() {
         #if PRE_MC_1_18_2
-        return biome.toString();
+		return biome.toString();
         #else
 		return this.biome.unwrapKey().orElse(Biomes.THE_VOID).registry().toString();
         #endif
@@ -198,7 +200,7 @@ public class BiomeWrapper implements IBiomeWrapper
 			Biome unwrappedBiome = registryAccess.registryOrThrow(Registries.BIOME).get(resourceLocation);
 			if (unwrappedBiome == null)
 			{
-				LOGGER.warn("null biome string deserialized from string: "+resourceLocationString);
+				LOGGER.warn("null biome string deserialized from string: " + resourceLocationString);
 			}
 			Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
 			#endif

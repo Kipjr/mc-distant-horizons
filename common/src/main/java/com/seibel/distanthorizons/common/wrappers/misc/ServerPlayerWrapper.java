@@ -10,26 +10,29 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 
-public class ServerPlayerWrapper implements IServerPlayerWrapper {
-    private static final ConcurrentMap<ServerPlayer, ServerPlayerWrapper>
-            serverPlayerWrapperMap = new MapMaker().weakKeys().makeMap();
+public class ServerPlayerWrapper implements IServerPlayerWrapper
+{
+	private static final ConcurrentMap<ServerPlayer, ServerPlayerWrapper>
+			serverPlayerWrapperMap = new MapMaker().weakKeys().makeMap();
 
-    private final ServerPlayer serverPlayer;
+	private final ServerPlayer serverPlayer;
 
-    public static ServerPlayerWrapper getWrapper(ServerPlayer serverPlayer)
-    {
-        return serverPlayerWrapperMap.computeIfAbsent(serverPlayer, ServerPlayerWrapper::new);
-    }
+	public static ServerPlayerWrapper getWrapper(ServerPlayer serverPlayer)
+	{
+		return serverPlayerWrapperMap.computeIfAbsent(serverPlayer, ServerPlayerWrapper::new);
+	}
 
-    private ServerPlayerWrapper(ServerPlayer serverPlayer) {
-        this.serverPlayer = serverPlayer;
-    }
+	private ServerPlayerWrapper(ServerPlayer serverPlayer)
+	{
+		this.serverPlayer = serverPlayer;
+	}
 
-    public UUID getUUID() {
-        return serverPlayer.getUUID();
-    }
+	public UUID getUUID()
+	{
+		return serverPlayer.getUUID();
+	}
 
-    public IServerLevelWrapper getLevel() 
+	public IServerLevelWrapper getLevel()
 	{
 		#if PRE_MC_1_20_1
 		return ServerLevelWrapper.getWrapper(this.serverPlayer.getLevel());
@@ -37,7 +40,7 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper {
 		return ServerLevelWrapper.getWrapper(this.serverPlayer.serverLevel());
 		#endif
     }
-    
+
     public Vec3d getPosition() {
         var position = serverPlayer.position();
         return new Vec3d(position.x, position.y, position.z);
