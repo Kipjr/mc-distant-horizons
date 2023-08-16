@@ -19,23 +19,20 @@
 
 package com.seibel.distanthorizons.fabric;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.seibel.distanthorizons.common.rendering.SeamlessOverdraw;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
+import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
-import com.mojang.blaze3d.platform.InputConstants;
-import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
-
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IImmersivePortalsAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import com.seibel.distanthorizons.fabric.wrappers.modAccessor.ImmersivePortalsAccessor;
 import com.seibel.distanthorizons.fabric.wrappers.modAccessor.SodiumAccessor;
 import io.netty.buffer.ByteBuf;
 import net.fabricmc.api.EnvType;
@@ -49,10 +46,6 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
-
-import java.nio.FloatBuffer;
-import java.util.HashSet;
-
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.FriendlyByteBuf;
@@ -62,7 +55,8 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.phys.HitResult;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL15;
+
+import java.util.HashSet;
 
 /**
  * This handles all events sent to the client,
@@ -102,7 +96,7 @@ public class FabricClientProxy
 		//========================//
 		
 		SodiumAccessor sodiumAccessor = (SodiumAccessor) ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class);
-		ImmersivePortalsAccessor immersivePortalsAccessor = (ImmersivePortalsAccessor) ModAccessorInjector.INSTANCE.get(IImmersivePortalsAccessor.class);
+		//ImmersivePortalsAccessor immersivePortalsAccessor = (ImmersivePortalsAccessor) ModAccessorInjector.INSTANCE.get(IImmersivePortalsAccessor.class);
 		
 		
 		
@@ -190,8 +184,8 @@ public class FabricClientProxy
 		//==============//
 		// render event //
 		//==============//
-
-
+		
+		
 		// Client Render Level
 		WorldRenderEvents.AFTER_SETUP.register((renderContext) ->
 		{
@@ -224,13 +218,13 @@ public class FabricClientProxy
 					#endif
 				}
 			}
-
-			if (immersivePortalsAccessor != null)
-			{
-				immersivePortalsAccessor.partialTicks = renderContext.tickDelta();
-			}
+			
+			//if (immersivePortalsAccessor != null)
+			//{
+			//	immersivePortalsAccessor.partialTicks = renderContext.tickDelta();
+			//}
 		});
-
+		
 		// Debug keyboard event
 		// FIXME: Use better hooks so it doesn't trigger key press events in text boxes
 		ClientTickEvents.END_CLIENT_TICK.register(client ->
@@ -248,16 +242,16 @@ public class FabricClientProxy
 		//==================//
 		
 		ClientPlayNetworking.registerGlobalReceiver(new ResourceLocation(ModInfo.NETWORKING_RESOURCE_NAMESPACE, ModInfo.MULTIVERSE_PLUGIN_NAMESPACE),
-			(Minecraft client, ClientPacketListener handler, FriendlyByteBuf friendlyByteBuf, PacketSender responseSender) ->
-			{
-				// converting to a ByteBuf is necessary otherwise Fabric will complain when the game boots
-				ByteBuf nettyByteBuf = friendlyByteBuf.asByteBuf();
-
-				// remove the Bukkit/Forge packet ID byte
-				nettyByteBuf.readByte();
-
-				ClientApi.INSTANCE.serverMessageReceived(nettyByteBuf);
-			});
+				(Minecraft client, ClientPacketListener handler, FriendlyByteBuf friendlyByteBuf, PacketSender responseSender) ->
+				{
+					// converting to a ByteBuf is necessary otherwise Fabric will complain when the game boots
+					ByteBuf nettyByteBuf = friendlyByteBuf.asByteBuf();
+					
+					// remove the Bukkit/Forge packet ID byte
+					nettyByteBuf.readByte();
+					
+					ClientApi.INSTANCE.serverMessageReceived(nettyByteBuf);
+				});
 	}
 	
 	public void onKeyInput()
