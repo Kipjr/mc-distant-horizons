@@ -115,7 +115,7 @@ public class BiomeWrapper implements IBiomeWrapper
 
 		BiomeWrapper that = (BiomeWrapper) obj;
 		// the serialized value is used so we can test the contents instead of the references
-		return Objects.equals(this.serialize(this.getLevelWrapper()), that.serialize(this.getLevelWrapper()));
+		return Objects.equals(this.serialize(this.getLevelWrapper()), that.serialize(that.getLevelWrapper()));
 	}
 
 	@Override
