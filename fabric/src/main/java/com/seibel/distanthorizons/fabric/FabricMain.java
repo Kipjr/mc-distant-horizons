@@ -87,10 +87,10 @@ public class FabricMain
 		{
 			ModAccessorInjector.INSTANCE.bind(ISodiumAccessor.class, new SodiumAccessor());
 		}
-		if (SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("imm_ptl_core"))
-		{
-			ModAccessorInjector.INSTANCE.bind(IImmersivePortalsAccessor.class, new ImmersivePortalsAccessor());
-		}
+		//if (SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("imm_ptl_core"))
+		//{
+			//ModAccessorInjector.INSTANCE.bind(IImmersivePortalsAccessor.class, new ImmersivePortalsAccessor());
+		//}
 		if (SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("starlight"))
 		{
 			ModAccessorInjector.INSTANCE.bind(IStarlightAccessor.class, new StarlightAccessor());
