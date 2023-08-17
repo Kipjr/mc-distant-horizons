@@ -93,7 +93,7 @@ public class ChunkWrapper implements IChunkWrapper
 	//=============//
 	// constructor //
 	//=============//
-	
+	private String stackTraceElements = Arrays.toString(Thread.currentThread().getStackTrace());
 	public ChunkWrapper(ChunkAccess chunk, LevelReader lightSource, @Nullable ILevelWrapper wrappedLevel)
 	{
 		this.chunk = chunk;

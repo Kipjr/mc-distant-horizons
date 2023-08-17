@@ -59,8 +59,6 @@ import net.minecraft.core.registries.Registries;
 /** This class wraps the minecraft BlockPos.Mutable (and BlockPos) class */
 public class BiomeWrapper implements IBiomeWrapper
 {
-	public static final String THE_VOID = ModInfo.ID + ":the_void";
-	public static final String PLAINS = "minecraft:plains";
 	private static final Logger LOGGER = LogManager.getLogger();
 
 	#if PRE_MC_1_18_2
@@ -84,6 +82,7 @@ public class BiomeWrapper implements IBiomeWrapper
 	//==============//
 
 	static public IBiomeWrapper getBiomeWrapper(#if PRE_MC_1_18_2 Biome #else Holder<Biome> #endif biome, ILevelWrapper levelWrapper) {
+		Objects.requireNonNull(#if PRE_MC_1_18_2 biome #else biome.value() #endif);
 		return biomeWrapperMap.computeIfAbsent(biome, biomeHolder -> new BiomeWrapper(biomeHolder, levelWrapper));
 	}
 
@@ -115,52 +114,34 @@ public class BiomeWrapper implements IBiomeWrapper
 
 		BiomeWrapper that = (BiomeWrapper) obj;
 		// the serialized value is used so we can test the contents instead of the references
-		return Objects.equals(this.serialize(this.getLevelWrapper()), that.serialize(that.getLevelWrapper()));
+		return Objects.equals(this.serialize(), that.serialize());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.serialize(this.getLevelWrapper()));
+		return Objects.hash(this.serialize());
 	}
 
 	@Override
-	public String serialize(ILevelWrapper levelWrapper) {
-		if (this.serializationResult == null) {
-			// FIXME: Workaround for serverside support
-			RegistryAccess registryAccess;
-			try {
-				registryAccess = ((Level) levelWrapper.getWrappedMcObject()).registryAccess();
-			} catch (Exception ignored) {
-				// Shouldn't normally happen, but just in case
-				this.serializationResult = THE_VOID;
-				return this.serializationResult;
-			}
-
-			ResourceLocation resourceLocation;
-			#if MC_1_16_5 || MC_1_17_1
-			resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome);
-			#elif MC_1_18_2 || MC_1_19_2
-			resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome.value());
-			#else
-			resourceLocation = registryAccess.registryOrThrow(Registries.BIOME).getKey(this.biome.value());
-			#endif
-
-			if (resourceLocation == null) {
-				String biomeName;
-				#if MC_1_16_5 || MC_1_17_1
-				biomeName = this.biome.toString();
-				#else
-				biomeName = this.biome.value().toString();
-				#endif
-
-				LOGGER.warn("unable to serialize (resourceLocation is null): {}", biomeName);
-				// Shouldn't normally happen, but just in case
-				this.serializationResult = THE_VOID;
-			} else {
-				this.serializationResult = resourceLocation.getNamespace() + ":" + resourceLocation.getPath();
-			}
-		}
-
+	public String serialize()
+	{
+		// the result can be quickly used as a semi-stable hashing method, so it's going to be cached
+		if (this.serializationResult != null)
+			return this.serializationResult;
+		
+		RegistryAccess registryAccess = ((Level) levelWrapper.getWrappedMcObject()).registryAccess();
+		
+		ResourceLocation resourceLocation;
+		#if MC_1_16_5 || MC_1_17_1
+		resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome);
+		#elif MC_1_18_2 || MC_1_19_2
+		resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome.value());
+		#else
+		resourceLocation = registryAccess.registryOrThrow(Registries.BIOME).getKey(this.biome.value());
+		#endif
+		Objects.requireNonNull(resourceLocation);
+		
+		this.serializationResult = resourceLocation.getNamespace() + ":" + resourceLocation.getPath();
 		return this.serializationResult;
 	}
 
@@ -170,16 +151,6 @@ public class BiomeWrapper implements IBiomeWrapper
 	}
 
 	public static IBiomeWrapper deserialize(String resourceLocationString, ILevelWrapper levelWrapper) throws IOException {
-		if (resourceLocationString.trim().isEmpty() || resourceLocationString.equals("") || resourceLocationString.equals(THE_VOID)) {
-			if (Config.Client.Advanced.Logging.logWorldGenEvent.get().levelForFile == org.apache.logging.log4j.Level.WARN) {
-				LOGGER.warn("null biome string deserialized");
-			}
-
-			// Shouldn't normally happen, but just in case
-			// Deserialize to minecraft:plains, otherwise the FullDataPointIdMap.Entry#deserialize function errors out
-			resourceLocationString = PLAINS;
-		}
-
 		// parse the resource location
 		int separatorIndex = resourceLocationString.indexOf(":");
 		if (separatorIndex == -1) {
@@ -198,10 +169,8 @@ public class BiomeWrapper implements IBiomeWrapper
 			Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
 			#else
 			Biome unwrappedBiome = registryAccess.registryOrThrow(Registries.BIOME).get(resourceLocation);
-			if (unwrappedBiome == null)
-			{
-				LOGGER.warn("null biome string deserialized from string: " + resourceLocationString);
-			}
+			assert unwrappedBiome != null;
+			
 			Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
 			#endif
 
@@ -219,7 +188,7 @@ public class BiomeWrapper implements IBiomeWrapper
 
 	@Override
 	public String toString() {
-		return this.serialize(this.getLevelWrapper());
+		return this.serialize();
 	}
 
 }
