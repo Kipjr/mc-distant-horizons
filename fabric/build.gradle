@@ -12,7 +12,6 @@ loom {
             setConfigName("Fabric Client")
             ideConfigGenerated(true)
             runDir("run/client")
-            programArgs("--username", "TTLLILLI") // DO NOT CHECKOUT
         }
         server {
             server()
