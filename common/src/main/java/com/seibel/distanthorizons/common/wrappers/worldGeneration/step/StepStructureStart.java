@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.common.wrappers.worldGeneration.step;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
@@ -36,18 +37,16 @@ import org.apache.logging.log4j.Logger;
 public final class StepStructureStart
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final ChunkStatus STATUS = ChunkStatus.STRUCTURE_STARTS;
+	private static final ReentrantLock structurePlacementLock = new ReentrantLock();
 	
 	private final BatchGenerationEnvironment environment;
 	
-	/**
-	 * @param batchGenerationEnvironment
-	 */
-	public StepStructureStart(BatchGenerationEnvironment batchGenerationEnvironment)
-	{
-		environment = batchGenerationEnvironment;
-	}
 	
-	public final ChunkStatus STATUS = ChunkStatus.STRUCTURE_STARTS;
+	
+	public StepStructureStart(BatchGenerationEnvironment batchGenerationEnvironment) { this.environment = batchGenerationEnvironment; }
+	
+	
 	
 	public static class StructStartCorruptedException extends RuntimeException
 	{
@@ -64,7 +63,7 @@ public final class StepStructureStart
 	
 	public void generateGroup(
 			ThreadedParameters tParams, WorldGenRegion worldGenRegion,
-			List<ChunkWrapper> chunkWrappers)
+			List<ChunkWrapper> chunkWrappers) throws InterruptedException
 	{
 		ArrayList<ChunkAccess> chunksToDo = new ArrayList<>();
 		
@@ -90,6 +89,15 @@ public final class StepStructureStart
 			for (ChunkAccess chunk : chunksToDo)
 			{
 				// System.out.println("StepStructureStart: "+chunk.getPos());
+				
+				// there are a few cases where the structure generator call may lock up (either due to teleporting or leaving the world).
+				// hopefully allowing interrupts here will prevent that from happening.
+				BatchGenerationEnvironment.throwIfThreadInterrupted();
+				
+				// hopefully this shouldn't cause any performance issues (this step is generally quite quick so hopefully it should be fine)
+				// and should prevent some concurrency issues
+				structurePlacementLock.lock();
+				
 				#if PRE_MC_1_19_2
 				environment.params.generator.createStructures(environment.params.registry, tParams.structFeat, chunk, environment.params.structures,
 						environment.params.worldSeed);
@@ -101,6 +109,9 @@ public final class StepStructureStart
 						environment.params.level.getChunkSource().getGeneratorState(),
 						tParams.structFeat, chunk, environment.params.structures);
 				#endif
+				
+				structurePlacementLock.unlock();
+				
 				#if POST_MC_1_18_2
 				try
 				{

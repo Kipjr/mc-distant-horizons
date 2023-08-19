@@ -37,20 +37,15 @@ import net.minecraft.world.level.levelgen.Heightmap;
 
 public final class StepFeatures
 {
-	/**
-	 *
-	 */
+	public static final ChunkStatus STATUS = ChunkStatus.FEATURES;
+	
 	private final BatchGenerationEnvironment environment;
 	
-	/**
-	 * @param batchGenerationEnvironment
-	 */
-	public StepFeatures(BatchGenerationEnvironment batchGenerationEnvironment)
-	{
-		environment = batchGenerationEnvironment;
-	}
 	
-	public final ChunkStatus STATUS = ChunkStatus.FEATURES;
+	
+	public StepFeatures(BatchGenerationEnvironment batchGenerationEnvironment) { this.environment = batchGenerationEnvironment; }
+	
+	
 	
 	public void generateGroup(
 			ThreadedParameters tParams, DhLitWorldGenRegion worldGenRegion,
@@ -73,14 +68,13 @@ public final class StepFeatures
 				#if PRE_MC_1_18_2
 				worldGenRegion.setOverrideCenter(chunk.getPos());
 				environment.params.generator.applyBiomeDecoration(worldGenRegion, tParams.structFeat);
-				Heightmap.primeHeightmaps(chunk, STATUS.heightmapsAfter());
-				BatchGenerationEnvironment.clearDistantGenerationMixinData();
 				#else
 				environment.params.generator.applyBiomeDecoration(worldGenRegion, chunk,
 						tParams.structFeat.forWorldGenRegion(worldGenRegion));
+				#endif
+				
 				Heightmap.primeHeightmaps(chunk, STATUS.heightmapsAfter());
 				BatchGenerationEnvironment.clearDistantGenerationMixinData();
-				#endif
 			}
 			catch (ReportedException e)
 			{
