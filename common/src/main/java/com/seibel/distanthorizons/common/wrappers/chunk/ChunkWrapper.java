@@ -72,7 +72,7 @@ public class ChunkWrapper implements IChunkWrapper
 	private final byte[] blockLightArray;
 	private final byte[] skyLightArray;
 	
-	private LinkedList<DhBlockPos> blockLightPosList = null;
+	private ArrayList<DhBlockPos> blockLightPosList = null;
 	
 	private boolean useDhLighting;
 	
@@ -315,7 +315,7 @@ public class ChunkWrapper implements IChunkWrapper
 		// only populate the list once
 		if (this.blockLightPosList == null)
 		{
-			this.blockLightPosList = new LinkedList<>();
+			this.blockLightPosList = new ArrayList<>();
 			
 			
 			#if PRE_MC_1_20_1
