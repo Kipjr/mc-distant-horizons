@@ -29,7 +29,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrappe
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 
-import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -95,8 +94,8 @@ public class ChunkWrapper implements IChunkWrapper
 	//=============//
 	// constructor //
 	//=============//
-	private String stackTraceElements = Arrays.toString(Thread.currentThread().getStackTrace());
-	public ChunkWrapper(ChunkAccess chunk, LevelReader lightSource, @Nullable ILevelWrapper wrappedLevel)
+	
+	public ChunkWrapper(ChunkAccess chunk, LevelReader lightSource, ILevelWrapper wrappedLevel)
 	{
 		this.chunk = chunk;
 		this.lightSource = lightSource;
@@ -157,20 +156,23 @@ public class ChunkWrapper implements IChunkWrapper
 	@Override
 	public IBiomeWrapper getBiome(int relX, int relY, int relZ)
 	{
-		//if (wrappedLevel != null) return wrappedLevel.getBiome(new DhBlockPos(x + getMinX(), y, z + getMinZ()));
-
 		#if PRE_MC_1_17_1
 		return BiomeWrapper.getBiomeWrapper(this.chunk.getBiomes().getNoiseBiome(
-				relX >> 2, relY >> 2, relZ >> 2));
+				relX >> 2, relY >> 2, relZ >> 2),
+				this.wrappedLevel);
 		#elif PRE_MC_1_18_2
 		return BiomeWrapper.getBiomeWrapper(this.chunk.getBiomes().getNoiseBiome(
-				QuartPos.fromBlock(relX), QuartPos.fromBlock(relY), QuartPos.fromBlock(relZ)));
+				QuartPos.fromBlock(relX), QuartPos.fromBlock(relY), QuartPos.fromBlock(relZ)),
+				this.wrappedLevel);
 		#elif PRE_MC_1_18_2
 		return BiomeWrapper.getBiomeWrapper(this.chunk.getNoiseBiome(
-				QuartPos.fromBlock(relX), QuartPos.fromBlock(relY), QuartPos.fromBlock(relZ)));
-		#else //Now returns a Holder<Biome> instead of Biome
+				QuartPos.fromBlock(relX), QuartPos.fromBlock(relY), QuartPos.fromBlock(relZ)),
+				this.wrappedLevel);
+		#else 
+		//Now returns a Holder<Biome> instead of Biome
 		return BiomeWrapper.getBiomeWrapper(this.chunk.getNoiseBiome(
-				QuartPos.fromBlock(relX), QuartPos.fromBlock(relY), QuartPos.fromBlock(relZ)), wrappedLevel);
+				QuartPos.fromBlock(relX), QuartPos.fromBlock(relY), QuartPos.fromBlock(relZ)),
+				this.wrappedLevel);
 		#endif
 	}
 	
@@ -214,7 +216,7 @@ public class ChunkWrapper implements IChunkWrapper
 		if (this.chunk instanceof LevelChunk)
 		{
 			LevelChunk levelChunk = (LevelChunk) this.chunk;
-			if (this.wrappedLevel instanceof IClientLevelWrapper)
+			if (levelChunk.getLevel().isClientSide())
 			{
 				weakMapLock.readLock().lock();
 				boolean fixedIsClientLightReady = chunksToUpdateClientLightReady.get(this.chunk);
@@ -368,12 +370,11 @@ public class ChunkWrapper implements IChunkWrapper
 	@Override
 	public IBlockStateWrapper getBlockState(int relX, int relY, int relZ)
 	{
-		//if (wrappedLevel != null) return wrappedLevel.getBlockState(new DhBlockPos(x + getMinX(), y, z + getMinZ()));
-		return BlockStateWrapper.fromBlockState(this.chunk.getBlockState(new BlockPos(relX, relY, relZ)), wrappedLevel);
+		return BlockStateWrapper.fromBlockState(this.chunk.getBlockState(new BlockPos(relX, relY, relZ)), this.wrappedLevel);
 	}
 	
 	@Override
-	public boolean isStillValid() { return this.wrappedLevel == null || this.wrappedLevel.tryGetChunk(this.chunkPos) == this; }
+	public boolean isStillValid() { return this.wrappedLevel.tryGetChunk(this.chunkPos) == this; }
 	
 	#if POST_MC_1_20_1
 	private static boolean checkLightSectionsOnChunk(LevelChunk chunk, LevelLightEngine engine)

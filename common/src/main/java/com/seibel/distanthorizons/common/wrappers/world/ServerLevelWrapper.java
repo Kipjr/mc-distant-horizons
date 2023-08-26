@@ -140,7 +140,7 @@ public class ServerLevelWrapper implements IServerLevelWrapper
 	public IChunkWrapper tryGetChunk(DhChunkPos pos)
 	{
 		if (!level.hasChunk(pos.x, pos.z)) return null;
-		ChunkAccess chunk = level.getChunk(pos.getX(), pos.getZ(), ChunkStatus.EMPTY, false);
+		ChunkAccess chunk = level.getChunk(pos.x, pos.z, ChunkStatus.EMPTY, false);
 		if (chunk == null) return null;
 		return new ChunkWrapper(chunk, level, this);
 	}
@@ -156,7 +156,7 @@ public class ServerLevelWrapper implements IServerLevelWrapper
 	@Override
 	public IBlockStateWrapper getBlockState(DhBlockPos pos)
 	{
-		return BlockStateWrapper.fromBlockState(level.getBlockState(McObjectConverter.Convert(pos)), getWrapper(level));
+		return BlockStateWrapper.fromBlockState(level.getBlockState(McObjectConverter.Convert(pos)), this);
 	}
 	
 	@Override
