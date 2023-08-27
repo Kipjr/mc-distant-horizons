@@ -131,19 +131,9 @@ public class WrapperFactory implements IWrapperFactory
 			
 			
 			// level wrapper
-			ILevelWrapper levelWrapper;
-			if (level instanceof ServerLevel)
-			{
-				levelWrapper = ServerLevelWrapper.getWrapper((ServerLevel)level);
-			}
-			else if (level instanceof ClientLevel)
-			{
-				levelWrapper = ClientLevelWrapper.getWrapper((ClientLevel)level);
-			}
-			else
-			{
-				throw new ClassCastException(createChunkWrapperErrorMessage(objectArray));
-			}
+			ILevelWrapper levelWrapper = level.isClientSide()
+					? ClientLevelWrapper.getWrapper((ClientLevel)level)
+					: ServerLevelWrapper.getWrapper((ServerLevel)level);
 			
 			
 			return new ChunkWrapper(chunk, lightSource, levelWrapper);
@@ -177,7 +167,7 @@ public class WrapperFactory implements IWrapperFactory
 		// MC 1.16, 1.18, 1.19, 1.20
 		#if POST_MC_1_17_1 || MC_1_16_5
 		message.append("[" + ChunkAccess.class.getName() + "], \n");
-		message.append("[" + ServerLevel.class.getName() + "] or [" + ClientLevel.class.getName() + "]. \n");
+		message.append("[ServerLevel] or [ClientLevel]. \n"); // Classes are not referenced by names to avoid exception when one is missing
 		#else
 			// See preprocessor comment in createChunkWrapper() for full documentation
 			not implemented for this version of Minecraft!

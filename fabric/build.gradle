@@ -12,9 +12,6 @@ loom {
             setConfigName("Fabric Client")
             ideConfigGenerated(false)
             runDir("run/client")
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
         }
         server {
             server()

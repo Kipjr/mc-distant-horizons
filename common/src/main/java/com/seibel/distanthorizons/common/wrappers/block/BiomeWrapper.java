@@ -176,7 +176,7 @@ public class BiomeWrapper implements IBiomeWrapper
 		
 		if (this.serialString == null)
 		{
-			net.minecraft.core.RegistryAccess registryAccess = Minecraft.getInstance().level.registryAccess();
+			net.minecraft.core.RegistryAccess registryAccess = ((Level) levelWrapper.getWrappedMcObject()).registryAccess();
 			
 			ResourceLocation resourceLocation;
 			#if MC_1_16_5 || MC_1_17_1
