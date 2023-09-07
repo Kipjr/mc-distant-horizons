@@ -1,3 +1,22 @@
+/*
+ *    This file is part of the Distant Horizons mod
+ *    licensed under the GNU LGPL v3 License.
+ *
+ *    Copyright (C) 2020-2023 James Seibel
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as published by
+ *    the Free Software Foundation, version 3.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License for more details.
+ *
+ *    You should have received a copy of the GNU Lesser General Public License
+ *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package com.seibel.distanthorizons.common.wrappers.block;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -46,7 +65,8 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	public static final String AIR_STRING = "AIR";
 	public static final BlockStateWrapper AIR = new BlockStateWrapper(null, null);
 	
-	public static final String[] RENDERER_IGNORED_BLOCKS_RESOURCE_LOCATIONS = { AIR_STRING, "minecraft:barrier", "minecraft:structure_void", "minecraft:light" };
+	// TODO: Make this changeable through the config
+	public static final String[] RENDERER_IGNORED_BLOCKS_RESOURCE_LOCATIONS = { AIR_STRING, "minecraft:barrier", "minecraft:structure_void", "minecraft:light", "minecraft:tripwire" };
 	
 	public static HashSet<IBlockStateWrapper> rendererIgnoredBlocks = null;
 	
@@ -208,7 +228,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		}
 		
         #if PRE_MC_1_20_1
-		return this.blockState.getMaterial().isLiquid();
+		return this.blockState.getMaterial().isLiquid() || !this.blockState.getFluidState().isEmpty();
         #else
 		return !this.blockState.getFluidState().isEmpty();
         #endif
