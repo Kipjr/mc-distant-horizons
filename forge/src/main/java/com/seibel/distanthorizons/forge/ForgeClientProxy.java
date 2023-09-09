@@ -191,7 +191,7 @@ public class ForgeClientProxy
 			if (chunk != null)
 			{
 				IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
-				ClientApi.INSTANCE.clientChunkLoadEvent(new ChunkWrapper(chunk, level, wrappedLevel), wrappedLevel);
+				ClientApi.INSTANCE.clientChunkBlockChangedEvent(new ChunkWrapper(chunk, level, wrappedLevel), wrappedLevel);
 			}
 		}
 	}
