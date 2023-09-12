@@ -61,7 +61,10 @@ public class ChunkWrapper implements IChunkWrapper
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	/** useful for debugging, but can slow down chunk operations quite a bit due to being called every time. */
-	private static final boolean RUN_RELATIVE_POS_INDEX_VALIDATION = false; 
+	private static final boolean RUN_RELATIVE_POS_INDEX_VALIDATION = false;
+	
+	/** can be used for interactions with the underlying chunk where creating new BlockPos objects could cause issues for the garbage collector. */
+	private static final ThreadLocal<BlockPos.MutableBlockPos> MUTABLE_BLOCK_POS_REF = ThreadLocal.withInitial(() -> new BlockPos.MutableBlockPos());
 	
 	
 	private final ChunkAccess chunk;
@@ -73,8 +76,8 @@ public class ChunkWrapper implements IChunkWrapper
 	/** only used when connected to a dedicated server */
 	private boolean isMcClientLightingCorrect = false;
 	
-	private final byte[] blockLightArray;
-	private final byte[] skyLightArray;
+	private ChunkLightStorage blockLightStorage;
+	private ChunkLightStorage skyLightStorage;
 	
 	private ArrayList<DhBlockPos> blockLightPosList = null;
 	
@@ -112,9 +115,7 @@ public class ChunkWrapper implements IChunkWrapper
 		this.useDhLighting = isDhGeneratedChunk;
 		
 		// FIXME +1 is to handle the fact that LodDataBuilder adds +1 to all block lighting calculations, also done in the relative position validator
-		this.blockLightArray = new byte[LodUtil.CHUNK_WIDTH * LodUtil.CHUNK_WIDTH * (this.getHeight() + 1)];
-		this.skyLightArray = new byte[LodUtil.CHUNK_WIDTH * LodUtil.CHUNK_WIDTH * (this.getHeight() + 1)];
-		
+
 		chunksNeedingClientLightUpdating.add(this);
 	}
 	
@@ -145,6 +146,21 @@ public class ChunkWrapper implements IChunkWrapper
 	}
 	@Override
 	public int getMaxBuildHeight() { return this.chunk.getMaxBuildHeight(); }
+	
+	@Override
+	public int getMinFilledHeight()
+	{
+		LevelChunkSection[] sections = this.chunk.getSections();
+		for (int index = 0; index < sections.length; index++)
+		{
+			if (!sections[index].hasOnlyAir())
+			{
+				// convert from an index to a block coordinate
+				return this.chunk.getSectionYFromSectionIndex(index) * 16;
+			}
+		}
+		return Integer.MAX_VALUE;
+	}
 	
 	
 	@Override
@@ -242,34 +258,45 @@ public class ChunkWrapper implements IChunkWrapper
 	public int getDhBlockLight(int relX, int y, int relZ)
 	{
 		this.throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(relX, y, relZ);
-		
-		int index = this.relativeBlockPosToIndex(relX, y, relZ);
-		return this.blockLightArray[index];
+		return this.getBlockLightStorage().get(relX, y, relZ);
 	}
 	@Override
 	public void setDhBlockLight(int relX, int y, int relZ, int lightValue)
 	{
 		this.throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(relX, y, relZ);
-		
-		int index = this.relativeBlockPosToIndex(relX, y, relZ);
-		this.blockLightArray[index] = (byte) lightValue;
+		this.getBlockLightStorage().set(relX, y, relZ, lightValue);
 	}
+	
+	private ChunkLightStorage getBlockLightStorage()
+	{
+		if (this.blockLightStorage == null)
+		{
+			this.blockLightStorage = new ChunkLightStorage(this.getMinBuildHeight(), this.getMaxBuildHeight());
+		}
+		return this.blockLightStorage;
+	}
+	
 	
 	@Override
 	public int getDhSkyLight(int relX, int y, int relZ)
 	{
 		this.throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(relX, y, relZ);
-		
-		int index = this.relativeBlockPosToIndex(relX, y, relZ);
-		return this.skyLightArray[index];
+		return this.getSkyLightStorage().get(relX, y, relZ);
 	}
 	@Override
 	public void setDhSkyLight(int relX, int y, int relZ, int lightValue)
 	{
 		this.throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(relX, y, relZ);
-		
-		int index = this.relativeBlockPosToIndex(relX, y, relZ);
-		this.skyLightArray[index] = (byte) lightValue;
+		this.getSkyLightStorage().set(relX, y, relZ, lightValue);
+	}
+	
+	private ChunkLightStorage getSkyLightStorage()
+	{
+		if (this.skyLightStorage == null)
+		{
+			this.skyLightStorage = new ChunkLightStorage(this.getMinBuildHeight(), this.getMaxBuildHeight());
+		}
+		return this.skyLightStorage;
 	}
 	
 	
@@ -282,8 +309,7 @@ public class ChunkWrapper implements IChunkWrapper
 		if (this.useDhLighting)
 		{
 			// DH lighting method
-			int index = this.relativeBlockPosToIndex(relX, y, relZ);
-			return this.blockLightArray[index];
+			return this.getBlockLightStorage().get(relX, y, relZ);
 		}
 		else
 		{
@@ -303,8 +329,7 @@ public class ChunkWrapper implements IChunkWrapper
 		if (this.useDhLighting)
 		{
 			// DH lighting method
-			int index = this.relativeBlockPosToIndex(relX, y, relZ);
-			return this.skyLightArray[index];
+			return this.getSkyLightStorage().get(relX, y, relZ);
 		}
 		else
 		{
@@ -314,7 +339,7 @@ public class ChunkWrapper implements IChunkWrapper
 	}
 	
 	@Override
-	public List<DhBlockPos> getBlockLightPosList()
+	public ArrayList<DhBlockPos> getBlockLightPosList()
 	{
 		// only populate the list once
 		if (this.blockLightPosList == null)
@@ -372,7 +397,13 @@ public class ChunkWrapper implements IChunkWrapper
 	@Override
 	public IBlockStateWrapper getBlockState(int relX, int relY, int relZ)
 	{
-		return BlockStateWrapper.fromBlockState(this.chunk.getBlockState(new BlockPos(relX, relY, relZ)), this.wrappedLevel);
+		BlockPos.MutableBlockPos blockPos = MUTABLE_BLOCK_POS_REF.get();
+		
+		blockPos.setX(relX);
+		blockPos.setY(relY);
+		blockPos.setZ(relZ);
+		
+		return BlockStateWrapper.fromBlockState(this.chunk.getBlockState(blockPos), this.wrappedLevel);
 	}
 	
 	@Override
@@ -442,7 +473,10 @@ public class ChunkWrapper implements IChunkWrapper
 	private void throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(int x, int y, int z) throws IndexOutOfBoundsException
 	{
 		if (RUN_RELATIVE_POS_INDEX_VALIDATION)
+		{
 			return;
+		}
+		
 		
 		// FIXME +1 is to handle the fact that LodDataBuilder adds +1 to all block lighting calculations, also done in the constructor
 		int minHeight = this.getMinBuildHeight();
