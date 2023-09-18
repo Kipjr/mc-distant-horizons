@@ -128,7 +128,7 @@ processResources {
 runClient {
     dependsOn(copyCoreResources)
     dependsOn(copyCommonLoaderResources)
-    jvmArgs "-XX:-OmitStackTraceInFastThrow"
+    jvmArgs([ "-XX:-OmitStackTraceInFastThrow", minecraftMemoryJavaArg ])
     finalizedBy(deleteResources)
 }
 
