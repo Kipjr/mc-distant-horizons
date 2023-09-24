@@ -23,6 +23,7 @@ import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiAfterDh
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeDhInitEvent;
 import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.jar.ModGitInfo;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.*;
 import com.seibel.distanthorizons.common.LodCommonMain;
 import com.seibel.distanthorizons.coreapi.ModInfo;
@@ -58,7 +59,7 @@ public class FabricMain
 			ModAccessorInjector.INSTANCE.get(IBCLibAccessor.class).setRenderCustomFog(false); // Remove BCLib's fog
 		#if POST_MC_1_20_1
 		if (SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("sodium"))
-			ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class).setFogOcclusion(false); // FIXME: This is a temporary solution to get sodium 0.5 to work
+			ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class).setFogOcclusion(false); // FIXME: This is a tmp fix for sodium 0.5.0, and 0.5.1. This is fixed in sodium 0.5.2
 		#endif
 		
 		if (ConfigBase.INSTANCE == null)
@@ -83,10 +84,21 @@ public class FabricMain
 		LOGGER.info("DH Commit: " + ModGitInfo.Git_Main_Commit);
 		LOGGER.info("DH-Core Commit: " + ModGitInfo.Git_Core_Commit);
 		
-		if (SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("sodium"))
+		IModChecker modChecker = SingletonInjector.INSTANCE.get(IModChecker.class);
+		if (modChecker.isModLoaded("sodium"))
 		{
 			ModAccessorInjector.INSTANCE.bind(ISodiumAccessor.class, new SodiumAccessor());
+			
+			// If sodium is installed Indium is also necessary in order to use the Fabric rendering API
+			if (!modChecker.isModLoaded("indium"))
+			{
+				IMinecraftClientWrapper mc = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+				String errorMessage = "loading Distant Horizons. Distant Horizons requires Indium in order to run with Sodium.";
+				String exceptionError = "Distant Horizons conditional mod Exception";
+				mc.crashMinecraft(errorMessage, new Exception(exceptionError));
+			}
 		}
+		if (modChecker.isModLoaded("starlight"))
 		//if (SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("imm_ptl_core"))
 		//{
 			//ModAccessorInjector.INSTANCE.bind(IImmersivePortalsAccessor.class, new ImmersivePortalsAccessor());
@@ -95,18 +107,18 @@ public class FabricMain
 		{
 			ModAccessorInjector.INSTANCE.bind(IStarlightAccessor.class, new StarlightAccessor());
 		}
-		if (SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("optifine"))
+		if (modChecker.isModLoaded("optifine"))
 		{
 			ModAccessorInjector.INSTANCE.bind(IOptifineAccessor.class, new OptifineAccessor());
 		}
-		if (SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("bclib"))
+		if (modChecker.isModLoaded("bclib"))
 		{
 			ModAccessorInjector.INSTANCE.bind(IBCLibAccessor.class, new BCLibAccessor());
 		}
 		
 		#if MC_1_16_5 || MC_1_18_2 || MC_1_19_2 || MC_1_19_4 || MC_1_20_1
 		// 1.17.1 won't support this since there isn't a matching Iris version
-		if (SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("iris"))
+		if (modChecker.isModLoaded("iris"))
 		{
 			ModAccessorInjector.INSTANCE.bind(IIrisAccessor.class, new IrisAccessor());
 		}
