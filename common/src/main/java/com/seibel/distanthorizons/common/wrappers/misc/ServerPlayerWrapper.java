@@ -45,6 +45,10 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper
         var position = serverPlayer.position();
         return new Vec3d(position.x, position.y, position.z);
     }
+	
+	public int getViewDistance() {
+		return serverPlayer.server.getPlayerList().getViewDistance();
+	}
 
     public Object getWrappedMcObject() {
         return serverPlayer;
