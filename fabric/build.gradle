@@ -14,13 +14,13 @@ loom {
             client()
             setConfigName("Fabric Client")
             ideConfigGenerated(true)
-            runDir("run/client")
+            runDir("../run/client")
         }
         server {
             server()
             setConfigName("Fabric Server")
             ideConfigGenerated(true)
-            runDir("run/server")
+            runDir("../run/server")
         }
     }
 }
@@ -131,7 +131,7 @@ processResources {
 runClient {
     dependsOn(copyCoreResources)
     dependsOn(copyCommonLoaderResources)
-    jvmArgs("-XX:-OmitStackTraceInFastThrow")
+    jvmArgs([ "-XX:-OmitStackTraceInFastThrow", minecraftMemoryJavaArg ])
     finalizedBy(deleteResources)
 }
 

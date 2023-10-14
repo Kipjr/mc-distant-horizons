@@ -219,6 +219,9 @@ subprojects { p ->
         // Compression
         forgeShadowMe("org.lz4:lz4-java:${rootProject.lz4_version}")
         
+        // Sqlite Database
+        forgeShadowMe("org.xerial:sqlite-jdbc:${rootProject.sqlite_jdbc_version}")
+        
         // NightConfig (includes Toml & Json)
         forgeShadowMe("com.electronwill.night-config:toml:${rootProject.nightconfig_version}")
         forgeShadowMe("com.electronwill.night-config:json:${rootProject.nightconfig_version}")
@@ -300,6 +303,10 @@ subprojects { p ->
 
         // Compression (LZ4)
         relocate "net.jpountz", "${librariesLocation}.jpountz"
+        
+        // Sqlite Database
+        //At the moment, there is a bug in this library which doesnt allow it to be relocated
+//        relocate "org.sqlite", "${librariesLocation}.sqlite"
 
         // NightConfig (includes Toml & Json)
         relocate "com.electronwill.nightconfig", "${librariesLocation}.electronwill.nightconfig"

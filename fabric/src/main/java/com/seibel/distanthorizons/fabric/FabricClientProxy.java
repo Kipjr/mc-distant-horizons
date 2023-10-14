@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
+import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -89,13 +90,11 @@ public class FabricClientProxy
 		LOGGER.info("Registering Fabric Client Events");
 		
 		
-		
 		//========================//
 		// register mod accessors //
 		//========================//
 		
 		SodiumAccessor sodiumAccessor = (SodiumAccessor) ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class);
-		//ImmersivePortalsAccessor immersivePortalsAccessor = (ImmersivePortalsAccessor) ModAccessorInjector.INSTANCE.get(IImmersivePortalsAccessor.class);
 		
 		
 		
@@ -115,7 +114,7 @@ public class FabricClientProxy
 		ClientChunkEvents.CHUNK_LOAD.register((level, chunk) ->
 		{
 			IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper(level);
-			ClientApi.INSTANCE.clientChunkLoadEvent(new ChunkWrapper(chunk, level, wrappedLevel), wrappedLevel);
+			SharedApi.INSTANCE.chunkLoadEvent(new ChunkWrapper(chunk, level, wrappedLevel), wrappedLevel);
 		});
 		
 		// (kinda) block break event
@@ -131,7 +130,7 @@ public class FabricClientProxy
 					LOGGER.trace("attack block at blockPos: " + blockPos);
 					
 					IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
-					ClientApi.INSTANCE.clientChunkBlockChangedEvent(
+					SharedApi.INSTANCE.chunkBlockChangedEvent(
 							new ChunkWrapper(chunk, level, wrappedLevel),
 							wrappedLevel
 					);
@@ -158,7 +157,7 @@ public class FabricClientProxy
 						LOGGER.trace("use block at blockPos: " + hitResult.getBlockPos());
 						
 						IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
-						ClientApi.INSTANCE.clientChunkBlockChangedEvent(
+						SharedApi.INSTANCE.chunkBlockChangedEvent(
 								new ChunkWrapper(chunk, level, wrappedLevel),
 								wrappedLevel
 						);
@@ -175,7 +174,7 @@ public class FabricClientProxy
 		ClientChunkEvents.CHUNK_UNLOAD.register((level, chunk) ->
 		{
 			IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper(level);
-			ClientApi.INSTANCE.clientChunkSaveEvent(new ChunkWrapper(chunk, level, wrappedLevel), wrappedLevel);
+			SharedApi.INSTANCE.chunkSaveEvent(new ChunkWrapper(chunk, level, wrappedLevel), wrappedLevel);
 		});
 		
 		
@@ -183,8 +182,9 @@ public class FabricClientProxy
 		//==============//
 		// render event //
 		//==============//
-		
-		
+
+        //Define this in the MixinLevelRenderer so that it works with sodium without any changes to the code
+        // TODO: If all else is fine, can we remove these commented code
 		// Client Render Level
 		WorldRenderEvents.AFTER_SETUP.register((renderContext) ->
 		{
@@ -207,13 +207,8 @@ public class FabricClientProxy
 				renderContext.projectionMatrix().set(matrixFloatArray);
 				#endif
 			}
-			
-			//if (immersivePortalsAccessor != null)
-			//{
-			//	immersivePortalsAccessor.partialTicks = renderContext.tickDelta();
-			//}
 		});
-		
+
 		// Debug keyboard event
 		// FIXME: Use better hooks so it doesn't trigger key press events in text boxes
 		ClientTickEvents.END_CLIENT_TICK.register(client -> 

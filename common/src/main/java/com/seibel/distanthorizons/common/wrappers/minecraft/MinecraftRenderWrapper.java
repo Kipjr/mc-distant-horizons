@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.common.wrappers.minecraft;
 import java.awt.Color;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
@@ -35,14 +36,22 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 
 #if PRE_MC_1_19_4
 import com.mojang.math.Vector3f;
 #else
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import org.joml.Vector3f;
 #endif
+#if MC_1_20_2
+import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
+#endif
 
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3f;
@@ -90,7 +99,11 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	
 	private static final IOptifineAccessor OPTIFINE_ACCESSOR = ModAccessorInjector.INSTANCE.get(IOptifineAccessor.class);
 	
-	public LightMapWrapper lightmap = null;
+	/** 
+	 * In the case of immersive portals multiple levels may be active at once, causing conflicting lightmaps. <br> 
+	 * Requiring the use of multiple {@link LightMapWrapper}.
+	 */
+	public HashMap<IClientLevelWrapper, LightMapWrapper> lightmapByLevelWrapper = new HashMap<>();
 	
 	
 	
@@ -111,6 +124,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	}
 	
 	@Override
+	/** Unless you really need to know if the player is blind, use {@link MinecraftRenderWrapper#isFogStateSpecial()}/{@link IMinecraftRenderWrapper#isFogStateSpecial()} instead */
 	public boolean playerHasBlindingEffect()
 	{
 		return MC.player.getActiveEffectsMap().get(MobEffects.BLINDNESS) != null
@@ -237,23 +251,17 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 		return height;
 	}
 	
-	private RenderTarget getRenderTarget()
-	{
-		RenderTarget r = null; //MC.levelRenderer.getCloudsTarget();
-		return r != null ? r : MC.getMainRenderTarget();
-	}
+	private RenderTarget getRenderTarget() { return MC.getMainRenderTarget(); }
 	
 	@Override
 	public int getTargetFrameBuffer()
 	{
-		return getRenderTarget().frameBufferId;
+		int frameBufferOverrideId = DhApiRenderProxy.INSTANCE.targetFrameBufferOverride;
+		return (frameBufferOverrideId == -1) ? this.getRenderTarget().frameBufferId : frameBufferOverrideId;
 	}
 	
 	@Override
-	public int getDepthTextureId()
-	{
-		return getRenderTarget().getDepthTextureId();
-	}
+	public int getDepthTextureId() { return this.getRenderTarget().getDepthTextureId(); }
 	
 	@Override
 	public int getTargetFrameBufferViewportWidth()
@@ -294,6 +302,16 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 		{
 			try
 			{
+				#if MC_1_20_2
+				LevelRenderer levelRenderer = MC.levelRenderer;
+				Collection<SectionRenderDispatcher.RenderSection> chunks = levelRenderer.visibleSections;
+				
+				return (chunks.stream().map((chunk) -> {
+					AABB chunkBoundingBox = chunk.getBoundingBox();
+					return new DhChunkPos(Math.floorDiv((int) chunkBoundingBox.minX, 16),
+							Math.floorDiv((int) chunkBoundingBox.minZ, 16));
+				}).collect(Collectors.toCollection(HashSet::new)));
+				#else
 				LevelRenderer levelRenderer = MC.levelRenderer;
 				Collection<LevelRenderer.RenderChunkInfo> chunks =
 					#if PRE_MC_1_18_2 levelRenderer.renderChunks;
@@ -306,6 +324,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 					return new DhChunkPos(Math.floorDiv((int) chunkBoundingBox.minX, 16),
 							Math.floorDiv((int) chunkBoundingBox.minZ, 16));
 				}).collect(Collectors.toCollection(HashSet::new)));
+				#endif
 			}
 			catch (LinkageError e)
 			{
@@ -328,10 +347,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	}
 	
 	@Override
-	public ILightMapWrapper getLightmapWrapper()
-	{
-		return lightmap;
-	}
+	public ILightMapWrapper getLightmapWrapper(ILevelWrapper level) { return this.lightmapByLevelWrapper.get(level); }
 	
 	@Override
 	public boolean isFogStateSpecial()
@@ -340,24 +356,23 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 		Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
 		FluidState fluidState = camera.getFluidInCamera();
 		Entity entity = camera.getEntity();
-		boolean isUnderWater = (entity instanceof LivingEntity) && ((LivingEntity)entity).hasEffect(MobEffects.BLINDNESS);
-			isUnderWater |= fluidState.is(FluidTags.WATER);
-			isUnderWater |= fluidState.is(FluidTags.LAVA);
-		return isUnderWater;
+		boolean isBlind = this.playerHasBlindingEffect();
+			isBlind |= fluidState.is(FluidTags.WATER);
+			isBlind |= fluidState.is(FluidTags.LAVA);
+		return isBlind;
 		#else
-		Entity entity = MC.gameRenderer.getMainCamera().getEntity();
-		boolean isBlind = (entity instanceof LivingEntity) && ((LivingEntity) entity).hasEffect(MobEffects.BLINDNESS);
+		boolean isBlind = this.playerHasBlindingEffect();
 		return MC.gameRenderer.getMainCamera().getFluidInCamera() != FogType.NONE || isBlind;
 		#endif
 	}
 	
-	public void updateLightmap(NativeImage lightPixels)
+	public void updateLightmap(NativeImage lightPixels, IClientLevelWrapper level)
 	{
-		if (lightmap == null)
+		if (!this.lightmapByLevelWrapper.containsKey(level))
 		{
-			lightmap = new LightMapWrapper();
+			this.lightmapByLevelWrapper.put(level, new LightMapWrapper());
 		}
-		lightmap.uploadLightmap(lightPixels);
+		this.lightmapByLevelWrapper.get(level).uploadLightmap(lightPixels);
 	}
 	
 }

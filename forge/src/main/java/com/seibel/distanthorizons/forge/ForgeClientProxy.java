@@ -19,43 +19,35 @@
 
 package com.seibel.distanthorizons.forge;
 
+import com.seibel.distanthorizons.common.util.ProxyUtil;
+import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
+import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
-
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import io.netty.buffer.ByteBuf;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.LevelAccessor;
-
-import net.minecraft.client.multiplayer.ClientLevel;
-#if PRE_MC_1_19_2
-import net.minecraftforge.event.world.ChunkEvent;
-import net.minecraftforge.event.world.WorldEvent;
-#else
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.event.level.LevelEvent;
-#endif
-
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraft.world.level.chunk.ChunkAccess;
-
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
-
-import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
-
-import net.minecraft.client.Minecraft;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 /**
  * This handles all events sent to the client,
@@ -73,9 +65,9 @@ public class ForgeClientProxy
 	
 	
 	#if PRE_MC_1_19_2
-	private static LevelAccessor GetLevel(WorldEvent e) { return e.getWorld(); }
+	private static LevelAccessor GetEventLevel(WorldEvent e) { return e.getWorld(); }
 	#else
-	private static LevelAccessor GetLevel(LevelEvent e) { return e.getLevel(); }
+	private static LevelAccessor GetEventLevel(LevelEvent e) { return e.getLevel(); }
 	#endif
 	
 	
@@ -165,7 +157,7 @@ public class ForgeClientProxy
 		#endif
 		
 		ChunkAccess chunk = level.getChunk(event.getPos());
-		this.onClientBlockChangeEvent(level, chunk);
+		this.onBlockChangeEvent(level, chunk);
 	}
 	@SubscribeEvent
 	public void leftClickBlockEvent(PlayerInteractEvent.LeftClickBlock event)
@@ -179,43 +171,28 @@ public class ForgeClientProxy
 		#endif
 		
 		ChunkAccess chunk = level.getChunk(event.getPos());
-		this.onClientBlockChangeEvent(level, chunk);
+		this.onBlockChangeEvent(level, chunk);
 	}
-	private void onClientBlockChangeEvent(LevelAccessor level, ChunkAccess chunk)
+	private void onBlockChangeEvent(LevelAccessor level, ChunkAccess chunk)
 	{
-		// TODO rate limit this event per blockPos to prevent spam
-		
-		// if we have access to the server, use the chunk save event instead 
-		if (MC.clientConnectedToDedicatedServer())
-		{
-			if (chunk != null)
-			{
-				IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
-				ClientApi.INSTANCE.clientChunkBlockChangedEvent(new ChunkWrapper(chunk, level, wrappedLevel), wrappedLevel);
-			}
-		}
+		ILevelWrapper wrappedLevel = ProxyUtil.getLevelWrapper(level);
+		SharedApi.INSTANCE.chunkBlockChangedEvent(new ChunkWrapper(chunk, level, wrappedLevel), wrappedLevel);
 	}
 	
 	
 	@SubscribeEvent
 	public void clientChunkLoadEvent(ChunkEvent.Load event)
 	{
-		if (GetLevel(event) instanceof ClientLevel)
-		{
-			IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) GetLevel(event));
-			IChunkWrapper chunk = new ChunkWrapper(event.getChunk(), GetLevel(event), wrappedLevel);
-			ClientApi.INSTANCE.clientChunkLoadEvent(chunk, ClientLevelWrapper.getWrapper((ClientLevel) GetLevel(event)));
-		}
+		ILevelWrapper wrappedLevel = ProxyUtil.getLevelWrapper(GetEventLevel(event));
+		IChunkWrapper chunk = new ChunkWrapper(event.getChunk(), GetEventLevel(event), wrappedLevel);
+		SharedApi.INSTANCE.chunkLoadEvent(chunk, wrappedLevel);
 	}
 	@SubscribeEvent
 	public void clientChunkUnloadEvent(ChunkEvent.Unload event)
 	{
-		if (GetLevel(event) instanceof ClientLevel)
-		{
-			IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) GetLevel(event));
-			IChunkWrapper chunk = new ChunkWrapper(event.getChunk(), GetLevel(event), wrappedLevel);
-			ClientApi.INSTANCE.clientChunkSaveEvent(chunk, ClientLevelWrapper.getWrapper((ClientLevel) GetLevel(event)));
-		}
+		ILevelWrapper wrappedLevel = ProxyUtil.getLevelWrapper(GetEventLevel(event));
+		IChunkWrapper chunk = new ChunkWrapper(event.getChunk(), GetEventLevel(event), wrappedLevel);
+		SharedApi.INSTANCE.chunkSaveEvent(chunk, wrappedLevel);
 	}
 	
 	
