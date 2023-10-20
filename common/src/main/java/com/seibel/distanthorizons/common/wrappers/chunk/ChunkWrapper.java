@@ -169,6 +169,11 @@ public class ChunkWrapper implements IChunkWrapper
 		LevelChunkSection[] sections = this.chunk.getSections();
 		for (int index = 0; index < sections.length; index++)
 		{
+			if (sections[index] == null)
+			{
+				continue;
+			}
+			
 			#if MC_1_16_5
 			if (!sections[index].isEmpty())
 			{
@@ -258,8 +263,10 @@ public class ChunkWrapper implements IChunkWrapper
 		}
 		
 		
-		#if PRE_MC_1_18_2
+		#if PRE_MC_1_17_1
 		return true;
+		#elif MC_1_17_1
+		return false; // MC's lighting engine never works for 1.17
 		#else
 		if (this.chunk instanceof LevelChunk)
 		{
