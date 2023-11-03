@@ -13,21 +13,20 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class RegionFileStorageExternalCache implements AutoCloseable
 {
 	public final RegionFileStorage storage;
 	public static final int MAX_CACHE_SIZE = 16;
 	
-	@Override
-	public void close() throws IOException
-	{
-		RegionFileCache cache;
-		while ((cache = this.regionFileCache.poll()) != null)
-		{
-			cache.file.close();
-		}
-	}
+	/**
+	 * Present to reduce the chance that we accidentally break underlying MC code that isn't thread safe, 
+	 * specifically: "it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap.getAndMoveToFirst()"
+	 */
+	ReentrantLock getRegionFileLock = new ReentrantLock();
+	
+	
 	
 	static class RegionFileCache
 	{
@@ -41,6 +40,8 @@ public class RegionFileStorageExternalCache implements AutoCloseable
 		}
 		
 	}
+	
+	
 	
 	public ConcurrentLinkedQueue<RegionFileCache> regionFileCache = new ConcurrentLinkedQueue<>();
 	
@@ -61,8 +62,20 @@ public class RegionFileStorageExternalCache implements AutoCloseable
 			
 			try
 			{
+				this.getRegionFileLock.lock();
+				
 				#if MC_1_16_5 || MC_1_17_1
 				rFile = this.storage.getRegionFile(pos);
+				
+				// keeping the region cache size low helps prevent concurrency issues
+				if (this.storage.regionCache.size() > 150) // max 256
+				{
+					RegionFile removedFile = this.storage.regionCache.removeLast();
+					if (removedFile != null)
+					{
+						removedFile.close();
+					}
+				}
 				#else
 				rFile = this.storage.regionCache.getOrDefault(posLong, null);	
 				#endif
@@ -84,6 +97,10 @@ public class RegionFileStorageExternalCache implements AutoCloseable
 				{
 				}
 				#endif
+			}
+			finally
+			{
+				this.getRegionFileLock.unlock();
 			}
 		}
 		
@@ -140,7 +157,7 @@ public class RegionFileStorageExternalCache implements AutoCloseable
 	@Nullable
 	public CompoundTag read(ChunkPos pos) throws IOException
 	{
-		RegionFile file = getRegionFile(pos);
+		RegionFile file = this.getRegionFile(pos);
 		if (file == null)
 		{
 			return null;
@@ -161,5 +178,17 @@ public class RegionFileStorageExternalCache implements AutoCloseable
 			return null;
 		}
 	}
+	
+	
+	@Override
+	public void close() throws IOException
+	{
+		RegionFileCache cache;
+		while ((cache = this.regionFileCache.poll()) != null)
+		{
+			cache.file.close();
+		}
+	}
+	
 	
 }

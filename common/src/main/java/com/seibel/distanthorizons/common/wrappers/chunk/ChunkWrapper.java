@@ -263,10 +263,8 @@ public class ChunkWrapper implements IChunkWrapper
 		}
 		
 		
-		#if PRE_MC_1_17_1
-		return true;
-		#elif MC_1_17_1
-		return false; // MC's lighting engine never works for 1.17
+		#if MC_1_16_5 || MC_1_17_1
+		return false; // MC's lighting engine doesn't work consistently enough to trust for 1.16 or 1.17
 		#else
 		if (this.chunk instanceof LevelChunk)
 		{
@@ -451,6 +449,11 @@ public class ChunkWrapper implements IChunkWrapper
 	{
 		#if PRE_MC_1_18_2
 		// TODO: Check what to do in 1.18.1 and older
+		
+		// since we don't currently handle this list,
+		// clear it to prevent memory leaks
+		chunksNeedingClientLightUpdating.clear();
+		
 		#else
 		
 		// update the chunks client lighting

@@ -20,34 +20,52 @@
 package com.seibel.distanthorizons.forge;
 
 import com.seibel.distanthorizons.common.util.ProxyUtil;
-import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
+import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftRenderWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
+
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraft.resources.ResourceLocation;
+
+import net.minecraft.client.multiplayer.ClientLevel;
+#if PRE_MC_1_19_2
+import net.minecraftforge.event.world.ChunkEvent;
+import net.minecraftforge.event.world.WorldEvent;
+#else
 import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+#endif
+
+#if POST_MC_1_18_2
+import net.minecraftforge.client.event.RenderLevelStageEvent;
+#else
+import net.minecraftforge.client.event.RenderBlockOverlayEvent;
+#endif
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraft.world.level.chunk.ChunkAccess;
+
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
+
+import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
+
+import net.minecraft.client.Minecraft;
+import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import org.lwjgl.opengl.GL32;
 
 /**
  * This handles all events sent to the client,
@@ -60,7 +78,7 @@ public class ForgeClientProxy
 {
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	
+
 	private static SimpleChannel multiversePluginChannel;
 	
 	
@@ -275,5 +293,43 @@ public class ForgeClientProxy
 			}
 		}
 	}
+	
+	
+	
+	//===========//
+	// rendering //
+	//===========//
+	
+	@SubscribeEvent
+	#if POST_MC_1_18_2
+	public void afterLevelRenderEvent(RenderLevelStageEvent event)
+	#else
+	public void afterLevelRenderEvent(RenderBlockOverlayEvent event)
+	#endif
+	{
+		#if POST_MC_1_20_1
+		if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL)
+		#elif POST_MC_1_18_2
+		if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_SOLID_BLOCKS)
+		#else
+		// FIXME: Is this the correct location for 1.16 & 1.17???
+		// I couldnt find anything for rendering after the level, so is rendering after overlays ok?
+		if (event.getOverlayType() == RenderBlockOverlayEvent.OverlayType.BLOCK)
+		#endif
+		{
+			try
+			{
+				// should generally only need to be set once per game session
+				// allows DH to render directly to Optifine's level frame buffer,
+				// allowing better shader support
+				MinecraftRenderWrapper.INSTANCE.finalLevelFrameBufferId = GL32.glGetInteger(GL32.GL_FRAMEBUFFER_BINDING);
+			}
+			catch (Exception | Error e)
+			{
+				LOGGER.error("Unexpected error in afterLevelRenderEvent: "+e.getMessage(), e);
+			}
+		}
+	}
+	
 	
 }
