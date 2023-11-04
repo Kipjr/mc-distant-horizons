@@ -22,10 +22,12 @@ package com.seibel.distanthorizons.common.wrappers.chunk;
 import com.seibel.distanthorizons.common.wrappers.block.BiomeWrapper;
 import com.seibel.distanthorizons.common.wrappers.block.BlockStateWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.mimicObject.DhLitWorldGenRegion;
+import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.world.EWorldEnvironment;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
@@ -132,7 +134,8 @@ public class ChunkWrapper implements IChunkWrapper
 		
 		// FIXME +1 is to handle the fact that LodDataBuilder adds +1 to all block lighting calculations, also done in the relative position validator
 
-		chunksNeedingClientLightUpdating.add(this);
+		if (SharedApi.getEnvironment() != EWorldEnvironment.Server_Only)
+			chunksNeedingClientLightUpdating.add(this);
 	}
 	
 	
