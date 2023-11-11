@@ -47,8 +47,6 @@ import net.minecraftforge.event.level.LevelEvent;
 
 #if POST_MC_1_18_2
 import net.minecraftforge.client.event.RenderLevelStageEvent;
-#else
-import net.minecraftforge.client.event.RenderBlockOverlayEvent;
 #endif
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -304,7 +302,7 @@ public class ForgeClientProxy
 	#if POST_MC_1_18_2
 	public void afterLevelRenderEvent(RenderLevelStageEvent event)
 	#else
-	public void afterLevelRenderEvent(RenderBlockOverlayEvent event)
+	public void afterLevelRenderEvent(TickEvent.RenderTickEvent event)
 	#endif
 	{
 		#if POST_MC_1_20_1
@@ -314,7 +312,7 @@ public class ForgeClientProxy
 		#else
 		// FIXME: Is this the correct location for 1.16 & 1.17???
 		// I couldnt find anything for rendering after the level, so is rendering after overlays ok?
-		if (event.getOverlayType() == RenderBlockOverlayEvent.OverlayType.BLOCK)
+		if (event.type.equals(TickEvent.RenderTickEvent.Type.WORLD))
 		#endif
 		{
 			try
