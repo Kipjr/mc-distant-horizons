@@ -29,7 +29,7 @@ public class FabricDedicatedServerMain implements DedicatedServerModInitializer
 		
 		// FIXME this prevents returning uninitialized Config values
 		//  resulting from a circular reference mid-initialization in a static class
-		// ThreadPresetConfigEventHandler <-> Config
+		//noinspection ResultOfMethodCallIgnored
 		ThreadPresetConfigEventHandler.INSTANCE.toString();
 		
 		server_proxy = new FabricServerProxy(true);
