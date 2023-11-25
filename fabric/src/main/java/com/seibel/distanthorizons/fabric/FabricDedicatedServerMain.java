@@ -110,7 +110,7 @@ public class FabricDedicatedServerMain implements DedicatedServerModInitializer
 			
 			var subcommand = literal(configEntry.getServersideShortName())
 					.executes(c -> {
-						LOGGER.info("Current value of {} is {}", configEntry.getServersideShortName(), configEntry.get());
+						c.getSource().sendSuccess(() -> Component.literal("Current value of "+configEntry.getServersideShortName()+" is {}"+configEntry.get()), true);
 						return 1;
 					});
 			
