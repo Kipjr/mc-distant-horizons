@@ -48,11 +48,6 @@ public class LodCommonMain
 		
 		DependencySetup.createSharedBindings();
 		SharedApi.init();
-//        if (!serverSided) {
-//            new NetworkReceiver().register_Client();
-//        } else {
-//            new NetworkReceiver().register_Server();
-//        }
 	}
 	
 	public static void initConfig()

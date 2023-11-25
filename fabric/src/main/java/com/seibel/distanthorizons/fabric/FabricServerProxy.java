@@ -154,25 +154,6 @@ public class FabricServerProxy
 				);
 			}
 		});
-		
-		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-			dispatcher.register(literal("dhconfig")
-					.requires(source -> source.hasPermission(4))
-					.then(
-							argument("name", integer())
-									.executes(c -> {
-										System.out.println("Bar is " + getInteger(c, "bar"));
-										return 1;
-									})
-					)
-					.executes(context -> {
-						// For versions below 1.19, replace "Text.literal" with "new LiteralText".
-						// For 1.19, remove "() ->" directly.
-						context.getSource().sendFailure(Component.literal("No arguments were provided"));
-
-						return 1;
-					}));
-		});
 	}
 	
 }
