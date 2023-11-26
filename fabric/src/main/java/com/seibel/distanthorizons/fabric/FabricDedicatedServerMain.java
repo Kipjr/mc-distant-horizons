@@ -94,9 +94,7 @@ public class FabricDedicatedServerMain implements DedicatedServerModInitializer
 		for (AbstractConfigType<?, ?> type : ConfigBase.INSTANCE.entries)
 		{
 			if (!(type instanceof ConfigEntry configEntry)) continue;
-			
 			if (configEntry.getServersideShortName() == null) continue;
-			LOGGER.info("{}: {}", configEntry.getServersideShortName(), configEntry.getType());
 			
 			Function<
 					Function<CommandContext<CommandSourceStack>, Object>,
