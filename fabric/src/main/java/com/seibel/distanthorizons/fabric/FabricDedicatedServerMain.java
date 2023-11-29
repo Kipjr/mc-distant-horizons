@@ -20,17 +20,17 @@ import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.dedicated.DedicatedServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
-import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -42,6 +42,7 @@ import static net.minecraft.commands.Commands.literal;
 public class FabricDedicatedServerMain implements DedicatedServerModInitializer
 {
 	private static final Logger LOGGER = LogManager.getLogger(FabricDedicatedServerMain.class.getSimpleName());
+	private static final ResourceLocation INITIAL_PHASE = ResourceLocation.tryParse("distanthorizons:dedicated_server_initial");
 	
 	public static FabricServerProxy server_proxy;
 	public boolean hasPostSetupDone = false;
@@ -66,7 +67,8 @@ public class FabricDedicatedServerMain implements DedicatedServerModInitializer
 			this.commandDispatcher = dispatcher;
 		});
 		
-		ServerLifecycleEvents.SERVER_STARTING.register((server) ->
+		ServerLifecycleEvents.SERVER_STARTING.addPhaseOrdering(INITIAL_PHASE, Event.DEFAULT_PHASE);
+		ServerLifecycleEvents.SERVER_STARTING.register(INITIAL_PHASE, (server) ->
 		{
 			if (this.hasPostSetupDone)
 			{
