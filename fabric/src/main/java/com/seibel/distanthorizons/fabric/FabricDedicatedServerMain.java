@@ -4,6 +4,7 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -34,6 +35,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
@@ -110,7 +112,7 @@ public class FabricDedicatedServerMain implements DedicatedServerModInitializer
 			
 			var subcommand = literal(configEntry.getServersideShortName())
 					.executes(c -> {
-						c.getSource().sendSuccess(() -> Component.literal("Current value of "+configEntry.getServersideShortName()+" is {}"+configEntry.get()), true);
+						c.getSource().sendSuccess(() -> Component.literal("Current value of "+configEntry.getServersideShortName()+" is "+configEntry.get()), true);
 						return 1;
 					});
 			
@@ -126,6 +128,8 @@ public class FabricDedicatedServerMain implements DedicatedServerModInitializer
 			}
 			else
 			{
+				boolean setterAdded = false;
+				
 				for (var pair : new HashMap<
 						Class<?>, 
 						Pair<
@@ -133,6 +137,7 @@ public class FabricDedicatedServerMain implements DedicatedServerModInitializer
 								BiFunction<CommandContext<?>, String, ?>>
 						>() {{
 					put(Integer.class, new Pair<>(() -> integer((int) configEntry.getMin(), (int) configEntry.getMax()), IntegerArgumentType::getInteger));
+					put(Double.class, new Pair<>(() -> doubleArg((double) configEntry.getMin(), (double) configEntry.getMax()), DoubleArgumentType::getDouble));
 					put(Boolean.class, new Pair<>(BoolArgumentType::bool, BoolArgumentType::getBool));
 				}}.entrySet())
 				{
@@ -140,7 +145,13 @@ public class FabricDedicatedServerMain implements DedicatedServerModInitializer
 					
 					subcommand.then(argument("value", pair.getValue().first.get())
 							.executes(makeConfigUpdater.apply(c -> pair.getValue().second.apply(c, "value"))));
+					
+					setterAdded = true;
+					break;
 				}
+				
+				if (!setterAdded)
+					throw new RuntimeException("Config type of "+type.getName()+" is not supported: "+configEntry.getType().getSimpleName());
 			}
 			
 			builder.then(subcommand);
