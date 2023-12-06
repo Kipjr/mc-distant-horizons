@@ -76,7 +76,14 @@ public class BiomeWrapper implements IBiomeWrapper
 	public static final BiomeWrapper EMPTY_WRAPPER = new BiomeWrapper(null, null);
 	
 	/** keep track of broken biomes so we don't log every time */
-	private static final HashSet<String> BrokenResourceLocationStrings = new HashSet<>();
+	private static final HashSet<String> brokenResourceLocationStrings = new HashSet<>();
+	
+	/** 
+	 * Only display this warning once, otherwise the log may be spammed <br> 
+	 * This is a known issue when joining Hypixel. 
+	 */
+	private static boolean emptyStringWarningLogged = false;
+	private static boolean emptyLevelSerializeFailLogged = false; 
 	
 	
 	
@@ -182,42 +189,55 @@ public class BiomeWrapper implements IBiomeWrapper
 	
 	public String serialize(ILevelWrapper levelWrapper)
 	{
+		if (this.serialString != null)
+		{
+			return this.serialString;
+		}
+		
+		
+		// we can't generate a serial string if the level is null
 		if (levelWrapper == null)
 		{
+			if (!emptyLevelSerializeFailLogged)
+			{
+				emptyLevelSerializeFailLogged = true;
+				LOGGER.warn("Unable to serialize biome: ["+this.biome+"] because the passed in level wrapper is null. Future errors won't be logged.");
+			}
+			
 			return EMPTY_STRING;
 		}
 		
 		
-		if (this.serialString == null)
+		
+		// generate the serial string //
+		
+		net.minecraft.core.RegistryAccess registryAccess = ((Level) levelWrapper.getWrappedMcObject()).registryAccess();
+		
+		ResourceLocation resourceLocation;
+		#if MC_1_16_5 || MC_1_17_1
+		resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome);
+		#elif MC_1_18_2 || MC_1_19_2
+		resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome.value());
+		#else
+		resourceLocation = registryAccess.registryOrThrow(Registries.BIOME).getKey(this.biome.value());
+		#endif
+		
+		if (resourceLocation == null)
 		{
-			net.minecraft.core.RegistryAccess registryAccess = ((Level) levelWrapper.getWrappedMcObject()).registryAccess();
-			
-			ResourceLocation resourceLocation;
+			String biomeName;
 			#if MC_1_16_5 || MC_1_17_1
-			resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome);
-			#elif MC_1_18_2 || MC_1_19_2
-			resourceLocation = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).getKey(this.biome.value());
+			biomeName = this.biome.toString();
 			#else
-			resourceLocation = registryAccess.registryOrThrow(Registries.BIOME).getKey(this.biome.value());
+			biomeName = this.biome.value().toString();
 			#endif
 			
-			if (resourceLocation == null)
-			{
-				String biomeName;
-				#if MC_1_16_5 || MC_1_17_1
-				biomeName = this.biome.toString();
-				#else
-				biomeName = this.biome.value().toString();
-				#endif
-				
-				LOGGER.warn("unable to serialize: " + biomeName);
-				// shouldn't normally happen, but just in case
-				this.serialString = "";
-			}
-			else
-			{
-				this.serialString = resourceLocation.getNamespace() + ":" + resourceLocation.getPath();
-			}
+			LOGGER.warn("unable to serialize: " + biomeName);
+			// shouldn't normally happen, but just in case
+			this.serialString = "";
+		}
+		else
+		{
+			this.serialString = resourceLocation.getNamespace() + ":" + resourceLocation.getPath();
 		}
 		
 		return this.serialString;
@@ -227,7 +247,11 @@ public class BiomeWrapper implements IBiomeWrapper
 	{
 		if (resourceLocationString.equals(EMPTY_STRING))
 		{
-			LOGGER.warn("["+EMPTY_STRING+"] biome string deserialized. This may mean there was a file saving error or a biome saving error.");
+			if (!emptyStringWarningLogged)
+			{
+				emptyStringWarningLogged = true;
+				LOGGER.warn("[" + EMPTY_STRING + "] biome string deserialized. This may mean the level was null when a save was attempted, a file saving error, or a biome saving error. Future errors will not be logged.");
+			}
 			return EMPTY_WRAPPER;
 		}
 		else if (resourceLocationString.trim().isEmpty() || resourceLocationString.equals(""))
@@ -270,9 +294,9 @@ public class BiomeWrapper implements IBiomeWrapper
 			
 			if (!success)
 			{
-				if (!BrokenResourceLocationStrings.contains(resourceLocationString))
+				if (!brokenResourceLocationStrings.contains(resourceLocationString))
 				{
-					BrokenResourceLocationStrings.add(resourceLocationString);
+					brokenResourceLocationStrings.add(resourceLocationString);
 					LOGGER.warn("Unable to deserialize biome from string: [" + resourceLocationString + "]");
 				}
 				return EMPTY_WRAPPER;
