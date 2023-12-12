@@ -115,7 +115,7 @@ To switch between different Minecraft versions, change `mcVer=1.?` in the `gradl
 If running in an IDE, to ensure the IDE noticed the version change, run any gradle command to refresh gradle. (In IntellJ you will also need to do a gradle sync if it didn't happen automatically.)
 >Note: There may be a `java.nio.file.FileSystemException` thrown when running the command after switching versions. To fix it, either restart your IDE (as your IDE is probably locking a file) or use a tool like LockHunter to unlock the linked file(s). (Generally it is a lib file under `common\build\lib`, `forge\build\lib`, or `fabric\build\lib`). \
 > If anyone knows how to solve this issue please let us know here: \
-> https://gitlab.com/jeseibel/minecraft-lod-mod/-/issues/233
+> https://gitlab.com/jeseibel/distant-horizons/-/issues/233
 
 
 <br>
@@ -134,7 +134,7 @@ From the File Explorer:
 6. The compiled jar file will be in the folder `Merged`
 
 From the command line:
-1. `git clone --recurse-submodules https://gitlab.com/jeseibel/minecraft-lod-mod.git`
+1. `git clone --recurse-submodules https://gitlab.com/gitlab.com/jeseibel/distant-horizons.git`
 2. `cd minecraft-lod-mod`
 3. `./gradlew assemble`
 4. `./gradlew mergeJars`
