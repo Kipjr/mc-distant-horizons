@@ -2,19 +2,25 @@ package com.seibel.distanthorizons.fabric.mixins.mods.sodium;
 
 /* Removed since DH now uses Indium so we can use the Fabric rendering API instead
 
-#if POST_MC_1_20_1
-// Sodium 0.5.1
+#if MC_VER >= MC_1_20_1
+// Sodium 0.5
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
 import com.seibel.distanthorizons.fabric.wrappers.modAccessor.SodiumAccessor;
 import me.jellysquid.mods.sodium.client.gl.device.CommandList;
+import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderMatrices;
 import me.jellysquid.mods.sodium.client.render.chunk.DefaultChunkRenderer;
+import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.lists.ChunkRenderListIterable;
+import me.jellysquid.mods.sodium.client.render.chunk.lists.SortedRenderLists;
+import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.DefaultTerrainRenderPasses;
 import me.jellysquid.mods.sodium.client.render.chunk.terrain.TerrainRenderPass;
 import me.jellysquid.mods.sodium.client.render.viewport.CameraTransform;
+import net.minecraft.client.renderer.RenderType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,8 +31,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinSodiumRenderer
 {
     @Unique SodiumAccessor accessor = null;
-	
-	@Inject(remap = false, method = "render", at = @At(value = "INVOKE", target = "Lme/jellysquid/mods/sodium/client/render/chunk/ShaderChunkRenderer;begin(Lme/jellysquid/mods/sodium/client/render/chunk/terrain/TerrainRenderPass;)V", shift = At.Shift.AFTER))
+
+    @Inject(remap = false, method = "render", at = @At(value = "INVOKE", target = "Lme/jellysquid/mods/sodium/client/render/chunk/ShaderChunkRenderer;begin(Lme/jellysquid/mods/sodium/client/render/chunk/terrain/TerrainRenderPass;)V", shift = At.Shift.AFTER))
     private void injectDHLoDRendering(ChunkRenderMatrices matrices, CommandList commandList, ChunkRenderListIterable renderLists, TerrainRenderPass renderPass, CameraTransform camera, CallbackInfo ci)
     {
         if (accessor == null)
@@ -45,9 +51,11 @@ public class MixinSodiumRenderer
                     accessor.partialTicks);
         }
     }
+
+
 }
 
-#elif POST_MC_1_17_1
+#elif MC_VER >= MC_1_17_1
 // Sodium 0.3 to 0.4
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;

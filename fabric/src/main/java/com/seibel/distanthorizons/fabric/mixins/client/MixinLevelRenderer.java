@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.fabric.mixins.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-#if PRE_MC_1_19_4
+#if MC_VER < MC_1_19_4
 import com.mojang.math.Matrix4f;
 #else
 import net.minecraft.client.Camera;
@@ -67,7 +67,7 @@ public class MixinLevelRenderer
 
     // Inject rendering at first call to renderChunkLayer
     // HEAD or RETURN
-	#if PRE_MC_1_17_1
+	#if MC_VER < MC_1_17_1
 	@Inject(at = @At("RETURN"), method = "renderSky(Lcom/mojang/blaze3d/vertex/PoseStack;F)V")
 	private void renderSky(PoseStack matrixStackIn, float partialTicks, CallbackInfo callback)
 	{
@@ -84,17 +84,17 @@ public class MixinLevelRenderer
     }
     #endif
 
-	#if PRE_MC_1_17_1
+	#if MC_VER < MC_1_17_1
     @Inject(at = @At("HEAD"),
 			method = "renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDD)V",
 			cancellable = true)
 	private void renderChunkLayer(RenderType renderType, PoseStack matrixStackIn, double xIn, double yIn, double zIn, CallbackInfo callback)
-	#elif PRE_MC_1_19_4
+	#elif MC_VER < MC_1_19_4
     @Inject(at = @At("HEAD"),
             method = "renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V",
             cancellable = true)
     private void renderChunkLayer(RenderType renderType, PoseStack modelViewMatrixStack, double cameraXBlockPos, double cameraYBlockPos, double cameraZBlockPos, Matrix4f projectionMatrix, CallbackInfo callback)
-	#elif PRE_MC_1_20_2
+	#elif MC_VER < MC_1_20_2
     @Inject(at = @At("HEAD"),
             method = "renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V",
             cancellable = true)
@@ -113,10 +113,10 @@ public class MixinLevelRenderer
 		}
     }
 	
-	#if PRE_MC_1_19_4
+	#if MC_VER < MC_1_19_4
 	@Inject(at = @At(value = "TAIL", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;runUpdates(IZZ)I"), method = "renderLevel")
 	public void callAfterRunUpdates(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci)
-	#elif PRE_MC_1_20_1
+	#elif MC_VER < MC_1_20_1
 	@Inject(at = @At(value = "TAIL", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;runUpdates(IZZ)I"), method = "renderLevel")
 	public void callAfterRunUpdates(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci)
 	#else

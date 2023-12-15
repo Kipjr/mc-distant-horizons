@@ -23,7 +23,6 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -33,11 +32,11 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-#if MC_1_16_5 || MC_1_17_1
+#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 import net.minecraft.core.Registry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.EmptyBlockGetter;
-#elif MC_1_18_2 || MC_1_19_2
+#elif MC_VER == MC_1_18_2 || MC_VER == MC_1_19_2
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
 import net.minecraft.core.BlockPos;
@@ -252,7 +251,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	@Override
 	public boolean isSolid()
 	{
-        #if PRE_MC_1_20_1
+        #if MC_VER < MC_1_20_1
 		return this.blockState.getMaterial().isSolid();
         #else
 		return !this.blockState.getCollisionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO).isEmpty();
@@ -267,7 +266,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 			return false;
 		}
 		
-        #if PRE_MC_1_20_1
+        #if MC_VER < MC_1_20_1
 		return this.blockState.getMaterial().isLiquid() || !this.blockState.getFluidState().isEmpty();
         #else
 		return !this.blockState.getFluidState().isEmpty();
@@ -293,15 +292,15 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		
 		
 		// older versions of MC have a static registry
-		#if !(MC_1_16_5 || MC_1_17_1)
+		#if MC_VER > MC_1_17_1
 		Level level = (Level)levelWrapper.getWrappedMcObject();
 		net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
 		#endif
 		
 		ResourceLocation resourceLocation;
-		#if MC_1_16_5 || MC_1_17_1
+		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 		resourceLocation = Registry.BLOCK.getKey(this.blockState.getBlock());
-		#elif MC_1_18_2 || MC_1_19_2
+		#elif MC_VER == MC_1_18_2 || MC_VER == MC_1_19_2
 		resourceLocation = registryAccess.registryOrThrow(Registry.BLOCK_REGISTRY).getKey(this.blockState.getBlock());
 		#else
 		resourceLocation = registryAccess.registryOrThrow(Registries.BLOCK).getKey(this.blockState.getBlock());
@@ -356,14 +355,14 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		try
 		{
 			
-			#if !(MC_1_16_5 || MC_1_17_1)
+			#if MC_VER > MC_1_17_1
 			Level level = (Level)Objects.requireNonNull(levelWrapper.getWrappedMcObject());
 			#endif
 			
 			Block block;
-			#if MC_1_16_5 || MC_1_17_1
+			#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 			block = Registry.BLOCK.get(resourceLocation);
-			#elif MC_1_18_2 || MC_1_19_2
+			#elif MC_VER == MC_1_18_2 || MC_VER == MC_1_19_2
 			net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
 			block = registryAccess.registryOrThrow(Registry.BLOCK_REGISTRY).get(resourceLocation);
 			#else

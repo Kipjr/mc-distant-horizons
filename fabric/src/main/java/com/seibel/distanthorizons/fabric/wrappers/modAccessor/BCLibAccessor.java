@@ -1,8 +1,8 @@
 package com.seibel.distanthorizons.fabric.wrappers.modAccessor;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IBCLibAccessor;
-#if MC_1_16_5 || MC_1_17_1
-#elif MC_1_18_2
+#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1 || MC_VER == MC_1_20_4 // These versions either don't have BCLib, or the implementation is different
+#elif MC_VER == MC_1_18_2
 import ru.bclib.config.ClientConfig;
 import ru.bclib.config.Configs;
 #else
@@ -17,7 +17,7 @@ public class BCLibAccessor implements IBCLibAccessor
 	
 	public void setRenderCustomFog(boolean newValue)
 	{
-		#if !(MC_1_16_5 || MC_1_17_1) // 1.16 and 1.17 don't have "ClientConfig.CUSTOM_FOG_RENDERING"
+		#if !(MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1 || MC_VER == MC_1_20_4) // These versions either don't have BCLib, or the implementation is different
 		
 		// Change the value of CUSTOM_FOG_RENDERING in the bclib client config
 		// This disabled fog from rendering within bclib

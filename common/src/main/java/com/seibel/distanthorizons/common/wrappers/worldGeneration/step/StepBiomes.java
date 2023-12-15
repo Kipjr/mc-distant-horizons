@@ -27,12 +27,12 @@ import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGeneratio
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.ThreadedParameters;
 
 import net.minecraft.server.level.WorldGenRegion;
-#if PRE_MC_1_19_2
+#if MC_VER < MC_1_19_2
 #endif
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.ProtoChunk;
-#if POST_MC_1_18_2
+#if MC_VER >= MC_1_18_2
 import net.minecraft.world.level.levelgen.blending.Blender;
 #endif
 
@@ -65,12 +65,12 @@ public final class StepBiomes
 		for (ChunkAccess chunk : chunksToDo)
 		{
 			// System.out.println("StepBiomes: "+chunk.getPos());
-			#if PRE_MC_1_18_2
+			#if MC_VER < MC_1_18_2
 			environment.params.generator.createBiomes(environment.params.biomes, chunk);
-			#elif PRE_MC_1_19_2
+			#elif MC_VER < MC_1_19_2
 			chunk = environment.joinSync(environment.params.generator.createBiomes(environment.params.biomes, Runnable::run, Blender.of(worldGenRegion),
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
-			#elif PRE_MC_1_19_4
+			#elif MC_VER < MC_1_19_4
 			chunk = environment.joinSync(environment.params.generator.createBiomes(environment.params.biomes, Runnable::run, environment.params.randomState, Blender.of(worldGenRegion),
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
 			#else

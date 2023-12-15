@@ -106,8 +106,7 @@ public class WrapperFactory implements IWrapperFactory
 			}
 		}
 		
-		// MC 1.16, 1.18, 1.19, 1.20
-		#if POST_MC_1_17_1 || MC_1_16_5
+		#if MC_VER // Always true
 		else if (objectArray.length == 2)
 		{
 			// correct number of parameters from the API
@@ -164,8 +163,7 @@ public class WrapperFactory implements IWrapperFactory
 				"Chunk wrapper creation failed. \n" +
 						"Expected parameters: \n");
 		
-		// MC 1.16, 1.18, 1.19, 1.20
-		#if POST_MC_1_17_1 || MC_1_16_5
+		#if MC_VER // Always true
 		message.append("[" + ChunkAccess.class.getName() + "], \n");
 		message.append("[ServerLevel] or [ClientLevel]. \n"); // Classes are not referenced by names to avoid exception when one is missing
 		#else

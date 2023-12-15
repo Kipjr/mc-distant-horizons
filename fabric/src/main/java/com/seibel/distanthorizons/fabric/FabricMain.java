@@ -59,7 +59,7 @@ public class FabricMain
 		
 		if (Config.Client.Advanced.Graphics.Fog.disableVanillaFog.get() && SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("bclib"))
 			ModAccessorInjector.INSTANCE.get(IBCLibAccessor.class).setRenderCustomFog(false); // Remove BCLib's fog
-		#if POST_MC_1_20_1
+		#if MC_VER >= MC_1_20_1
 		if (SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("sodium"))
 			ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class).setFogOcclusion(false); // FIXME: This is a tmp fix for sodium 0.5.0, and 0.5.1. This is fixed in sodium 0.5.2
 		#endif
@@ -123,7 +123,7 @@ public class FabricMain
 			ModAccessorInjector.INSTANCE.bind(IBCLibAccessor.class, new BCLibAccessor());
 		}
 		
-		#if MC_1_16_5 || MC_1_18_2 || MC_1_19_2 || MC_1_19_4 || MC_1_20_1
+		#if MC_VER != MC_1_17_1 && MC_VER <= MC_1_20_1
 		// 1.17.1 won't support this since there isn't a matching Iris version
 		if (modChecker.isModLoaded("iris"))
 		{

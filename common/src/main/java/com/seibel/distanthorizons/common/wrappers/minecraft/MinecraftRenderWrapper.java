@@ -39,12 +39,12 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 
-#if PRE_MC_1_19_4
+#if MC_VER < MC_1_19_4
 import com.mojang.math.Vector3f;
 #else
 import org.joml.Vector3f;
 #endif
-#if MC_1_20_2
+#if MC_VER >= MC_1_20_2
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
 #endif
 
@@ -67,7 +67,7 @@ import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.effect.MobEffects;
-#if PRE_MC_1_17_1
+#if MC_VER < MC_1_17_1
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.material.FluidState;
@@ -133,7 +133,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	public boolean playerHasBlindingEffect()
 	{
 		return MC.player.getActiveEffectsMap().get(MobEffects.BLINDNESS) != null
-				#if POST_AND_MC_1_19_2
+				#if MC_VER >= MC_1_19_2
 				|| MC.player.getActiveEffectsMap().get(MobEffects.DARKNESS) != null // Deep dark effect
 				#endif
 				;
@@ -151,7 +151,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public Mat4f getDefaultProjectionMatrix(float partialTicks)
 	{
-		#if PRE_MC_1_17_1
+		#if MC_VER < MC_1_17_1
 		return McObjectConverter.Convert(Minecraft.getInstance().gameRenderer.getProjectionMatrix(Minecraft.getInstance().gameRenderer.getMainCamera(), partialTicks, true));
 		#else
 		return McObjectConverter.Convert(MC.gameRenderer.getProjectionMatrix(MC.gameRenderer.getFov(MC.gameRenderer.getMainCamera(), partialTicks, true)));
@@ -161,7 +161,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public double getGamma()
 	{
-		#if PRE_MC_1_19_2
+		#if MC_VER < MC_1_19_2
 		return MC.options.gamma;
 		#else
 		return MC.options.gamma().get();
@@ -171,7 +171,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public Color getFogColor(float partialTicks)
 	{
-		#if PRE_MC_1_17_1
+		#if MC_VER < MC_1_17_1
 		float[] colorValues = new float[4];
 		GL15.glGetFloatv(GL15.GL_FOG_COLOR, colorValues);
 		#else
@@ -192,7 +192,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	{
 		if (MC.level.dimensionType().hasSkyLight())
 		{
-			#if PRE_MC_1_17_1
+			#if MC_VER < MC_1_17_1
 			Vec3 colorValues = MC.level.getSkyColor(MC.gameRenderer.getMainCamera().getBlockPosition(), MC.getFrameTime());
 			#else
 			Vec3 colorValues = MC.level.getSkyColor(MC.gameRenderer.getMainCamera().getPosition(), MC.getFrameTime());
@@ -213,7 +213,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public int getRenderDistance()
 	{
-		#if PRE_MC_1_18_2
+		#if MC_VER < MC_1_18_2
 		//FIXME: How to resolve this?
 		return MC.options.renderDistance;
 		#else
@@ -321,25 +321,25 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 		{
 			try
 			{
-				#if MC_1_20_2
+				#if MC_VER < MC_1_20_2
 				LevelRenderer levelRenderer = MC.levelRenderer;
-				Collection<SectionRenderDispatcher.RenderSection> chunks = levelRenderer.visibleSections;
+				Collection<LevelRenderer.RenderChunkInfo> chunks =
+					#if MC_VER < MC_1_18_2 levelRenderer.renderChunks;
+					#else levelRenderer.renderChunkStorage.get().renderChunks; #endif
 				
 				return (chunks.stream().map((chunk) -> {
-					AABB chunkBoundingBox = chunk.getBoundingBox();
+					AABB chunkBoundingBox =
+						#if MC_VER < MC_1_18_2 chunk.chunk.bb;
+						#else chunk.chunk.getBoundingBox(); #endif
 					return new DhChunkPos(Math.floorDiv((int) chunkBoundingBox.minX, 16),
 							Math.floorDiv((int) chunkBoundingBox.minZ, 16));
 				}).collect(Collectors.toCollection(HashSet::new)));
 				#else
 				LevelRenderer levelRenderer = MC.levelRenderer;
-				Collection<LevelRenderer.RenderChunkInfo> chunks =
-					#if PRE_MC_1_18_2 levelRenderer.renderChunks;
-					#else levelRenderer.renderChunkStorage.get().renderChunks; #endif
+				Collection<SectionRenderDispatcher.RenderSection> chunks = levelRenderer.visibleSections;
 				
 				return (chunks.stream().map((chunk) -> {
-					AABB chunkBoundingBox =
-						#if PRE_MC_1_18_2 chunk.chunk.bb;
-						#else chunk.chunk.getBoundingBox(); #endif
+					AABB chunkBoundingBox = chunk.getBoundingBox();
 					return new DhChunkPos(Math.floorDiv((int) chunkBoundingBox.minX, 16),
 							Math.floorDiv((int) chunkBoundingBox.minZ, 16));
 				}).collect(Collectors.toCollection(HashSet::new)));
@@ -371,7 +371,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public boolean isFogStateSpecial()
 	{
-		#if PRE_MC_1_17_1
+		#if MC_VER < MC_1_17_1
 		Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
 		FluidState fluidState = camera.getFluidInCamera();
 		Entity entity = camera.getEntity();

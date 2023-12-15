@@ -1,7 +1,7 @@
 package com.seibel.distanthorizons.common.wrappers.gui;
 
 import net.minecraft.client.gui.Font;
-#if PRE_MC_1_20_1
+#if MC_VER < MC_1_20_1
 import com.mojang.blaze3d.vertex.PoseStack;
 #else
 import net.minecraft.client.gui.GuiGraphics;
@@ -24,14 +24,14 @@ public class DhScreen extends Screen
 	// addButton in 1.16 and below
 	protected Button addBtn(Button button)
 	{
-		#if PRE_MC_1_17_1
+		#if MC_VER < MC_1_17_1
         return this.addButton(button);
 		#else
 		return this.addRenderableWidget(button);
 		#endif
 	}
 	
-	#if PRE_MC_1_20_1
+	#if MC_VER < MC_1_20_1
 	protected void DhDrawCenteredString(PoseStack guiStack, Font font, Component text, int x, int y, int color)
 	{
 		drawCenteredString(guiStack, font, text, x, y, color);

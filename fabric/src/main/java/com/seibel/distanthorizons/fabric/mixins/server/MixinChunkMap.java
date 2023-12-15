@@ -55,7 +55,7 @@ public class MixinChunkMap
 		//==================//
 		
 		// some chunks may be missing their biomes, which cause issues when attempting to save them
-		#if MC_1_16_5 || MC_1_17_1
+		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 		if (chunk.getBiomes() == null)
 		{
 			return;

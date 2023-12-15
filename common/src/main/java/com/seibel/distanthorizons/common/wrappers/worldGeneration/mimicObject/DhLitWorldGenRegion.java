@@ -41,7 +41,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ColorResolver;
-#if POST_MC_1_17_1
+#if MC_VER >= MC_1_17_1
 import net.minecraft.world.level.LevelHeightAccessor;
 #endif
 import net.minecraft.world.level.LightLayer;
@@ -73,11 +73,11 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 	 */
 	ReentrantLock getChunkLock = new ReentrantLock();
 	
-	#if PRE_MC_1_18_2
+	#if MC_VER < MC_1_18_2
 	private ChunkPos overrideCenterPos = null;
 	
 	public void setOverrideCenter(ChunkPos pos) { overrideCenterPos = pos; }
-	#if PRE_MC_1_17_1
+	#if MC_VER < MC_1_17_1
 	@Override
 	public int getCenterX() 
 	{
@@ -104,7 +104,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 			List<ChunkAccess> chunkList, ChunkStatus chunkStatus, int writeRadius,
 			BatchGenerationEnvironment.EmptyChunkGenerator generator)
 	{
-		super(serverLevel, chunkList #if POST_MC_1_17_1 , chunkStatus, writeRadius #endif );
+		super(serverLevel, chunkList #if MC_VER >= MC_1_17_1 , chunkStatus, writeRadius #endif );
 		this.firstPos = chunkList.get(0).getPos();
 		this.generator = generator;
 		this.lightEngine = lightEngine;
@@ -115,7 +115,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 	
 	
 	
-	#if POST_MC_1_17_1
+	#if MC_VER >= MC_1_17_1
 	// Bypass BCLib mixin overrides.
 	@Override
 	public boolean ensureCanWrite(BlockPos blockPos)
@@ -130,7 +130,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 		{
 			return false;
 		}
-		#if POST_MC_1_18_2
+		#if MC_VER >= MC_1_18_2
 		if (center.isUpgrading())
 		{
 			LevelHeightAccessor levelHeightAccessor = center.getHeightAccessorForGeneration();
@@ -185,7 +185,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 		BlockState blockState = this.getBlockState(blockPos);
 		
 		// This is a bypass for the spawner block since MC complains about not having it
-		#if POST_MC_1_17_1
+		#if MC_VER >= MC_1_17_1
 		if (blockState.getBlock() instanceof SpawnerBlock)
 		{
 			return ((EntityBlock) blockState.getBlock()).newBlockEntity(blockPos, blockState);
@@ -269,7 +269,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 		ChunkAccess chunk = getChunkAccess(i, j, chunkStatus, bl);
 		if (chunk instanceof LevelChunk)
 		{
-			chunk = new ImposterProtoChunk((LevelChunk) chunk #if POST_MC_1_18_2 , true #endif );
+			chunk = new ImposterProtoChunk((LevelChunk) chunk #if MC_VER >= MC_1_18_2 , true #endif );
 		}
 		return chunk;
 	}
@@ -331,7 +331,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 	
 	private Biome _getBiome(BlockPos pos)
 	{
-		#if POST_MC_1_18_2
+		#if MC_VER >= MC_1_18_2
 		return getBiome(pos).value();
 		#else
 		return getBiome(pos);
@@ -340,7 +340,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 	
 	public int calculateBlockTint(BlockPos blockPos, ColorResolver colorResolver)
 	{
-		#if PRE_MC_1_19_2
+		#if MC_VER < MC_1_19_2
 		int i = (Minecraft.getInstance()).options.biomeBlendRadius;
 		#else
 		int i = (Minecraft.getInstance()).options.biomeBlendRadius().get();

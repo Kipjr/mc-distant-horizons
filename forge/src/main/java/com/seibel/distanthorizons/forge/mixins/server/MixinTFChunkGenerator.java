@@ -3,13 +3,13 @@ package com.seibel.distanthorizons.forge.mixins.server;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import org.spongepowered.asm.mixin.Mixin;
 
-#if MC_1_16_5
+#if MC_VER == MC_1_16_5
 @Mixin(ChunkGenerator.class)
 class MixinTFChunkGenerator 
 {
 	// not currently implemented, attempting to run with the mod enabled in the IDE causes the game to lock up
 }
-#elif PRE_MC_1_17_1
+#elif MC_VER < MC_1_17_1
 
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;

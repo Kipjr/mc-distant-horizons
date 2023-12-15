@@ -16,7 +16,7 @@ public class MixinGameRenderer
 	private static final Logger LOGGER = LogManager.getLogger(MixinGameRenderer.class.getSimpleName());
 	
 	
-	#if POST_MC_1_17_1
+	#if MC_VER >= MC_1_17_1
 	// FIXME: This I think will dup multiple renderStartupEvent calls...
 	@Inject(method = {"reloadShaders", "preloadUiShader"}, at = @At("TAIL"))
 	public void onStartupShaders(CallbackInfo ci)

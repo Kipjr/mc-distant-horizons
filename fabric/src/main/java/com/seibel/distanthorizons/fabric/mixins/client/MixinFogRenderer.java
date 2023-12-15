@@ -35,7 +35,7 @@ import net.minecraft.client.renderer.FogRenderer.FogMode;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-#if PRE_MC_1_17_1
+#if MC_VER < MC_1_17_1
 import net.minecraft.world.level.material.FluidState;
 #else
 import net.minecraft.world.level.material.FogType;
@@ -50,14 +50,14 @@ public class MixinFogRenderer
 	private static final float A_EVEN_LARGER_VALUE = 42069420694206942069.F;
 	
 	@Inject(at = @At("RETURN"), method = "setupFog")
-	#if PRE_MC_1_19_2
+	#if MC_VER < MC_1_19_2
 	private static void disableSetupFog(Camera camera, FogMode fogMode, float f, boolean bl, CallbackInfo callback)
 	{
 	#else
 	private static void disableSetupFog(Camera camera, FogMode fogMode, float f, boolean bl, float g, CallbackInfo callback)
 	{
 	#endif
-		#if PRE_MC_1_17_1
+		#if MC_VER < MC_1_17_1
 		FluidState fluidState = camera.getFluidInCamera();
 		boolean cameraNotInFluid = fluidState.isEmpty();
 		#else
@@ -71,7 +71,7 @@ public class MixinFogRenderer
 				&& !SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class).isFogStateSpecial()
 				&& Config.Client.Advanced.Graphics.Fog.disableVanillaFog.get())
 		{
-			#if PRE_MC_1_17_1
+			#if MC_VER < MC_1_17_1
 			RenderSystem.fogStart(A_REALLY_REALLY_BIG_VALUE);
 			RenderSystem.fogEnd(A_EVEN_LARGER_VALUE);
 			#else

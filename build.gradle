@@ -10,11 +10,11 @@ plugins {
     // Manifold preprocessor
     id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
 
-    // Provides mc libraries to core
+//    // Provides mc libraries to core
 //    id "org.spongepowered.gradle.vanilla" version '0.2.1-SNAPSHOT' apply false
 
     // Architectury is used here only as a replacement for forge's own loom
-    id "dev.architectury.loom" version "1.1.+" apply false
+    id "dev.architectury.loom" version "1.4-SNAPSHOT" apply false
 }
 
 /**
@@ -23,55 +23,32 @@ plugins {
  * @param mcVers array of all MC versions
  * @param mcIndex array index of the currently active MC version
  */
-def writeBuildGradlePredefine(List<String> mcVers, int mcIndex) {
-    ArrayList<String> redefineList = new ArrayList<String>()
-
-    for (int i = 0; i < mcVers.size(); i++) {
-        String mcStr = mcVers[i].replace(".", "_")
-        
-        if (mcIndex < i) {
-            // exclusive before
-            // FIXME doesn't function correctly for 1.16.5 (IE the first item in the list)
-            redefineList.add("PRE_MC_" + mcStr)
-        }
-        if (mcIndex <= i) {
-            // inclusive before
-            redefineList.add("PRE_AND_MC_" + mcStr)
-        }
-        
-        if (mcIndex == i) {
-            // exact
-            redefineList.add("MC_" + mcStr)
-        }
-        
-        if (mcIndex > i) {
-            // inclusive after
-            redefineList.add("POST_AND_MC_" + mcStr)
-        }
-        if (mcIndex >= i) {
-            // exclusive after
-            redefineList.add("POST_MC_" + mcStr)
-        }
-    }
-
+def writeBuildGradlePredefine(List<String> mcVers, int mcIndex) 
+{
     // Build the list of preprocessors to use
-    StringBuilder sb = new StringBuilder()
+    StringBuilder sb = new StringBuilder();
 
-    sb.append("# DON'T TOUCH THIS FILE, This is handled by the build script\n")
+    sb.append("# DON'T TOUCH THIS FILE, This is handled by the build script\n");
+    
+    
+    for (int i = 0; i < mcVers.size(); i++) 
+    {
+        String verStr = mcVers[i].replace(".", "_");
+        sb.append("MC_" + verStr + "=" + i.toString() + "\n");
+        
+        if (mcIndex == i)
+            sb.append("MC_VER=" + i.toString() + "\n");
+    }
+    
 
     // Check if this is a development build
-    if (mod_version.toLowerCase().contains("dev")) {
+    if (mod_version.toLowerCase().contains("dev")) 
+    {
         // WARNING: only use this for logging, we don't want to have confusion
         // when a method doesn't work correctly in the release build.
-        sb.append("DEV_BUILD")
-        sb.append("=\n")
+        sb.append("DEV_BUILD=\n");
     }
-
-    // Build the MC version preprocessors
-    for (String redefinedVersion : redefineList) {
-        sb.append(redefinedVersion)
-        sb.append("=\n")
-    }
+    
     new File(projectDir, "build.properties").text = sb.toString()
 }
 

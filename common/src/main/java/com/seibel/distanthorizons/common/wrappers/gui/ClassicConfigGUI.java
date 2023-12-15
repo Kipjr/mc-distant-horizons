@@ -35,7 +35,7 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-#if PRE_MC_1_20_1
+#if MC_VER < MC_1_20_1
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.GuiComponent;
 #else
@@ -49,7 +49,7 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.resources.language.I18n;    // translation
-#if POST_MC_1_17_1
+#if MC_VER >= MC_1_17_1
 import net.minecraft.client.gui.narration.NarratableEntry;
 #endif
 import net.minecraft.resources.ResourceLocation;
@@ -278,7 +278,7 @@ public class ClassicConfigGUI
 				Objects.requireNonNull(minecraft).setScreen(parent);
 			}));
 			
-			this.list = new ConfigListWidget(this.minecraft, this.width * 2, this.height, 32, this.height - 32, 25);
+			this.list = new ConfigListWidget(this.minecraft, this.width * 2, this.height, 32, 32, 25);
 			if (this.minecraft != null && this.minecraft.level != null)
 				this.list.setRenderBackground(false);
 			
@@ -379,13 +379,13 @@ public class ClassicConfigGUI
 		}
 		
 		@Override
-        #if PRE_MC_1_20_1
+        #if MC_VER < MC_1_20_1
 		public void render(PoseStack matrices, int mouseX, int mouseY, float delta)
         #else
 		public void render(GuiGraphics matrices, int mouseX, int mouseY, float delta)
 		#endif
 		{
-			#if PRE_MC_1_20_2 // 1.20.2 now enables this by default in the `this.list.render` function
+			#if MC_VER < MC_1_20_2 // 1.20.2 now enables this by default in the `this.list.render` function
 			this.renderBackground(matrices); // Renders background
 			#else
 			super.render(matrices, mouseX, mouseY, delta);
@@ -441,7 +441,7 @@ public class ClassicConfigGUI
 					}
 				}
 			}
-			#if PRE_MC_1_20_2
+			#if MC_VER < MC_1_20_2
 			super.render(matrices, mouseX, mouseY, delta);
 			#endif
 		}
@@ -537,9 +537,13 @@ public class ClassicConfigGUI
 	{
 		Font textRenderer;
 		
-		public ConfigListWidget(Minecraft minecraftClient, int i, int j, int k, int l, int m)
+		public ConfigListWidget(Minecraft minecraftClient, int canvasWidth, int canvasHeight, int topMargin, int botMargin, int itemSpacing)
 		{
-			super(minecraftClient, i, j, k, l, m);
+			#if MC_VER < MC_1_20_4
+			super(minecraftClient, canvasWidth, canvasHeight, topMargin, canvasHeight - botMargin, itemSpacing);
+			#else
+			super(minecraftClient, canvasWidth, canvasHeight - (topMargin + botMargin), topMargin, itemSpacing);
+			#endif
 			this.centerListVertically = false;
 			textRenderer = minecraftClient.font;
 		}
@@ -601,7 +605,7 @@ public class ClassicConfigGUI
 		}
 		
 		@Override
-        #if PRE_MC_1_20_1
+        #if MC_VER < MC_1_20_1
 		public void render(PoseStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
         #else
 		public void render(GuiGraphics matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
@@ -623,7 +627,7 @@ public class ClassicConfigGUI
 				indexButton.render(matrices, mouseX, mouseY, tickDelta);
 			}
 			if (text != null && (!text.getString().contains("spacer") || button != null))
-                #if PRE_MC_1_20_1
+                #if MC_VER < MC_1_20_1
 				GuiComponent.drawString(matrices, textRenderer, text, 12, y + 5, 0xFFFFFF);
 				#else
 				matrices.drawString(textRenderer, text, 12, y + 5, 0xFFFFFF);
@@ -638,7 +642,7 @@ public class ClassicConfigGUI
 		
 		// Only for 1.17 and over
 		// Remove in 1.16 and below
-		#if POST_MC_1_17_1
+		#if MC_VER >= MC_1_17_1
 		@Override
 		public List<? extends NarratableEntry> narratables()
 		{

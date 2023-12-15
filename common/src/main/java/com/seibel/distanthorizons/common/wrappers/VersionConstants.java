@@ -59,7 +59,7 @@ public class VersionConstants implements IVersionConstants
 	@Override
 	public String getMinecraftVersion()
 	{
-		#if PRE_MC_1_19_2
+		#if MC_VER < MC_1_19_2
 		return Minecraft.getInstance().getGame().getVersion().getId();
 		#else
 		return SharedConstants.getCurrentVersion().getId();

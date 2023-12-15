@@ -34,17 +34,17 @@ import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
-#if POST_MC_1_17_1
+#if MC_VER >= MC_1_17_1
 import net.minecraft.client.renderer.GameRenderer;
 #endif
-#if PRE_MC_1_20_1
+#if MC_VER < MC_1_20_1
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 #else
 import net.minecraft.client.gui.GuiGraphics;
 #endif
 
-#if PRE_MC_1_20_2
+#if MC_VER < MC_1_20_2
 public class TexturedButtonWidget extends ImageButton
 #else
 public class TexturedButtonWidget extends Button
@@ -52,7 +52,7 @@ public class TexturedButtonWidget extends Button
 {
 	public final boolean renderBackground;
 	
-	#if POST_MC_1_20_2
+	#if MC_VER >= MC_1_20_2
 	private final int u;
 	private final int v;
 	private final int hoveredVOffset;
@@ -69,7 +69,7 @@ public class TexturedButtonWidget extends Button
 	}
 	public TexturedButtonWidget(int x, int y, int width, int height, int u, int v, int hoveredVOffset, ResourceLocation texture, int textureWidth, int textureHeight, OnPress pressAction, Component text, boolean renderBackground)
 	{
-		#if PRE_MC_1_20_2
+		#if MC_VER < MC_1_20_2
 		super(x, y, width, height, u, v, hoveredVOffset, texture, textureWidth, textureHeight, pressAction, text);
 		#else
 		// We don't pass on the text option as otherwise it will render (we normally pass it for narration)
@@ -89,13 +89,13 @@ public class TexturedButtonWidget extends Button
 		this.renderBackground = renderBackground;
 	}
 	
-	#if PRE_MC_1_20_2
-	#if PRE_MC_1_19_4
+	#if MC_VER < MC_1_20_2
+	#if MC_VER < MC_1_19_4
 	@Override
 	public void renderButton(PoseStack matrices, int mouseX, int mouseY, float delta) {
 		if (this.renderBackground) // Renders the background of the button
 		{
-			#if PRE_MC_1_17_1
+			#if MC_VER < MC_1_17_1
 			Minecraft.getInstance().getTextureManager().bind(WIDGETS_LOCATION);
 			RenderSystem.color4f(1.0F, 1.0F, 1.0F, this.alpha);
 			#else
@@ -108,7 +108,7 @@ public class TexturedButtonWidget extends Button
 			RenderSystem.enableBlend();
 			RenderSystem.defaultBlendFunc();
 			RenderSystem.enableDepthTest();
-			#if PRE_MC_1_19_4
+			#if MC_VER < MC_1_19_4
 			this.blit(matrices, this.x, this.y, 0, 46 + i * 20, this.width / 2, this.height);
 			this.blit(matrices, this.x + this.width / 2, this.y, 200 - this.width / 2, 46 + i * 20, this.width / 2, this.height);
 			#else
@@ -120,7 +120,7 @@ public class TexturedButtonWidget extends Button
 		super.renderButton(matrices, mouseX, mouseY, delta);
 	}
 	#else
-    #if PRE_MC_1_20_1
+    #if MC_VER < MC_1_20_1
 	@Override
     public void renderWidget(PoseStack matrices, int mouseX, int mouseY, float delta)
     {
@@ -138,7 +138,7 @@ public class TexturedButtonWidget extends Button
 			if (!this.active)           i = 0;
 			else if (this.isHovered)    i = 2;
 
-            #if PRE_MC_1_20_1
+            #if MC_VER < MC_1_20_1
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             RenderSystem.enableDepthTest();

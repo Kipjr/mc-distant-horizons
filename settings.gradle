@@ -23,6 +23,9 @@ pluginManagement {
         }
         mavenCentral()
         gradlePluginPortal()
+        
+        // Not needed, but useful for debugging gradle plugins
+        mavenLocal()
     }
 }
 

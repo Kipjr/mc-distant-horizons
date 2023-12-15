@@ -199,9 +199,9 @@ public class FabricClientProxy
 			{
 				float[] matrixFloatArray = SeamlessOverdraw.overwriteMinecraftNearFarClipPlanes(renderContext.projectionMatrix(), renderContext.tickDelta());
 				
-				#if MC_1_16_5
+				#if MC_VER == MC_1_16_5
 				SeamlessOverdraw.applyLegacyProjectionMatrix(matrixFloatArray);
-				#elif PRE_MC_1_19_4
+				#elif MC_VER < MC_1_19_4
 				renderContext.projectionMatrix().load(FloatBuffer.wrap(matrixFloatArray));
 				#else
 				renderContext.projectionMatrix().set(matrixFloatArray);

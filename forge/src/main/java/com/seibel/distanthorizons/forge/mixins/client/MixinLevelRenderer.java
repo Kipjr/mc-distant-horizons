@@ -20,7 +20,7 @@
 package com.seibel.distanthorizons.forge.mixins.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-#if PRE_MC_1_19_4
+#if MC_VER < MC_1_19_4
 import com.mojang.math.Matrix4f;
 #else
 import net.minecraft.client.Camera;
@@ -52,7 +52,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.FloatBuffer;
 
-#if PRE_MC_1_17_1
+#if MC_VER < MC_1_17_1
 import org.lwjgl.opengl.GL15;
 #endif
 
@@ -84,7 +84,7 @@ public class MixinLevelRenderer
 		throw new NullPointerException("Null cannot be cast to non-null type.");
 	}
 	
-	#if PRE_MC_1_17_1
+	#if MC_VER < MC_1_17_1
 	@Inject(at = @At("RETURN"), method = "renderSky(Lcom/mojang/blaze3d/vertex/PoseStack;F)V")
 	private void renderSky(PoseStack matrixStackIn, float partialTicks, CallbackInfo callback)
 	#else
@@ -99,17 +99,17 @@ public class MixinLevelRenderer
 	
 	
 	// TODO: Can we move this to forge's client proxy similarly to how fabric does it
-	#if PRE_MC_1_17_1
+	#if MC_VER < MC_1_17_1
     @Inject(at = @At("HEAD"),
 			method = "renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDD)V",
 			cancellable = true)
 	private void renderChunkLayer(RenderType renderType, PoseStack matrixStackIn, double xIn, double yIn, double zIn, CallbackInfo callback)
-	#elif PRE_MC_1_19_4
+	#elif MC_VER < MC_1_19_4
 	@Inject(at = @At("HEAD"),
 			method = "renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V",
 			cancellable = true)
 	private void renderChunkLayer(RenderType renderType, PoseStack modelViewMatrixStack, double cameraXBlockPos, double cameraYBlockPos, double cameraZBlockPos, Matrix4f projectionMatrix, CallbackInfo callback)
-	#elif PRE_MC_1_20_2
+	#elif MC_VER < MC_1_20_2
 	@Inject(at = @At("HEAD"),
 			method = "renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V",
 			cancellable = true)
@@ -122,7 +122,7 @@ public class MixinLevelRenderer
     #endif
 	{
 		// get MC's model view and projection matrices
-		#if MC_1_16_5
+		#if MC_VER == MC_1_16_5
 		// get the matrices from the OpenGL fixed pipeline
 		float[] mcProjMatrixRaw = new float[16];
 		GL15.glGetFloatv(GL15.GL_PROJECTION_MATRIX, mcProjMatrixRaw);
@@ -149,9 +149,9 @@ public class MixinLevelRenderer
 			{
 				float[] matrixFloatArray = SeamlessOverdraw.overwriteMinecraftNearFarClipPlanes(mcProjectionMatrix, previousPartialTicks);
 				
-				#if MC_1_16_5
+				#if MC_VER == MC_1_16_5
 				SeamlessOverdraw.applyLegacyProjectionMatrix(matrixFloatArray);
-				#elif PRE_MC_1_19_4
+				#elif MC_VER < MC_1_19_4
 				projectionMatrix.load(FloatBuffer.wrap(matrixFloatArray));
 				#else
 				projectionMatrix.set(matrixFloatArray);
@@ -165,10 +165,10 @@ public class MixinLevelRenderer
 		}
 	}
 	
-	#if PRE_MC_1_19_4
+	#if MC_VER < MC_1_19_4
 	@Inject(at = @At(value = "TAIL", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;runUpdates(IZZ)I"), method = "renderLevel")
 	public void callAfterRunUpdates(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci)
-	#elif PRE_MC_1_20_1
+	#elif MC_VER < MC_1_20_1
 	@Inject(at = @At(value = "TAIL", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;runUpdates(IZZ)I"), method = "renderLevel")
 	public void callAfterRunUpdates(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci)
 	#else

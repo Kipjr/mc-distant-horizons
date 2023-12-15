@@ -26,7 +26,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import net.minecraft.client.gui.screens.OptionsScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-#if PRE_MC_1_19_2
+#if MC_VER < MC_1_19_2
 import net.minecraft.network.chat.TranslatableComponent;
 #endif
 import net.minecraft.resources.ResourceLocation;
@@ -57,7 +57,7 @@ public class MixinOptionsScreen extends Screen
 	private void lodconfig$init(CallbackInfo ci)
 	{
 		if (Config.Client.optionsButton.get())
-			this. #if PRE_MC_1_17_1 addButton #else addRenderableWidget #endif
+			this. #if MC_VER < MC_1_17_1 addButton #else addRenderableWidget #endif
 					(new TexturedButtonWidget(
 							// Where the button is on the screen
 							this.width / 2 - 180, this.height / 6 - 12,
@@ -71,7 +71,7 @@ public class MixinOptionsScreen extends Screen
 							// For now it goes to the client option by default
 							(buttonWidget) -> Objects.requireNonNull(minecraft).setScreen(GetConfigScreen.getScreen(this)),
 							// Add a title to the utton
-                #if PRE_MC_1_19_2
+                #if MC_VER < MC_1_19_2
 							new TranslatableComponent(ModInfo.ID + ".title")));
                 #else
 							Component.translatable(ModInfo.ID + ".title")));

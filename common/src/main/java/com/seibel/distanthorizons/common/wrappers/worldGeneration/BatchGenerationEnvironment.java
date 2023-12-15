@@ -56,7 +56,7 @@ import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepStruc
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepStructureStart;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepSurface;
 
-#if POST_MC_1_19_4
+#if MC_VER >= MC_1_19_4
 import net.minecraft.core.registries.Registries;
 #else
 import net.minecraft.core.Registry;
@@ -365,9 +365,9 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 	private static ProtoChunk EmptyChunk(ServerLevel level, ChunkPos chunkPos)
 	{
 		return new ProtoChunk(chunkPos, UpgradeData.EMPTY
-					#if POST_MC_1_17_1 , level #endif
-					#if POST_MC_1_18_2 , level.registryAccess().registryOrThrow(
-						#if PRE_MC_1_19_4
+					#if MC_VER >= MC_1_17_1 , level #endif
+					#if MC_VER >= MC_1_18_2 , level.registryAccess().registryOrThrow(
+						#if MC_VER < MC_1_19_4
 				Registry.BIOME_REGISTRY
 						#else
 				Registries.BIOME
@@ -463,8 +463,8 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 				if (target == null)
 				{
 					target = new ProtoChunk(chunkPos, UpgradeData.EMPTY
-							#if POST_MC_1_17_1 , params.level #endif
-							#if POST_MC_1_18_2 , params.biomes, null #endif
+							#if MC_VER >= MC_1_17_1 , params.level #endif
+							#if MC_VER >= MC_1_18_2 , params.biomes, null #endif
 					);
 				}
 				return target;
@@ -507,7 +507,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 				ChunkAccess target = wrappedChunk.getChunk();
 				if (target instanceof LevelChunk)
 				{
-					#if MC_1_16_5 || MC_1_17_1
+					#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 					((LevelChunk) target).setLoaded(true);
 					#else
 					((LevelChunk) target).loaded = true;
@@ -520,7 +520,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 				}
 				
 				boolean isFull = target.getStatus() == ChunkStatus.FULL || target instanceof LevelChunk;
-				#if POST_MC_1_18_2
+				#if MC_VER >= MC_1_18_2
 				boolean isPartial = target.isOldNoiseGeneration();
 				#endif
 				if (isFull)
@@ -528,7 +528,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 					LOAD_LOGGER.info("Detected full existing chunk at {}", target.getPos());
 					genEvent.resultConsumer.accept(wrappedChunk);
 				}
-				#if POST_MC_1_18_2
+				#if MC_VER >= MC_1_18_2
 				else if (isPartial)
 				{
 					LOAD_LOGGER.info("Detected old existing chunk at {}", target.getPos());

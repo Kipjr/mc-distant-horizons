@@ -39,7 +39,7 @@ public class DummyLightEngine extends LevelLightEngine
 	}
 	
 	
-	#if PRE_MC_1_20_1
+	#if MC_VER < MC_1_20_1
 	@Override
 	public void onBlockEmissionIncrease(BlockPos blockPos, int i) { }
 	
@@ -63,7 +63,7 @@ public class DummyLightEngine extends LevelLightEngine
     #endif
 	
 	@Override
-	public void queueSectionData(LightLayer lightLayer, SectionPos sectionPos, @Nullable DataLayer dataLayer #if PRE_MC_1_20_1 , boolean bl #endif ) { }
+	public void queueSectionData(LightLayer lightLayer, SectionPos sectionPos, @Nullable DataLayer dataLayer #if MC_VER < MC_1_20_1 , boolean bl #endif ) { }
 	
 	@Override
 	public void checkBlock(BlockPos blockPos) { }
@@ -87,7 +87,7 @@ public class DummyLightEngine extends LevelLightEngine
 	@Override
 	public void retainData(ChunkPos chunkPos, boolean bl) { }
 	
-	#if POST_MC_1_17_1
+	#if MC_VER >= MC_1_17_1
 	@Override
 	public int getLightSectionCount() { throw new UnsupportedOperationException("This should never be used!"); }
 	@Override

@@ -29,7 +29,7 @@ import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.material.FluidState;
 import org.jetbrains.annotations.Nullable;
 
-#if POST_MC_1_18_2
+#if MC_VER >= MC_1_18_2
 import net.minecraft.core.Holder;
 #endif
 
@@ -46,9 +46,9 @@ public class TintWithoutLevelOverrider implements BlockAndTintGetter
 	{
 		return colorResolver.getColor(_unwrap(biome.biome), blockPos.getX(), blockPos.getZ());
 	}
-	private Biome _unwrap(#if POST_MC_1_18_2 Holder<Biome> #else Biome #endif biome)
+	private Biome _unwrap(#if MC_VER >= MC_1_18_2 Holder<Biome> #else Biome #endif biome)
 	{
-		#if POST_MC_1_18_2
+		#if MC_VER >= MC_1_18_2
 		return biome.value();
 		#else
 		return biome;
@@ -84,7 +84,7 @@ public class TintWithoutLevelOverrider implements BlockAndTintGetter
 	}
 	
 	
-	#if MC_1_17_1 || POST_MC_1_18_2
+	#if MC_VER >= MC_1_17_1
 	@Override
 	public int getHeight()
 	{

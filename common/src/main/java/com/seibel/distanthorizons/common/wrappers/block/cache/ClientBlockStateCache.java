@@ -38,7 +38,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.FlowerBlock;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.RotatedPillarBlock;
-#if POST_MC_1_19_2
+#if MC_VER >= MC_1_19_2
 import net.minecraft.util.RandomSource;
 #else
 import java.util.Random;
@@ -60,7 +60,7 @@ public class ClientBlockStateCache
 	private static final HashSet<BlockState> BLOCK_STATES_THAT_NEED_LEVEL = new HashSet<>();
 	private static final HashSet<BlockState> BROKEN_BLOCK_STATES = new HashSet<>();
 	
-	#if PRE_MC_1_19_2
+	#if MC_VER < MC_1_19_2
 	public static final Random random = new Random(0);
 	#else
 	public static final RandomSource random = RandomSource.create();
@@ -91,18 +91,20 @@ public class ClientBlockStateCache
 	{
 		Default,
 		Flower,
-		Leaves;
+		Leaves,
+		Chisel;
 		static ColorMode getColorMode(Block b)
 		{
 			if (b instanceof LeavesBlock) return Leaves;
 			if (b instanceof FlowerBlock) return Flower;
+			if (b.toString().equals("Block{chiselsandbits:chiseled}")) return Chisel;
 			return Default;
 		}
 	}
 	
 	private static int getWidth(TextureAtlasSprite texture)
 	{
-        #if PRE_MC_1_19_4
+        #if MC_VER < MC_1_19_4
 		return texture.getWidth();
         #else
 		return texture.contents().width();
@@ -111,7 +113,7 @@ public class ClientBlockStateCache
 	
 	private static int getHeight(TextureAtlasSprite texture)
 	{
-        #if PRE_MC_1_19_4
+        #if MC_VER < MC_1_19_4
 		return texture.getHeight();
         #else
 		return texture.contents().height();
@@ -160,7 +162,14 @@ public class ClientBlockStateCache
 					{
 						scale = FLOWER_COLOR_SCALE;
 					}
-					
+					//make Chiseled block not render
+					else if (colorMode == ColorMode.Chisel)
+					{
+						r = 0;
+						g = 0;
+						b = 0;
+						a = 0;
+					}
 					count += scale;
 					alpha += a * a * scale;
 					red += r * r * scale;
@@ -211,7 +220,7 @@ public class ClientBlockStateCache
 				needShade = quads.get(0).isShade();
 				tintIndex = quads.get(0).getTintIndex();
 				baseColor = calculateColorFromTexture(
-                        #if PRE_MC_1_17_1 quads.get(0).sprite,
+                        #if MC_VER < MC_1_17_1 quads.get(0).sprite,
 						#else quads.get(0).getSprite(), #endif
 						ColorMode.getColorMode(blockState.getBlock()));
 			}

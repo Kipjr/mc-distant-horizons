@@ -47,7 +47,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-#if PRE_MC_1_19_2
+#if MC_VER < MC_1_19_2
 import net.minecraft.network.chat.TextComponent;
 #endif
 import net.minecraft.server.level.ServerLevel;
@@ -197,7 +197,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Override
 	public DhChunkPos getPlayerChunkPos()
 	{
-        #if PRE_MC_1_17_1
+        #if MC_VER < MC_1_17_1
         ChunkPos playerPos = new ChunkPos(getPlayer().blockPosition());
         #else
 		ChunkPos playerPos = getPlayer().chunkPosition();
@@ -262,7 +262,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	{
 		LocalPlayer p = getPlayer();
 		if (p == null) return;
-        #if PRE_MC_1_19_2
+        #if MC_VER < MC_1_19_2
 		p.sendMessage(new TextComponent(string), getPlayer().getUUID());
         #else
 		p.sendSystemMessage(net.minecraft.network.chat.Component.translatable(string));
@@ -282,7 +282,11 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	{
 		LOGGER.error(ModInfo.READABLE_NAME + " had the following error: [" + errorMessage + "]. Crashing Minecraft...", exception);
 		CrashReport report = new CrashReport(errorMessage, exception);
+		#if MC_VER < MC_1_20_4
 		Minecraft.crash(report);
+		#else
+		Minecraft.getInstance().delayCrash(report);
+		#endif
 	}
 	
 	@Override

@@ -14,7 +14,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraftforge.event.TickEvent;
-#if PRE_MC_1_19_2
+#if MC_VER < MC_1_19_2
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 #else
@@ -23,10 +23,10 @@ import net.minecraftforge.event.level.LevelEvent;
 #endif
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-#if MC_1_16_5
+#if MC_VER == MC_1_16_5
 import net.minecraftforge.fml.event.server.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.event.server.FMLServerStoppingEvent;
-#elif MC_1_17_1
+#elif MC_VER == MC_1_17_1
 import net.minecraftforge.fmlserverevents.FMLServerAboutToStartEvent;
 import net.minecraftforge.fmlserverevents.FMLServerStoppingEvent;
 #else
@@ -41,7 +41,7 @@ import java.util.function.Supplier;
 
 public class ForgeServerProxy
 {
-	#if PRE_MC_1_19_2
+	#if MC_VER < MC_1_19_2
 	private static LevelAccessor GetEventLevel(WorldEvent e) { return e.getWorld(); }
 	#else
 	private static LevelAccessor GetEventLevel(LevelEvent e) { return e.getLevel(); }
@@ -81,21 +81,21 @@ public class ForgeServerProxy
 	
 	// ServerWorldLoadEvent
 	@SubscribeEvent
-	public void dedicatedWorldLoadEvent(#if MC_1_16_5 || MC_1_17_1 FMLServerAboutToStartEvent #else ServerAboutToStartEvent #endif event)
+	public void dedicatedWorldLoadEvent(#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1 FMLServerAboutToStartEvent #else ServerAboutToStartEvent #endif event)
 	{
 		this.serverApi.serverLoadEvent(this.isDedicated);
 	}
 	
 	// ServerWorldUnloadEvent
 	@SubscribeEvent
-	public void serverWorldUnloadEvent(#if MC_1_16_5 || MC_1_17_1 FMLServerStoppingEvent #else ServerStoppingEvent #endif event)
+	public void serverWorldUnloadEvent(#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1 FMLServerStoppingEvent #else ServerStoppingEvent #endif event)
 	{
 		this.serverApi.serverUnloadEvent();
 	}
 	
 	// ServerLevelLoadEvent
 	@SubscribeEvent
-	#if PRE_MC_1_19_2
+	#if MC_VER < MC_1_19_2
 	public void serverLevelLoadEvent(WorldEvent.Load event)
 	#else
 	public void serverLevelLoadEvent(LevelEvent.Load event)
@@ -109,7 +109,7 @@ public class ForgeServerProxy
 	
 	// ServerLevelUnloadEvent
 	@SubscribeEvent
-	#if PRE_MC_1_19_2
+	#if MC_VER < MC_1_19_2
 	public void serverLevelUnloadEvent(WorldEvent.Unload event)
 	#else
 	public void serverLevelUnloadEvent(LevelEvent.Unload event)
