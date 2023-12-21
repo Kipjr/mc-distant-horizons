@@ -19,7 +19,11 @@
 
 package com.seibel.distanthorizons.common.wrappers;
 
+import com.seibel.distanthorizons.api.interfaces.block.IDhApiBiomeWrapper;
+import com.seibel.distanthorizons.api.interfaces.block.IDhApiBlockStateWrapper;
 import com.seibel.distanthorizons.api.interfaces.override.worldGenerator.IDhApiWorldGenerator;
+import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
+import com.seibel.distanthorizons.api.interfaces.factories.IDhApiWrapperFactory;
 import com.seibel.distanthorizons.common.wrappers.block.BiomeWrapper;
 import com.seibel.distanthorizons.common.wrappers.block.BlockStateWrapper;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
@@ -35,9 +39,12 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.worldGeneration.AbstractBatchGenerationEnvironmentWrapper;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 
 import java.io.IOException;
@@ -55,6 +62,9 @@ public class WrapperFactory implements IWrapperFactory
 	
 	
 	
+	//==============//
+	// core methods //
+	//==============//
 	
 	@Override
 	public AbstractBatchGenerationEnvironmentWrapper createBatchGenerator(IDhLevel targetLevel)
@@ -106,7 +116,7 @@ public class WrapperFactory implements IWrapperFactory
 			}
 		}
 		
-		#if MC_VER // Always true
+		#if MC_VER <= MC_1_20_4
 		else if (objectArray.length == 2)
 		{
 			// correct number of parameters from the API
@@ -145,7 +155,7 @@ public class WrapperFactory implements IWrapperFactory
 		#else
 			// Intentional compiler error to bring attention to the missing wrapper function.
 			// If you need to work on an unimplemented version but don't have the ability to implement this yet
-			// you can comment it out, but please don't commit it. Someone will have to implement it .
+			// you can comment it out, but please don't commit it. Someone will have to implement it.
 
 			// After implementing the new version please read this method's javadocs for instructions
 			// on what other locations also need to be updated, the DhAPI specifically needs to
@@ -159,24 +169,165 @@ public class WrapperFactory implements IWrapperFactory
 	 */
 	private static String createChunkWrapperErrorMessage(Object[] objectArray)
 	{
-		StringBuilder message = new StringBuilder(
-				"Chunk wrapper creation failed. \n" +
-						"Expected parameters: \n");
+		String[] expectedClassNames;
 		
-		#if MC_VER // Always true
-		message.append("[" + ChunkAccess.class.getName() + "], \n");
-		message.append("[ServerLevel] or [ClientLevel]. \n"); // Classes are not referenced by names to avoid exception when one is missing
+		#if MC_VER <= MC_1_20_4
+		expectedClassNames = new String[] 
+		{
+			ChunkAccess.class.getName(),
+			"[ServerLevel] or [ClientLevel]" // Classes are not referenced by names to avoid exception when one of them is missing
+		};
 		#else
 			// See preprocessor comment in createChunkWrapper() for full documentation
 			not implemented for this version of Minecraft!
 		#endif
 		
+		return createWrapperErrorMessage("Chunk wrapper", expectedClassNames, objectArray);
+	}
+	
+	
+	
+	//=============//
+	// api methods //
+	//=============//
+	
+	// documentation should be in the API interface
+	
+	public IDhApiBiomeWrapper getBiomeWrapper(Object[] objectArray, IDhApiLevelWrapper levelWrapper) 
+	{
+		// confirm the API level wrapper is also a Core wrapper 
+		if (!(levelWrapper instanceof ILevelWrapper))
+		{
+			throw new ClassCastException("Unable to cast... only DH provided IDhApiLevelWrapper's can be used."); // TODO
+		}
+		ILevelWrapper coreLevelWrapper = (ILevelWrapper) levelWrapper;
+		
+		
+		
+		#if MC_VER < MC_1_20_4
+		if (objectArray.length != 1)
+		{
+			throw new ClassCastException(createBiomeWrapperErrorMessage(objectArray));
+		}
+		#endif
+		
+		#if MC_VER < MC_1_18_2
+		if (!(objectArray[0] instanceof Biome))
+		{
+			throw new ClassCastException(createBiomeWrapperErrorMessage(objectArray));
+		}
+		
+		Biome biome = (Biome) objectArray[0];
+		return BiomeWrapper.getBiomeWrapper(biome, coreLevelWrapper);
+		#elif MC_VER <= MC_1_20_4
+		if (!(objectArray[0] instanceof Holder) || !(((Holder<?>) objectArray[0]).value() instanceof Biome))
+		{
+			throw new ClassCastException(createBiomeWrapperErrorMessage(objectArray));
+		}
+		
+		Holder<Biome> biomeHolder = (Holder<Biome>) objectArray[0];
+		return BiomeWrapper.getBiomeWrapper(biomeHolder, coreLevelWrapper);
+		#else
+		// See preprocessor comment in createChunkWrapper() for full documentation (not a typo, check createChunkWrapper()'s else statement for full documentation)
+		not implemented for this version of Minecraft!
+		#endif
+	}
+	/**
+	 * Note: when this is updated for different MC versions,
+	 * make sure you also update the documentation in {@link IDhApiWrapperFactory#getBiomeWrapper}.
+	 */
+	private static String createBiomeWrapperErrorMessage(Object[] objectArray)
+	{
+		String[] expectedClassNames;
+		
+		#if MC_VER < MC_1_18_2
+		expectedClassNames = new String[] { Biome.class.getName() };
+		#elif MC_VER <= MC_1_20_4
+		expectedClassNames = new String[] { Holder.class.getName()+"<"+Biome.class.getName()+">" };
+		#else
+			// See preprocessor comment in createChunkWrapper() for full documentation
+			not implemented for this version of Minecraft!
+		#endif
+		
+		return createWrapperErrorMessage("Biome wrapper", expectedClassNames, objectArray);
+	}
+	
+	public IDhApiBlockStateWrapper getBlockStateWrapper(Object[] objectArray, IDhApiLevelWrapper levelWrapper)
+	{
+		// confirm the API level wrapper is also a Core wrapper 
+		if (!(levelWrapper instanceof ILevelWrapper))
+		{
+			throw new ClassCastException("Unable to cast... only DH provided IDhApiLevelWrapper's can be used."); // TODO
+		}
+		ILevelWrapper coreLevelWrapper = (ILevelWrapper) levelWrapper;
+		
+		
+		
+		#if MC_VER <= MC_1_20_4
+		if (objectArray.length != 1)
+		{
+			throw new ClassCastException(createBlockStateWrapperErrorMessage(objectArray));
+		}
+		if (!(objectArray[0] instanceof BlockState))
+		{
+			throw new ClassCastException(createBlockStateWrapperErrorMessage(objectArray));
+		}
+		
+		BlockState blockState = (BlockState) objectArray[0];
+		return BlockStateWrapper.fromBlockState(blockState, coreLevelWrapper);
+		#else
+		// See preprocessor comment in createChunkWrapper() for full documentation (not a typo, check createChunkWrapper()'s else statement for full documentation)
+		not implemented for this version of Minecraft!
+		#endif
+	}
+	/**
+	 * Note: when this is updated for different MC versions,
+	 * make sure you also update the documentation in {@link IDhApiWrapperFactory#getBlockStateWrapper}.
+	 */
+	private static String createBlockStateWrapperErrorMessage(Object[] objectArray)
+	{
+		String[] expectedClassNames;
+		
+		#if MC_VER <= MC_1_20_4
+		expectedClassNames = new String[] { Holder.class.getName()+"<"+Biome.class.getName()+">" };
+		#else
+			// See preprocessor comment in createChunkWrapper() for full documentation
+			not implemented for this version of Minecraft!
+		#endif
+		
+		return createWrapperErrorMessage("BlockState wrapper", expectedClassNames, objectArray);
+	}
+	
+	
+	
+	
+	//================//
+	// helper methods //
+	//================//
+	
+	private static String createWrapperErrorMessage(String wrapperName, String[] expectedClassNames, Object[] objectArray)
+	{
+		// error header
+		StringBuilder message = new StringBuilder(
+				wrapperName + " creation failed. \n" +
+						"Expected object array parameters: \n");
+		
+		
+		// expected parameters
+		for (String expectedClassName : expectedClassNames)
+		{
+			message.append("[").append(expectedClassName).append("], \n");
+		}
+		
+		
+		// given parameters
 		if (objectArray.length != 0)
 		{
 			message.append("Given parameters: ");
 			for (Object obj : objectArray)
 			{
-				message.append("[").append(obj.getClass().getName()).append("], ");
+				String objClassName = (obj != null) ? obj.getClass().getName() : "NULL";
+				message.append("[").append(objClassName).append("], ");
 			}
 		}
 		else
@@ -184,8 +335,8 @@ public class WrapperFactory implements IWrapperFactory
 			message.append(" No parameters given.");
 		}
 		
+		
 		return message.toString();
 	}
-	
 	
 }

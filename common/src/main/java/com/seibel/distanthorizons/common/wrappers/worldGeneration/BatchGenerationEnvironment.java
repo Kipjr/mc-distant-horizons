@@ -648,7 +648,19 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 				
 			int maxSkyLight = this.serverlevel.getServerLevelWrapper().hasSkyLight() ? 15 : 0;
 			
-			ArrayList<IChunkWrapper> iChunkWrapperList = new ArrayList<>(chunksToGenerate);
+			// only light generated chunks,
+			// attempting to light un-generated chunks will cause lighting issues on bordering generated chunks
+			ArrayList<IChunkWrapper> iChunkWrapperList = new ArrayList<>();
+			for (int i = 0; i < chunksToGenerate.size(); i++) // regular for loop since enhanced for loops increase GC pressure slightly
+			{
+				ChunkWrapper chunkWrapper = chunksToGenerate.get(i);
+				if (chunkWrapper.getChunk().getStatus() != ChunkStatus.EMPTY)
+				{
+					iChunkWrapperList.add(chunkWrapper);
+				}
+			}
+			
+			// light each chunk in the list
 			for (int i = 0; i < iChunkWrapperList.size(); i++)
 			{
 				IChunkWrapper centerChunk = iChunkWrapperList.get(i);
