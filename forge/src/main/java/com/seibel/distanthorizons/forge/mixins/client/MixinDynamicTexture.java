@@ -38,14 +38,19 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import javax.annotation.Nullable;
+
 @Mixin(DynamicTexture.class)
-public class MixinDynamicTexture implements ILightTextureMarker
+public abstract class MixinDynamicTexture implements ILightTextureMarker
 {
 	/** Used to prevent accidentally using other dynamic textures as a lightmap */
 	@Unique
 	private boolean isLightTexture = false;
 	
 	@Shadow
+	#if MC_VER >= MC_1_20_4
+			(remap = false)
+	#endif
 	@Final
 	private NativeImage pixels;
 	
