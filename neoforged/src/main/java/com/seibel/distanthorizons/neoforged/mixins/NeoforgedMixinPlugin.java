@@ -1,7 +1,7 @@
-package com.seibel.distanthorizons.forge.mixins;
+package com.seibel.distanthorizons.neoforged.mixins;
 
 import net.minecraft.client.ClientBrandRetriever;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -13,13 +13,13 @@ import java.util.Set;
  * @author coolGi
  * @author cortex
  */
-public class ForgeMixinPlugin implements IMixinConfigPlugin
+public class NeoforgedMixinPlugin implements IMixinConfigPlugin
 {
 	
 	@Override
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName)
 	{
-		if (!ClientBrandRetriever.getClientModName().equals("forge"))
+		if (!ClientBrandRetriever.getClientModName().equals("neoforge"))
 			return false;
 		
 		if (mixinClassName.contains(".mods."))

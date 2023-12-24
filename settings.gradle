@@ -4,10 +4,14 @@ pluginManagement {
             name "Fabric"
             url "https://maven.fabricmc.net/"
         }
-        // TODO: Stop using Forge for versions with NeoForge
+        // TODO: Stop using Forge for versions with NeoForged
         maven {
             name "Forge"
             url "https://maven.minecraftforge.net/"
+        }
+        maven {
+            name "Neoforged"
+            url "https://maven.neoforged.net/releases/"
         }
         maven {
             name "Architectury (Better Forge because regular Forge is annoying)" // TODO: Once we switch to NeoForge, would it's gradle work better? or will it have Forge's problems in it
@@ -84,7 +88,9 @@ project(":api").projectDir = file('coreSubProjects/api')
 include("common")
 // Enables or disables the subprojects depending on whats in the versionProperties/mcVer.properties
 for (loader in ((String) gradle.builds_for).split(",")) {
-    include(loader.strip()) // Strip it in case a space is added before or after the comma
+    def l = loader.strip() // Strip it in case a space is added before or after the comma
+    println "Adding loader " + l
+    include(l)
 }
 //if (gradle.builds_for.contains("fabric") || gradle.builds_for.contains("quilt"))
 //    include("fabricLike")

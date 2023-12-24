@@ -17,7 +17,7 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.forge.mixins.client;
+package com.seibel.distanthorizons.neoforged.mixins.client;
 
 
 import com.mojang.blaze3d.platform.NativeImage;
@@ -48,6 +48,9 @@ public abstract class MixinDynamicTexture implements ILightTextureMarker
 	private boolean isLightTexture = false;
 	
 	@Shadow
+	#if MC_VER >= MC_1_20_4
+			(remap = false)
+	#endif
 	@Final
 	private NativeImage pixels;
 	

@@ -11,6 +11,13 @@ architectury {
     forge()
 }
 
+repositories {
+    maven {
+        name "Neoforged"
+        url "https://maven.neoforged.net/releases/"
+    }
+}
+
 //loom {
 //    forge {
 //        convertAccessWideners.set(true)
@@ -23,27 +30,37 @@ loom {
     silentMojangMappingsLicense() // Shut the licencing warning
     accessWidenerPath = project(":common").file("src/main/resources/${accessWidenerVersion}.distanthorizons.accesswidener")
 
-    forge {
-        convertAccessWideners = true
-        extraAccessWideners.add loom.accessWidenerPath.get().asFile.name
-
-        mixinConfigs = [
-                "DistantHorizons.forge.mixins.json"
-        ]
+    neoForge {
+        // Access wideners are now defined in the `remapJar.atAccessWideners`
+//        convertAccessWideners = true
+//        extraAccessWideners.add loom.accessWidenerPath.get().asFile.name
+        
+        // Mixins are now defined in the `mods.toml`
+//        mixinConfigs = [
+//                "DistantHorizons.mixins.json"
+//        ]
+    }
+    mixin {
+        useLegacyMixinAp = true
+        
+        // Mixins are now defined in the `mods.toml`
+//        mixinConfigs = [
+//                "DistantHorizons.mixins.json"
+//        ]
     }
 
     // "runs" isn't required, but when we do need it then it can be useful
     runs {
         client {
             client()
-            setConfigName("Forge Client")
+            setConfigName("Neoforged Client")
             ideConfigGenerated(true)
             runDir("../run")
 //            vmArgs("-XX:-OmitStackTraceInFastThrow", minecraftMemoryJavaArg)
         }
         server {
             server()
-            setConfigName("Forge Server")
+            setConfigName("Neoforged Server")
             ideConfigGenerated(true)
             runDir("../run")
         }
@@ -54,6 +71,8 @@ remapJar {
     inputFile = shadowJar.archiveFile
     dependsOn shadowJar
 //    classifier null
+
+    atAccessWideners.add("distanthorizons.accesswidener")
 }
 
 
@@ -70,10 +89,13 @@ dependencies {
         officialMojangMappings()
         // Parchment mappings (it adds parameter mappings & javadoc)
         parchment("org.parchmentmc.data:parchment-${rootProject.parchment_version}@zip")
+
+        // Architectury hackishness
+//        it.mappings "dev.architectury:yarn-mappings-patch-forge:${rootProject.mappings_patch}"
     }
 
-    // Forge
-    forge "net.minecraftforge:forge:${rootProject.minecraft_version}-${rootProject.forge_version}"
+    // Neoforged
+    neoForge "net.neoforged:neoforge:${rootProject.neoforged_version}"
 
     // Architectury API
 //    if (minecraft_version == "1.16.5") {

@@ -39,7 +39,9 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.worldGeneration.AbstractBatchGenerationEnvironmentWrapper;
 import net.minecraft.client.multiplayer.ClientLevel;
+#if MC_VER > MC_1_17_1
 import net.minecraft.core.Holder;
+#endif
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
@@ -288,11 +290,13 @@ public class WrapperFactory implements IWrapperFactory
 	{
 		String[] expectedClassNames;
 		
-		#if MC_VER <= MC_1_20_4
+		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
+		expectedClassNames = new String[] { Biome.class.getName() };
+		#elif MC_VER <= MC_1_20_4
 		expectedClassNames = new String[] { Holder.class.getName()+"<"+Biome.class.getName()+">" };
 		#else
-			// See preprocessor comment in createChunkWrapper() for full documentation
-			not implemented for this version of Minecraft!
+		// See preprocessor comment in createChunkWrapper() for full documentation
+		not implemented for this version of Minecraft!
 		#endif
 		
 		return createWrapperErrorMessage("BlockState wrapper", expectedClassNames, objectArray);

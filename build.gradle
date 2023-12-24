@@ -75,6 +75,12 @@ forgix {
         forge {
             jarLocation = "build/libs/DistantHorizons-forge-${rootProject.versionStr}.jar"
         }
+    
+    if (findProject(":neoforged"))
+        custom {
+            projectName = "neoforged"
+            jarLocation = "build/libs/DistantHorizons-neoforged-${rootProject.versionStr}.jar"
+        }
 
     if (findProject(":fabric"))
         fabric {
@@ -105,7 +111,10 @@ subprojects { p ->
 //    apply plugin: "org.spongepowered.gradle.vanilla" // Provides minecraft libraries
 
     // Apply forge's loom
-    if (findProject(":forge") && p == project(":forge"))
+    if (
+            (findProject(":forge") && p == project(":forge")) ||
+            (findProject(":neoforged") && p == project(":neoforged"))
+    )
         apply plugin: "dev.architectury.loom"
 
 
@@ -318,7 +327,7 @@ subprojects { p ->
         def intoTargets = ["$buildDir/resources/main/"] // Location of the built resources folder
 
         // Fix forge version numbering system as it is weird
-        // For whatever reason forge uses [1.18, 1.18.1, 1.18.2) instead of the standard ["1.18", "1.18.1", "1.18.2"] which make more sense
+        // For whatever reason forge uses [1.18, 1.18.1, 1.18.2) instead of the standard ["1.18", "1.18.1", "1.18.2"]
         def compatible_forgemc_versions = "${compatible_minecraft_versions}".replaceAll("\"", "").replaceAll("]", ",)")
 //        println compatible_forgemc_versions
 
@@ -400,7 +409,7 @@ subprojects { p ->
 ////        include "${accessWidenerVersion}.distanthorizons.accesswidener"
 
         // Jank solution to remove all unused accesswideners
-        // The line above would work..., except forge requires the original accesswidener file, meaning we require this jank solution to keep it
+        // The line above would work..., except that (neo)forge (well, mainly architectury) requires the original accesswidener file, meaning we require this jank solution to keep it
         exclude { file ->
             if (file.name.contains(".distanthorizons.accesswidener") && file.name != "${accessWidenerVersion}.distanthorizons.accesswidener") {
                 return true
@@ -446,7 +455,7 @@ subprojects { p ->
 }
 
 allprojects { p ->
-    // Does the same as "p == project(":common") || p == project(":fabric") || p == project(":quilt")  || p == project(":forge")"
+    // Does the same as "p == project(":common") || p == project(":fabric") || p == project(":quilt")  || p == project(":forge") || p == project("WhateverWeAddLaterOn")"
     // Useful later on so we dont have duplicated code
     def isMinecraftSubProject = p != project(":core") && p != project(":api")
 
@@ -461,8 +470,21 @@ allprojects { p ->
     // this is the text that appears at the top of the overview (home) page
     // and is used when bookmarking a page
     javadoc.title = rootProject.mod_name + "-" + project.name
-    
-    
+
+    // Some annotations arent "technically" part of the official java standard,
+    //  so we define it ourself here
+    javadoc {
+        configure( options ) {
+            tags(
+                    'todo:X"',
+                    'apiNote:a:API Note:',
+                    'implSpec:a:Implementation Requirements:',
+                    'implNote:a:Implementation Note:'
+            )
+        }
+    }
+
+
     repositories {
         // The central repo
         mavenCentral()
@@ -527,6 +549,7 @@ allprojects { p ->
                 includeGroup "forge-mod"
             }
         }
+        // TODO: If neoforged is ever needed, should we use that, or call it a forge mod?
     }
 
     // Adds some dependencies that are in vanilla but not in core
