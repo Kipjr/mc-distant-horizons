@@ -36,9 +36,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinLightTexture
 {
 	@Shadow
-	#if MC_VER >= MC_1_20_4
-			(remap = false)
-	#endif
 	@Final
 	private DynamicTexture lightTexture;
 	

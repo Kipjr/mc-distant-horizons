@@ -74,9 +74,6 @@ import org.lwjgl.opengl.GL15;
 public class MixinLevelRenderer
 {
 	@Shadow
-	#if MC_VER >= MC_1_20_4
-			(remap = false)
-	#endif
 	private ClientLevel level;
 	@Unique
 	private static float previousPartialTicks = 0;
