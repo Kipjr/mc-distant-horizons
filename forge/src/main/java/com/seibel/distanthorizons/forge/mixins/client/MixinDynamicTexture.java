@@ -48,7 +48,7 @@ public abstract class MixinDynamicTexture implements ILightTextureMarker
 	private boolean isLightTexture = false;
 	
 	@Shadow
-	#if POST_MC_1_20_4
+	#if MC_VER >= MC_1_20_4
 			(remap = false)
 	#endif
 	@Final
