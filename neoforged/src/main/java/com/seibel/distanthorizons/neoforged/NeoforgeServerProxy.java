@@ -2,16 +2,13 @@ package com.seibel.distanthorizons.neoforged;
 
 import com.seibel.distanthorizons.common.util.ProxyUtil;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
-import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
 import com.seibel.distanthorizons.core.api.internal.ServerApi;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
@@ -26,7 +23,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.Supplier;
 
-public class ForgeServerProxy
+public class NeoforgeServerProxy
 {
 	private static LevelAccessor GetEventLevel(LevelEvent e) { return e.getLevel(); }
 	
@@ -40,7 +37,7 @@ public class ForgeServerProxy
 	// constructor //
 	//=============//
 	
-	public ForgeServerProxy(boolean isDedicated)
+	public NeoforgeServerProxy(boolean isDedicated)
 	{
 		this.isDedicated = isDedicated;
 		isGenerationThreadChecker = BatchGenerationEnvironment::isCurrentThreadDistantGeneratorThread;

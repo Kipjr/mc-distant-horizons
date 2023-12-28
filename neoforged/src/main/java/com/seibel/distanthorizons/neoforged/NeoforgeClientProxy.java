@@ -64,7 +64,7 @@ import org.lwjgl.opengl.GL32;
  * @author James_Seibel
  * @version 2023-7-27
  */
-public class ForgeClientProxy
+public class NeoforgeClientProxy
 {
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();

@@ -33,7 +33,7 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IOptifineAccessor;
-import com.seibel.distanthorizons.neoforged.wrappers.ForgeDependencySetup;
+import com.seibel.distanthorizons.neoforged.wrappers.NeoforgeDependencySetup;
 
 import com.seibel.distanthorizons.neoforged.wrappers.modAccessor.OptifineAccessor;
 
@@ -44,10 +44,10 @@ import net.minecraft.world.level.ColorResolver;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.*;
-import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.neoforged.neoforge.client.ConfigScreenHandler;
 
 import net.neoforged.neoforge.common.NeoForge;
@@ -70,21 +70,21 @@ import java.util.List;
  * @version 8-15-2022
  */
 @Mod(ModInfo.ID)
-public class ForgeMain implements LodForgeMethodCaller
+public class NeoforgeMain implements LodForgeMethodCaller
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
-	public static ForgeClientProxy client_proxy = null;
-	public static ForgeServerProxy server_proxy = null;
+	public static NeoforgeClientProxy client_proxy = null;
+	public static NeoforgeServerProxy server_proxy = null;
 	
-	public ForgeMain()
+	public NeoforgeMain(IEventBus eventBus)
 	{
 		DependencySetup.createClientBindings();
 
 //		initDedicated(null);
 //		initDedicated(null);
 		// Register the mod initializer (Actual event registration is done in the different proxies)
-		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::initClient);
-		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::initDedicated);
+		eventBus.addListener(this::initClient);
+		eventBus.addListener(this::initDedicated);
 	}
 	
 	private void initClient(final FMLClientSetupEvent event)
@@ -93,7 +93,7 @@ public class ForgeMain implements LodForgeMethodCaller
 		
 		LOGGER.info("Initializing Mod");
 		LodCommonMain.startup(this);
-		ForgeDependencySetup.createInitialBindings();
+		NeoforgeDependencySetup.createInitialBindings();
 		LOGGER.info(ModInfo.READABLE_NAME + ", Version: " + ModInfo.VERSION);
 		
 		// Print git info (Useful for dev builds)
@@ -101,9 +101,9 @@ public class ForgeMain implements LodForgeMethodCaller
 		LOGGER.info("DH Commit: " + ModJarInfo.Git_Commit);
 		LOGGER.info("DH Jar Build Source: " + ModJarInfo.Build_Source);
 		
-		client_proxy = new ForgeClientProxy();
+		client_proxy = new NeoforgeClientProxy();
 		NeoForge.EVENT_BUS.register(client_proxy);
-		server_proxy = new ForgeServerProxy(false);
+		server_proxy = new NeoforgeServerProxy(false);
 		NeoForge.EVENT_BUS.register(server_proxy);
 		
 		if (AbstractOptifineAccessor.optifinePresent())
@@ -114,7 +114,7 @@ public class ForgeMain implements LodForgeMethodCaller
 		ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
 				() -> new ConfigScreenHandler.ConfigScreenFactory((client, parent) -> GetConfigScreen.getScreen(parent)));
 		
-		ForgeClientProxy.setupNetworkingListeners(event);
+		NeoforgeClientProxy.setupNetworkingListeners(event);
 		
 		LOGGER.info(ModInfo.READABLE_NAME + " Initialized");
 		
@@ -139,7 +139,7 @@ public class ForgeMain implements LodForgeMethodCaller
 	private void postInitCommon()
 	{
 		LOGGER.info("Post-Initializing Mod");
-		ForgeDependencySetup.runDelayedSetup();
+		NeoforgeDependencySetup.runDelayedSetup();
 		
 		LOGGER.info("Mod Post-Initialized");
 	}

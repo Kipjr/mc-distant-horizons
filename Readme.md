@@ -134,7 +134,7 @@ From the File Explorer:
 6. The compiled jar file will be in the folder `Merged`
 
 From the command line:
-1. `git clone --recurse-submodules https://gitlab.com/gitlab.com/jeseibel/distant-horizons.git`
+1. `git clone --recurse-submodules https://gitlab.com/jeseibel/distant-horizons.git`
 2. `cd minecraft-lod-mod`
 3. `./gradlew assemble`
 4. `./gradlew mergeJars`

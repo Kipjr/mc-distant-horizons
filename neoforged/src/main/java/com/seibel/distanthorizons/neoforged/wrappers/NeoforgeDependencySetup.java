@@ -33,7 +33,7 @@ import com.seibel.distanthorizons.neoforged.wrappers.modAccessor.ModChecker;
  * @author Ran
  * @version 12-1-2021
  */
-public class ForgeDependencySetup
+public class NeoforgeDependencySetup
 {
 	public static void createInitialBindings()
 	{
