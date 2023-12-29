@@ -72,7 +72,7 @@ public class FabricDedicatedServerMain implements DedicatedServerModInitializer
 		server_proxy.registerEvents();
 		
 		
-		#if MC_VER > MC_1_19_2
+		#if MC_VER >= MC_1_19_2
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 		#else // < 1.19.2
 		CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
