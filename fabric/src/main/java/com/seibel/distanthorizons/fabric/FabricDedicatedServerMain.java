@@ -20,7 +20,7 @@ import com.seibel.distanthorizons.core.util.objects.Pair;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-#if MC_VER > MC_1_19_2
+#if MC_VER >= MC_1_19_2
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 #else // < 1.19.2
 import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
