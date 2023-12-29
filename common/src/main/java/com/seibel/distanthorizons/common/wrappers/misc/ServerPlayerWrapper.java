@@ -6,6 +6,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapp
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -42,7 +43,7 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper
     }
 
     public Vec3d getPosition() {
-        var position = serverPlayer.position();
+        Vec3 position = serverPlayer.position();
         return new Vec3d(position.x, position.y, position.z);
     }
 	

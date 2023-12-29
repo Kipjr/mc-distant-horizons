@@ -20,11 +20,16 @@ import com.seibel.distanthorizons.core.util.objects.Pair;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+#if MC_VER > MC_1_19_2
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+#else // < 1.19.2
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+#endif
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.dedicated.DedicatedServer;
 import org.apache.logging.log4j.LogManager;
@@ -65,7 +70,12 @@ public class FabricDedicatedServerMain implements DedicatedServerModInitializer
 		server_proxy = new FabricServerProxy(true);
 		server_proxy.registerEvents();
 		
+		
+		#if MC_VER > MC_1_19_2
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+		#else // < 1.19.2
+		CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
+		#endif
 			this.commandDispatcher = dispatcher;
 		});
 		
@@ -97,28 +107,41 @@ public class FabricDedicatedServerMain implements DedicatedServerModInitializer
 		
 		for (AbstractConfigType<?, ?> type : ConfigBase.INSTANCE.entries)
 		{
-			if (!(type instanceof ConfigEntry configEntry)) continue;
+			if (!(type instanceof ConfigEntry)) continue;
+			ConfigEntry configEntry = (ConfigEntry) type;
 			if (configEntry.getServersideShortName() == null) continue;
 			
 			Function<
 					Function<CommandContext<CommandSourceStack>, Object>,
 					Command<CommandSourceStack>
 			> makeConfigUpdater = getter -> c -> {
-				var value = getter.apply(c);
+				Object value = getter.apply(c);
+				#if MC_VER >= MC_1_20_1
 				c.getSource().sendSuccess(() -> Component.literal("Changed the value of "+configEntry.getServersideShortName()+" to "+value), true);
+				#elif MC_VER >= MC_1_19_2
+				c.getSource().sendSuccess(Component.literal("Changed the value of "+configEntry.getServersideShortName()+" to "+value), true);
+				#else // < 1.19.2
+				c.getSource().sendSuccess(new TranslatableComponent("Changed the value of "+configEntry.getServersideShortName()+" to "+value), true);
+				#endif
 				configEntry.set(value);
 				return 1;
 			};
 			
-			var subcommand = literal(configEntry.getServersideShortName())
+			LiteralArgumentBuilder<CommandSourceStack> subcommand = literal(configEntry.getServersideShortName())
 					.executes(c -> {
+						#if MC_VER >= MC_1_20_1
 						c.getSource().sendSuccess(() -> Component.literal("Current value of "+configEntry.getServersideShortName()+" is "+configEntry.get()), true);
+						#elif MC_VER >= MC_1_19_2
+						c.getSource().sendSuccess(Component.literal("Current value of "+configEntry.getServersideShortName()+" is "+configEntry.get()), true);
+						#else // < 1.19.2
+						c.getSource().sendSuccess(new TranslatableComponent("Current value of "+configEntry.getServersideShortName()+" is "+configEntry.get()), true);
+						#endif
 						return 1;
 					});
 			
 			if (Enum.class.isAssignableFrom(configEntry.getType()))
 			{
-				for (var choice : configEntry.getType().getEnumConstants())
+				for (Object choice : configEntry.getType().getEnumConstants())
 				{
 					subcommand.then(
 							literal(choice.toString())
@@ -130,7 +153,7 @@ public class FabricDedicatedServerMain implements DedicatedServerModInitializer
 			{
 				boolean setterAdded = false;
 				
-				for (var pair : new HashMap<
+				for (java.util.Map.Entry<Class<?>, Pair<Supplier<ArgumentType<?>>, BiFunction<CommandContext<?>, String, ?>>> pair : new HashMap<
 						Class<?>, 
 						Pair<
 								Supplier<ArgumentType<?>>, 

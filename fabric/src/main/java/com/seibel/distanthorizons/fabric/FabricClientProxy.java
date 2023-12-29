@@ -19,12 +19,13 @@
 
 package com.seibel.distanthorizons.fabric;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import com.seibel.distanthorizons.common.rendering.SeamlessOverdraw;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
-import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
+import com.mojang.blaze3d.platform.InputConstants;
+import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
+
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
@@ -47,6 +48,10 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
+
+import java.nio.FloatBuffer;
+import java.util.HashSet;
+
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.FriendlyByteBuf;
@@ -56,8 +61,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.phys.HitResult;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
-
-import java.util.HashSet;
+import org.lwjgl.opengl.GL15;
 
 /**
  * This handles all events sent to the client,

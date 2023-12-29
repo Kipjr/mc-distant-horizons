@@ -64,8 +64,11 @@ dependencies {
     addModJar(fabricApi.module("fabric-rendering-v1", rootProject.fabric_api_version)) // TODO: Remove this as it is only needed in 1 line (FabricClientProxy)
     addModJar(fabricApi.module("fabric-networking-api-v1", rootProject.fabric_api_version))
     addModJar(fabricApi.module("fabric-entity-events-v1", rootProject.fabric_api_version))
-    addModJar(fabricApi.module("fabric-command-api-v2", rootProject.fabric_api_version))
-
+    if (minecraft_version >= "1.19.2")
+        addModJar(fabricApi.module("fabric-command-api-v2", rootProject.fabric_api_version))
+    else // < 1.19.2
+        addModJar(fabricApi.module("fabric-command-api-v1", rootProject.fabric_api_version))
+    
     // Mod Menu
     modImplementation("com.terraformersmc:modmenu:${rootProject.modmenu_version}")
 
