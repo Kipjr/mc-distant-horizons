@@ -20,20 +20,21 @@ import com.seibel.distanthorizons.core.util.objects.Pair;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-#if MC_VER >= MC_1_19_2
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-#else // < 1.19.2
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
-#endif
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.dedicated.DedicatedServer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+#if MC_VER >= MC_1_19_2
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.network.chat.Component;
+#else // < 1.19.2
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+import net.minecraft.network.chat.TranslatableComponent;
+#endif
 
 import java.util.HashMap;
 import java.util.function.BiFunction;
