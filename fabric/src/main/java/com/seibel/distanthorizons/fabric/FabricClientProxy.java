@@ -233,7 +233,7 @@ public class FabricClientProxy
 				(Minecraft client, ClientPacketListener handler, FriendlyByteBuf friendlyByteBuf, PacketSender responseSender) ->
 				{
 					// converting to a ByteBuf is necessary otherwise Fabric will complain when the game boots
-					ByteBuf nettyByteBuf = friendlyByteBuf.asByteBuf();
+					ByteBuf nettyByteBuf = friendlyByteBuf.asReadOnly();
 					
 					// remove the Bukkit/Forge packet ID byte
 					nettyByteBuf.readByte();

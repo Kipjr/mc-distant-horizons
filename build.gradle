@@ -216,8 +216,10 @@ subprojects { p ->
 //        forgeShadowMe("com.formdev:svgSalamander:${rootProject.svgSalamander_version}")
         
         // Netty
-        // Breaks 1.16.5
-        forgeShadowMe("io.netty:netty-all:${rootProject.netty_version}")
+        forgeShadowMe("io.netty:netty-buffer:${rootProject.netty_version}")
+        forgeShadowMe("io.netty:netty-codec:${rootProject.netty_version}")
+        forgeShadowMe("io.netty:netty-transport:${rootProject.netty_version}")
+        forgeShadowMe("io.netty:netty-handler:${rootProject.netty_version}")
 
         // Remember, for lwjgl dependencies that arent included in Minecraft, you need to also need to add it to the ShadowJar thing
         forgeShadowMe("org.lwjgl:lwjgl-jawt:${rootProject.lwjgl_version}") {
@@ -562,7 +564,7 @@ allprojects { p ->
         dependencies { // All of these dependencies are in Vanilla Minecraft, but we need to depend on it as we arent importing Minecraft in the core
             // Imports most of lwjgl's libraries (well, only the ones that we need)
             implementation platform("org.lwjgl:lwjgl-bom:${rootProject.lwjgl_version}") // TODO: Use Minecraft's version for lwjgl_version (which changes in nearly every version) instead of a hard defined version for all versions
-
+            
             // REMEMBER: Dont shadow stuff here, these are just the libs that are included in Minecraft so that the core can use
             implementation "org.lwjgl:lwjgl"
             implementation "org.lwjgl:lwjgl-assimp"

@@ -64,7 +64,12 @@ public class DimensionTypeWrapper implements IDimensionTypeWrapper
 	@Override
 	public String getDimensionName()
 	{
+		#if MC_VER >= MC_1_17_1
 		return dimensionType.effectsLocation().getPath();
+		#else // < 1.17.1
+		// effectsLocation() is marked as client only, so using the backing field directly
+		return dimensionType.effectsLocation.getPath();
+		#endif
 	}
 	
 	@Override

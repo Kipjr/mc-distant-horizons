@@ -47,4 +47,7 @@ accessible field net/minecraft/client/renderer/texture/TextureAtlasSprite frames
 accessible field net/minecraft/client/renderer/texture/TextureAtlasSprite framesY [I
 accessible field net/minecraft/client/renderer/texture/TextureAtlasSprite mainImage [Lcom/mojang/blaze3d/platform/NativeImage;
 
+# DimensionTypeWrapper workaround
+accessible field net/minecraft/world/level/dimension/DimensionType effectsLocation Lnet/minecraft/resources/ResourceLocation;
+
 extendable class com/mojang/math/Matrix4f
