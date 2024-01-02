@@ -26,6 +26,8 @@ import com.seibel.distanthorizons.common.forge.LodForgeMethodCaller;
 import com.seibel.distanthorizons.common.wrappers.DependencySetup;
 import com.seibel.distanthorizons.common.wrappers.gui.GetConfigScreen;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftClientWrapper;
+import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftDedicatedServerWrapper;
+import com.seibel.distanthorizons.core.config.eventHandlers.presets.ThreadPresetConfigEventHandler;
 import com.seibel.distanthorizons.core.jar.ModJarInfo;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOptifineAccessor;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
@@ -42,6 +44,7 @@ import net.minecraft.core.Direction;
 #if MC_VER >= MC_1_19_2
 import net.minecraft.util.RandomSource;
 #endif
+import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.world.level.ColorResolver;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
@@ -50,6 +53,13 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.*;
+#if MC_VER == MC_1_16_5
+import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
+#elif MC_VER == MC_1_17_1
+import net.minecraftforge.fmlserverevents.FMLServerStartingEvent;
+#else
+import net.minecraftforge.event.server.ServerStartingEvent;
+#endif
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 #if MC_VER < MC_1_17_1
 import net.minecraftforge.fml.ExtensionPoint;
@@ -95,7 +105,6 @@ public class ForgeMain implements LodForgeMethodCaller
 	
 	public ForgeMain()
 	{
-		DependencySetup.createClientBindings();
 
 //		initDedicated(null);
 //		initDedicated(null);
@@ -106,6 +115,7 @@ public class ForgeMain implements LodForgeMethodCaller
 	
 	private void initClient(final FMLClientSetupEvent event)
 	{
+		DependencySetup.createClientBindings();
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDhInitEvent.class, null);
 		
 		LOGGER.info("Initializing Mod");
@@ -152,13 +162,44 @@ public class ForgeMain implements LodForgeMethodCaller
 	
 	private void initDedicated(final FMLDedicatedServerSetupEvent event)
 	{
-//		DependencySetup.createServerBindings();
-//		initCommon();
-
-//		server_proxy = new ForgeServerProxy(true);
-//		MinecraftForge.EVENT_BUS.register(server_proxy);
-//
-		postInitCommon();
+		DependencySetup.createServerBindings();
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDhInitEvent.class, null);
+		
+		LOGGER.info("Initializing Mod");
+		LodCommonMain.startup(this);
+		ForgeDependencySetup.createInitialBindings();
+		LOGGER.info(ModInfo.READABLE_NAME + ", Version: " + ModInfo.VERSION);
+		
+		// Print git info (Useful for dev builds)
+		//LOGGER.info("DH Branch: " + ModJarInfo.Git_Branch);
+		//LOGGER.info("DH Commit: " + ModJarInfo.Git_Commit);
+		//LOGGER.info("DH Jar Build Source: " + ModJarInfo.Build_Source);
+		
+		// FIXME this prevents returning uninitialized Config values
+		//  resulting from a circular reference mid-initialization in a static class
+		//noinspection ResultOfMethodCallIgnored
+		ThreadPresetConfigEventHandler.INSTANCE.toString();
+		
+		server_proxy = new ForgeServerProxy(true);
+		MinecraftForge.EVENT_BUS.register(server_proxy);
+		
+		LOGGER.info(ModInfo.READABLE_NAME + " Initialized");
+		
+		ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterDhInitEvent.class, null);
+		
+		#if MC_VER >= MC_1_18_2
+		MinecraftForge.EVENT_BUS.addListener((ServerStartingEvent e) -> {
+			MinecraftDedicatedServerWrapper.INSTANCE.dedicatedServer = (DedicatedServer)e.getServer();
+		#else
+		MinecraftForge.EVENT_BUS.addListener((FMLServerStartingEvent e) -> {
+			MinecraftDedicatedServerWrapper.INSTANCE.dedicatedServer = (DedicatedServer)e.getServer();
+		#endif
+			
+			// Init config
+			// The reason im initialising in this rather than the post init process is cus im using this for the auto updater
+			LodCommonMain.initConfig();
+			postInitCommon();
+		});
 	}
 	
 	private void postInitCommon()

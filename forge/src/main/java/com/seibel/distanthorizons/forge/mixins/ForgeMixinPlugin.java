@@ -6,6 +6,14 @@ import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
+#if MC_VER >= MC_1_18_2
+import net.minecraftforge.internal.BrandingControl;
+#elif MC_VER >= MC_1_17_1
+import net.minecraftforge.fmllegacy.BrandingControl;
+#else // < 1.17.1
+import net.minecraftforge.fml.BrandingControl;
+#endif
+
 import java.util.List;
 import java.util.Set;
 
@@ -19,8 +27,16 @@ public class ForgeMixinPlugin implements IMixinConfigPlugin
 	@Override
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName)
 	{
-		if (!ClientBrandRetriever.getClientModName().equals("forge"))
-			return false;
+		try
+		{
+			if (!ClientBrandRetriever.getClientModName().equals("forge"))
+				return false;
+		}
+		catch (RuntimeException e)
+		{
+			if (!BrandingControl.getServerBranding().equals("forge"))
+				return false;
+		}
 		
 		if (mixinClassName.contains(".mods."))
 		{ // If the mixin wants to go into a mod then we check if that mod is loaded or not
