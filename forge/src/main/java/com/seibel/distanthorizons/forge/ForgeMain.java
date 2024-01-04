@@ -50,6 +50,7 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.*;
@@ -187,6 +188,10 @@ public class ForgeMain implements LodForgeMethodCaller
 		
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterDhInitEvent.class, null);
 		
+		MinecraftForge.EVENT_BUS.addListener((RegisterCommandsEvent e) -> {
+			LodCommonMain.commandDispatcher = e.getDispatcher();
+		});
+		
 		#if MC_VER >= MC_1_18_2
 		MinecraftForge.EVENT_BUS.addListener((ServerStartingEvent e) -> {
 			MinecraftDedicatedServerWrapper.INSTANCE.dedicatedServer = (DedicatedServer)e.getServer();
@@ -199,6 +204,7 @@ public class ForgeMain implements LodForgeMethodCaller
 			// The reason im initialising in this rather than the post init process is cus im using this for the auto updater
 			LodCommonMain.initConfig();
 			postInitCommon();
+			LodCommonMain.initCommands();
 		});
 	}
 	

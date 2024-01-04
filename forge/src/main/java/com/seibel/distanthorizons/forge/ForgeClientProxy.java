@@ -277,7 +277,7 @@ public class ForgeClientProxy
 		#else // < 1.20.2
 		Predicate<String> versionTest = versionString ->
 		{
-			if (versionString.equals(NetworkRegistry.ABSENT) || versionString.equals(NetworkRegistry.ACCEPTVANILLA))
+			if (versionString.equals(NetworkRegistry.ABSENT #if MC_VER >= MC_1_19_4 .version() #endif) || versionString.equals(NetworkRegistry.ACCEPTVANILLA))
 			{
 				// allow using networking on vanilla servers or if DH isn't installed on the server
 				return true;

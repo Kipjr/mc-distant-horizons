@@ -2,18 +2,20 @@ package com.seibel.distanthorizons.forge;
 
 import com.seibel.distanthorizons.common.util.ProxyUtil;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
-import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
+import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
 import com.seibel.distanthorizons.core.api.internal.ServerApi;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 #if MC_VER < MC_1_19_2
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
@@ -22,6 +24,13 @@ import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.event.level.LevelEvent;
 #endif
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+
+#if MC_VER >= MC_1_19_4
+import net.minecraft.core.registries.Registries;
+#else // < 1.19.4
+import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
+#endif
 
 #if MC_VER == MC_1_16_5
 import net.minecraftforge.fml.event.server.FMLServerAboutToStartEvent;
@@ -138,6 +147,26 @@ public class ForgeServerProxy
 		this.serverApi.serverChunkSaveEvent(chunk, levelWrapper);
 	}
 	
+	@SubscribeEvent
+	public void playerLoggedInEvent(PlayerEvent.PlayerLoggedInEvent event)
+	{
+		this.serverApi.serverPlayerJoinEvent(getServerPlayerWrapper(event));
+	}
+	@SubscribeEvent
+	public void playerLoggedOutEvent(PlayerEvent.PlayerLoggedOutEvent event)
+	{
+		this.serverApi.serverPlayerDisconnectEvent(getServerPlayerWrapper(event));
+	}
+	@SubscribeEvent
+	public void playerChangedDimensionEvent(PlayerEvent.PlayerChangedDimensionEvent event)
+	{
+		this.serverApi.serverPlayerLevelChangeEvent(
+				getServerPlayerWrapper(event),
+				getServerLevelWrapper(event.getFrom(), event),
+				getServerLevelWrapper(event.getTo(), event)
+		);
+	}
+	
 	
 	
 	//================//
@@ -146,5 +175,33 @@ public class ForgeServerProxy
 	
 	private static ServerLevelWrapper getServerLevelWrapper(ServerLevel level) { return ServerLevelWrapper.getWrapper(level); }
 	
+	
+	private static ServerLevelWrapper getServerLevelWrapper(ResourceKey<Level> resourceKey, PlayerEvent.PlayerChangedDimensionEvent event)
+	{
+		return getServerLevelWrapper(
+				#if MC_VER >= MC_1_19_4
+				(ServerLevel) event.getEntity().getServer().registryAccess().registryOrThrow(Registries.DIMENSION).get(resourceKey)
+				#else // < 1.19.4
+				(ServerLevel) RegistryAccess 
+						#if MC_VER >= MC_1_18_2
+						.builtinCopy()
+						#else // < 1.18.2
+						.builtin()
+						#endif
+						.registry(Registry.DIMENSION_REGISTRY).get()
+						.get(resourceKey)
+				#endif
+		);
+	}
+	
+	private static ServerPlayerWrapper getServerPlayerWrapper(PlayerEvent event) {
+		return ServerPlayerWrapper.getWrapper(
+				#if MC_VER >= MC_1_19_2
+				(ServerPlayer) event.getEntity()
+				#else
+				(ServerPlayer) event.getPlayer()
+				#endif
+		);
+	}
 	
 }
