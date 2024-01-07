@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.common.wrappers.block;
 
-import com.seibel.distanthorizons.common.LodCommonMain;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Cursor3D;
 import net.minecraft.core.Direction;
@@ -75,15 +74,15 @@ public class TintGetterOverrideSmooth implements BlockAndTintGetter
 		{
 			mutableBlockPos.set(cursor3D.nextX(), cursor3D.nextY(), cursor3D.nextZ());
 			int n;
-			if (LodCommonMain.forgeMethodCaller != null)
-			{
-				n = LodCommonMain.forgeMethodCaller.colorResolverGetColor(colorResolver, _getBiome(mutableBlockPos),
-						mutableBlockPos.getX(), mutableBlockPos.getZ());
-			}
-			else
-			{
-				n = colorResolver.getColor(_getBiome(mutableBlockPos), mutableBlockPos.getX(), mutableBlockPos.getZ());
-			}
+			//if (LodCommonMain.forgeMethodCaller != null)
+			//{
+			//	n = LodCommonMain.forgeMethodCaller.colorResolverGetColor(colorResolver, _getBiome(mutableBlockPos),
+			//			mutableBlockPos.getX(), mutableBlockPos.getZ());
+			//}
+			//else
+			//{
+				n = colorResolver.getColor(this._getBiome(mutableBlockPos), mutableBlockPos.getX(), mutableBlockPos.getZ());
+			//}
 			
 			k += (n & 0xFF0000) >> 16;
 			l += (n & 0xFF00) >> 8;

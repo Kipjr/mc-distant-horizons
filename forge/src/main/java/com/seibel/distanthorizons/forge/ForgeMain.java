@@ -19,36 +19,18 @@
 
 package com.seibel.distanthorizons.forge;
 
-import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiAfterDhInitEvent;
-import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeDhInitEvent;
-import com.seibel.distanthorizons.common.LodCommonMain;
-import com.seibel.distanthorizons.common.forge.LodForgeMethodCaller;
-import com.seibel.distanthorizons.common.wrappers.DependencySetup;
+import com.mojang.brigadier.CommandDispatcher;
+import com.seibel.distanthorizons.common.AbstractModInitializer;
+import com.seibel.distanthorizons.common.IEventProxy;
 import com.seibel.distanthorizons.common.wrappers.gui.GetConfigScreen;
-import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftClientWrapper;
-import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftDedicatedServerWrapper;
-import com.seibel.distanthorizons.core.config.eventHandlers.presets.ThreadPresetConfigEventHandler;
-import com.seibel.distanthorizons.core.jar.ModJarInfo;
-import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOptifineAccessor;
-import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IOptifineAccessor;
 import com.seibel.distanthorizons.forge.wrappers.ForgeDependencySetup;
 
 import com.seibel.distanthorizons.forge.wrappers.modAccessor.OptifineAccessor;
 
-import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.core.Direction;
-#if MC_VER >= MC_1_19_2
-import net.minecraft.util.RandomSource;
-#endif
-import net.minecraft.server.dedicated.DedicatedServer;
-import net.minecraft.world.level.ColorResolver;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -72,20 +54,15 @@ import net.minecraftforge.client.ConfigGuiHandler;
 import net.minecraftforge.client.ConfigScreenHandler;
 #endif
 
-import org.apache.logging.log4j.Logger;
-
 // these imports change due to forge refactoring classes in 1.19
 #if MC_VER < MC_1_19_2
 import net.minecraftforge.client.model.data.ModelDataMap;
 
 import java.util.Random;
 #else
-import net.minecraft.client.renderer.RenderType;
-import net.minecraftforge.client.model.data.ModelData;
 #endif
 
-import java.lang.invoke.MethodHandles;
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Initialize and setup the Mod. <br>
@@ -98,47 +75,38 @@ import java.util.List;
  * @version 8-15-2022
  */
 @Mod(ModInfo.ID)
-public class ForgeMain implements LodForgeMethodCaller
+public class ForgeMain extends AbstractModInitializer
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
-	public static ForgeClientProxy client_proxy = null;
-	public static ForgeServerProxy server_proxy = null;
-	
 	public ForgeMain()
 	{
-
-//		initDedicated(null);
-//		initDedicated(null);
 		// Register the mod initializer (Actual event registration is done in the different proxies)
-		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::initClient);
-		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::initDedicated);
+		FMLJavaModLoadingContext.get().getModEventBus().addListener((FMLClientSetupEvent e) -> this.onInitializeClient());
+		FMLJavaModLoadingContext.get().getModEventBus().addListener((FMLDedicatedServerSetupEvent e) -> this.onInitializeServer());
 	}
 	
-	private void initClient(final FMLClientSetupEvent event)
+	@Override
+	protected void createInitialBindings()
 	{
-		DependencySetup.createClientBindings();
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDhInitEvent.class, null);
-		
-		LOGGER.info("Initializing Mod");
-		LodCommonMain.startup(this);
 		ForgeDependencySetup.createInitialBindings();
-		LOGGER.info(ModInfo.READABLE_NAME + ", Version: " + ModInfo.VERSION);
+	}
+	
+	@Override
+	protected IEventProxy createClientProxy()
+	{
+		return new ForgeClientProxy();
+	}
+	
+	@Override
+	protected IEventProxy createServerProxy(boolean isDedicated)
+	{
+		return new ForgeServerProxy(isDedicated);
+	}
+	
+	@Override
+	protected void initializeModCompat()
+	{
+		this.tryCreateModCompatAccessor("optifine", IOptifineAccessor.class, OptifineAccessor::new);
 		
-		// Print git info (Useful for dev builds)
-		LOGGER.info("DH Branch: " + ModJarInfo.Git_Branch);
-		LOGGER.info("DH Commit: " + ModJarInfo.Git_Commit);
-		LOGGER.info("DH Jar Build Source: " + ModJarInfo.Build_Source);
-		
-		client_proxy = new ForgeClientProxy();
-		MinecraftForge.EVENT_BUS.register(client_proxy);
-		server_proxy = new ForgeServerProxy(false);
-		MinecraftForge.EVENT_BUS.register(server_proxy);
-		
-		if (AbstractOptifineAccessor.optifinePresent())
-		{
-			ModAccessorInjector.INSTANCE.bind(IOptifineAccessor.class, new OptifineAccessor());
-		}
-
 		#if MC_VER < MC_1_17_1
 		ModLoadingContext.get().registerExtensionPoint(ExtensionPoint.CONFIGGUIFACTORY,
 				() -> (client, parent) -> GetConfigScreen.getScreen(parent));
@@ -149,101 +117,36 @@ public class ForgeMain implements LodForgeMethodCaller
 		ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
 				() -> new ConfigScreenHandler.ConfigScreenFactory((client, parent) -> GetConfigScreen.getScreen(parent)));
 		#endif
-		
-		ForgeClientProxy.setupNetworkingListeners(event);
-		
-		LOGGER.info(ModInfo.READABLE_NAME + " Initialized");
-		
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterDhInitEvent.class, null);
-		
-		// Init config
-		// The reason im initialising in this rather than the post init process is cus im using this for the auto updater
-		LodCommonMain.initConfig();
 	}
-	
-	private void initDedicated(final FMLDedicatedServerSetupEvent event)
-	{
-		DependencySetup.createServerBindings();
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDhInitEvent.class, null);
-		
-		LOGGER.info("Initializing Mod");
-		LodCommonMain.startup(this);
-		ForgeDependencySetup.createInitialBindings();
-		LOGGER.info(ModInfo.READABLE_NAME + ", Version: " + ModInfo.VERSION);
-		
-		// Print git info (Useful for dev builds)
-		//LOGGER.info("DH Branch: " + ModJarInfo.Git_Branch);
-		//LOGGER.info("DH Commit: " + ModJarInfo.Git_Commit);
-		//LOGGER.info("DH Jar Build Source: " + ModJarInfo.Build_Source);
-		
-		// FIXME this prevents returning uninitialized Config values
-		//  resulting from a circular reference mid-initialization in a static class
-		//noinspection ResultOfMethodCallIgnored
-		ThreadPresetConfigEventHandler.INSTANCE.toString();
-		
-		server_proxy = new ForgeServerProxy(true);
-		MinecraftForge.EVENT_BUS.register(server_proxy);
-		
-		LOGGER.info(ModInfo.READABLE_NAME + " Initialized");
-		
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterDhInitEvent.class, null);
-		
-		MinecraftForge.EVENT_BUS.addListener((RegisterCommandsEvent e) -> {
-			LodCommonMain.commandDispatcher = e.getDispatcher();
-		});
-		
-		#if MC_VER >= MC_1_18_2
-		MinecraftForge.EVENT_BUS.addListener((ServerStartingEvent e) -> {
-			MinecraftDedicatedServerWrapper.INSTANCE.dedicatedServer = (DedicatedServer)e.getServer();
-		#else
-		MinecraftForge.EVENT_BUS.addListener((FMLServerStartingEvent e) -> {
-			MinecraftDedicatedServerWrapper.INSTANCE.dedicatedServer = (DedicatedServer)e.getServer();
-		#endif
-			
-			// Init config
-			// The reason im initialising in this rather than the post init process is cus im using this for the auto updater
-			LodCommonMain.initConfig();
-			postInitCommon();
-			LodCommonMain.initCommands();
-		});
-	}
-	
-	private void postInitCommon()
-	{
-		LOGGER.info("Post-Initializing Mod");
-		ForgeDependencySetup.runDelayedSetup();
-		
-		LOGGER.info("Mod Post-Initialized");
-	}
-	
-	#if MC_VER < MC_1_19_2
-	private final ModelDataMap modelData = new ModelDataMap.Builder().build();
-	#else
-	private final ModelData modelData = ModelData.EMPTY;
-	#endif
 	
 	@Override
-	#if MC_VER < MC_1_19_2
-	public List<BakedQuad> getQuads(MinecraftClientWrapper mc, Block block, BlockState blockState, Direction direction, Random random)
+	protected void subscribeRegisterCommandsEvent(Consumer<CommandDispatcher<CommandSourceStack>> eventHandler)
 	{
-		return mc.getModelManager().getBlockModelShaper().getBlockModel(block.defaultBlockState()).getQuads(blockState, direction, random, modelData);
+		MinecraftForge.EVENT_BUS.addListener((RegisterCommandsEvent e) ->
+		{
+			eventHandler.accept(e.getDispatcher());
+		});
 	}
-	#else
-	public List<BakedQuad> getQuads(MinecraftClientWrapper mc, Block block, BlockState blockState, Direction direction, RandomSource random)
-	{
-		return mc.getModelManager().getBlockModelShaper().getBlockModel(block.defaultBlockState()).getQuads(blockState, direction, random, modelData #if MC_VER >= MC_1_19_2 , RenderType.solid() #endif );
-	}
-	#endif
 	
-	@Override //TODO: Check this if its still needed
-	public int colorResolverGetColor(ColorResolver resolver, Biome biome, double x, double z)
+	@Override
+	protected void subscribeClientStartedEvent(Runnable eventHandler)
 	{
-		#if MC_1_17_1______Still_needed
-		return resolver.m_130045_(biome, x, z);
-		#else
-		return resolver.getColor(biome, x, z);
-		#endif
-		
+		// FIXME Why it's unused?
+	}
+	
+	@Override
+	protected void subscribeServerStartingEvent(Consumer<MinecraftServer> eventHandler)
+	{
+		MinecraftForge.EVENT_BUS.addListener((#if MC_VER >= MC_1_18_2 ServerStartingEvent #else FMLServerStartingEvent #endif e) ->
+		{
+			eventHandler.accept(e.getServer());
+		});
+	}
+	
+	@Override
+	protected void runDelayedSetup()
+	{
+		ForgeDependencySetup.runDelayedSetup();
 	}
 	
 }

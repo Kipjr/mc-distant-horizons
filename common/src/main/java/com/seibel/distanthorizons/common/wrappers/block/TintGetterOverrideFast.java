@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.common.wrappers.block;
 
-import com.seibel.distanthorizons.common.LodCommonMain;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.*;
@@ -60,15 +59,15 @@ public class TintGetterOverrideFast implements BlockAndTintGetter
 	@Override
 	public int getBlockTint(BlockPos blockPos, ColorResolver colorResolver)
 	{
-		if (LodCommonMain.forgeMethodCaller != null)
-		{
-			return LodCommonMain.forgeMethodCaller.colorResolverGetColor(colorResolver, _getBiome(blockPos),
-					blockPos.getX(), blockPos.getZ());
-		}
-		else
-		{
-			return colorResolver.getColor(_getBiome(blockPos), blockPos.getX(), blockPos.getZ());
-		}
+		//if (LodCommonMain.forgeMethodCaller != null)
+		//{
+		//	return LodCommonMain.forgeMethodCaller.colorResolverGetColor(colorResolver, _getBiome(blockPos),
+		//			blockPos.getX(), blockPos.getZ());
+		//}
+		//else
+		//{
+			return colorResolver.getColor(this._getBiome(blockPos), blockPos.getX(), blockPos.getZ());
+		//}
 	}
 	
 	@Override

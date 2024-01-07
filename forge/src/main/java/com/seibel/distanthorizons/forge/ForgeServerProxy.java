@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.forge;
 
+import com.seibel.distanthorizons.common.IEventProxy;
 import com.seibel.distanthorizons.common.util.ProxyUtil;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
@@ -14,6 +15,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 #if MC_VER < MC_1_19_2
@@ -48,7 +50,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.Supplier;
 
-public class ForgeServerProxy
+public class ForgeServerProxy implements IEventProxy
 {
 	#if MC_VER < MC_1_19_2
 	private static LevelAccessor GetEventLevel(WorldEvent e) { return e.getWorld(); }
@@ -60,6 +62,15 @@ public class ForgeServerProxy
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private final boolean isDedicated;
 	public static Supplier<Boolean> isGenerationThreadChecker = null;
+	
+	
+	
+	@Override
+	public void registerEvents()
+	{
+		MinecraftForge.EVENT_BUS.register(this);
+	}
+	
 	
 	
 	//=============//

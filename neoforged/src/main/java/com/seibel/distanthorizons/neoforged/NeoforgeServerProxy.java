@@ -1,5 +1,6 @@
 package com.seibel.distanthorizons.neoforged;
 
+import com.seibel.distanthorizons.common.IEventProxy;
 import com.seibel.distanthorizons.common.util.ProxyUtil;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
@@ -10,6 +11,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LevelAccessor;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
@@ -23,7 +25,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.Supplier;
 
-public class NeoforgeServerProxy
+public class NeoforgeServerProxy implements IEventProxy
 {
 	private static LevelAccessor GetEventLevel(LevelEvent e) { return e.getLevel(); }
 	
@@ -42,6 +44,13 @@ public class NeoforgeServerProxy
 		this.isDedicated = isDedicated;
 		isGenerationThreadChecker = BatchGenerationEnvironment::isCurrentThreadDistantGeneratorThread;
 	}
+	
+	@Override
+	public void registerEvents()
+	{
+		NeoForge.EVENT_BUS.register(this);
+	}
+	
 	
 	
 	

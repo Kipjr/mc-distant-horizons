@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.neoforged;
 
+import com.seibel.distanthorizons.common.IEventProxy;
 import com.seibel.distanthorizons.common.util.ProxyUtil;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftRenderWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
@@ -37,6 +38,7 @@ import net.minecraft.world.level.LevelAccessor;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 
@@ -64,7 +66,7 @@ import org.lwjgl.opengl.GL32;
  * @author James_Seibel
  * @version 2023-7-27
  */
-public class NeoforgeClientProxy
+public class NeoforgeClientProxy implements IEventProxy
 {
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
@@ -73,6 +75,15 @@ public class NeoforgeClientProxy
 	
 	
 	private static LevelAccessor GetEventLevel(LevelEvent e) { return e.getLevel(); }
+	
+	
+	
+	@Override
+	public void registerEvents()
+	{
+		NeoForge.EVENT_BUS.register(this);
+		setupNetworkingListeners();
+	}
 	
 	
 	
@@ -202,8 +213,7 @@ public class NeoforgeClientProxy
 	// networking //
 	//============//
 	
-	/** @param event this is just to ensure the event is called at the right time, if it is called outside the {@link FMLClientSetupEvent} event, the binding may fail */
-	public static void setupNetworkingListeners(FMLClientSetupEvent event)
+	public static void setupNetworkingListeners()
 	{
 //		multiversePluginChannel = NetworkRegistry.newSimpleChannel(
 //				new ResourceLocation(ModInfo.NETWORKING_RESOURCE_NAMESPACE, ModInfo.MULTIVERSE_PLUGIN_NAMESPACE),

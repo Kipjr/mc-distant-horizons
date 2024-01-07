@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.fabric;
 
+import com.seibel.distanthorizons.common.IEventProxy;
 import com.seibel.distanthorizons.common.rendering.SeamlessOverdraw;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
@@ -72,7 +73,7 @@ import org.lwjgl.opengl.GL15;
  * @version 2023-7-27
  */
 @Environment(EnvType.CLIENT)
-public class FabricClientProxy
+public class FabricClientProxy implements IEventProxy
 {
 	private final ClientApi clientApi = ClientApi.INSTANCE;
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);

@@ -19,45 +19,27 @@
 
 package com.seibel.distanthorizons.neoforged;
 
-import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiAfterDhInitEvent;
-import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeDhInitEvent;
-import com.seibel.distanthorizons.common.LodCommonMain;
-import com.seibel.distanthorizons.common.forge.LodForgeMethodCaller;
-import com.seibel.distanthorizons.common.wrappers.DependencySetup;
+import com.mojang.brigadier.CommandDispatcher;
+import com.seibel.distanthorizons.common.AbstractModInitializer;
+import com.seibel.distanthorizons.common.IEventProxy;
 import com.seibel.distanthorizons.common.wrappers.gui.GetConfigScreen;
-import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftClientWrapper;
-import com.seibel.distanthorizons.core.jar.ModJarInfo;
-import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOptifineAccessor;
-import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
-import com.seibel.distanthorizons.coreapi.ModInfo;
-import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
-import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IOptifineAccessor;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.neoforged.wrappers.NeoforgeDependencySetup;
-
 import com.seibel.distanthorizons.neoforged.wrappers.modAccessor.OptifineAccessor;
-
-import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.core.Direction;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.ColorResolver;
-import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.MinecraftServer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.lifecycle.*;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.fml.event.lifecycle.FMLDedicatedServerSetupEvent;
 import net.neoforged.neoforge.client.ConfigScreenHandler;
-
 import net.neoforged.neoforge.common.NeoForge;
-import org.apache.logging.log4j.Logger;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
 
-import net.minecraft.client.renderer.RenderType;
-import net.neoforged.neoforge.client.model.data.ModelData;
-
-import java.lang.invoke.MethodHandles;
-import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Initialize and setup the Mod. <br>
@@ -70,92 +52,67 @@ import java.util.List;
  * @version 8-15-2022
  */
 @Mod(ModInfo.ID)
-public class NeoforgeMain implements LodForgeMethodCaller
+public class NeoforgeMain extends AbstractModInitializer
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
-	public static NeoforgeClientProxy client_proxy = null;
-	public static NeoforgeServerProxy server_proxy = null;
-	
 	public NeoforgeMain(IEventBus eventBus)
 	{
-		DependencySetup.createClientBindings();
-
-//		initDedicated(null);
-//		initDedicated(null);
-		// Register the mod initializer (Actual event registration is done in the different proxies)
-		eventBus.addListener(this::initClient);
-		eventBus.addListener(this::initDedicated);
+		eventBus.addListener((FMLClientSetupEvent e) -> this.onInitializeClient());
+		eventBus.addListener((FMLDedicatedServerSetupEvent e) -> this.onInitializeServer());
 	}
-	
-	private void initClient(final FMLClientSetupEvent event)
-	{
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDhInitEvent.class, null);
-		
-		LOGGER.info("Initializing Mod");
-		LodCommonMain.startup(this);
-		NeoforgeDependencySetup.createInitialBindings();
-		LOGGER.info(ModInfo.READABLE_NAME + ", Version: " + ModInfo.VERSION);
-		
-		// Print git info (Useful for dev builds)
-		LOGGER.info("DH Branch: " + ModJarInfo.Git_Branch);
-		LOGGER.info("DH Commit: " + ModJarInfo.Git_Commit);
-		LOGGER.info("DH Jar Build Source: " + ModJarInfo.Build_Source);
-		
-		client_proxy = new NeoforgeClientProxy();
-		NeoForge.EVENT_BUS.register(client_proxy);
-		server_proxy = new NeoforgeServerProxy(false);
-		NeoForge.EVENT_BUS.register(server_proxy);
-		
-		if (AbstractOptifineAccessor.optifinePresent())
-		{
-			ModAccessorInjector.INSTANCE.bind(IOptifineAccessor.class, new OptifineAccessor());
-		}
-
-		ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
-				() -> new ConfigScreenHandler.ConfigScreenFactory((client, parent) -> GetConfigScreen.getScreen(parent)));
-		
-		NeoforgeClientProxy.setupNetworkingListeners(event);
-		
-		LOGGER.info(ModInfo.READABLE_NAME + " Initialized");
-		
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterDhInitEvent.class, null);
-		
-		// Init config
-		// The reason im initialising in this rather than the post init process is cus im using this for the auto updater
-		LodCommonMain.initConfig();
-	}
-	
-	private void initDedicated(final FMLDedicatedServerSetupEvent event)
-	{
-//		DependencySetup.createServerBindings();
-//		initCommon();
-
-//		server_proxy = new ForgeServerProxy(true);
-//		MinecraftForge.EVENT_BUS.register(server_proxy);
-//
-		postInitCommon();
-	}
-	
-	private void postInitCommon()
-	{
-		LOGGER.info("Post-Initializing Mod");
-		NeoforgeDependencySetup.runDelayedSetup();
-		
-		LOGGER.info("Mod Post-Initialized");
-	}
-	
-	private final ModelData modelData = ModelData.EMPTY;
 	
 	@Override
-	public List<BakedQuad> getQuads(MinecraftClientWrapper mc, Block block, BlockState blockState, Direction direction, RandomSource random)
+	protected void createInitialBindings()
 	{
-		return mc.getModelManager().getBlockModelShaper().getBlockModel(block.defaultBlockState()).getQuads(blockState, direction, random, modelData, RenderType.solid() );
+		NeoforgeDependencySetup.createInitialBindings();
 	}
 	
-	@Override //TODO: Check this if its still needed
-	public int colorResolverGetColor(ColorResolver resolver, Biome biome, double x, double z)
+	@Override
+	protected IEventProxy createClientProxy()
 	{
-		return resolver.getColor(biome, x, z);
+		return new NeoforgeClientProxy();
+	}
+	
+	@Override
+	protected IEventProxy createServerProxy(boolean isDedicated)
+	{
+		return new NeoforgeServerProxy(isDedicated);
+	}
+	
+	@Override
+	protected void initializeModCompat()
+	{
+		this.tryCreateModCompatAccessor("optifine", IOptifineAccessor.class, OptifineAccessor::new);
+		
+		ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
+				() -> new ConfigScreenHandler.ConfigScreenFactory((client, parent) -> GetConfigScreen.getScreen(parent)));
+	}
+	
+	@Override
+	protected void subscribeRegisterCommandsEvent(Consumer<CommandDispatcher<CommandSourceStack>> eventHandler)
+	{
+		NeoForge.EVENT_BUS.addListener((RegisterCommandsEvent e) -> {
+			eventHandler.accept(e.getDispatcher());
+		});
+	}
+	
+	@Override
+	protected void subscribeClientStartedEvent(Runnable eventHandler)
+	{
+		// FIXME Why it's unused?
+	}
+	
+	@Override
+	protected void subscribeServerStartingEvent(Consumer<MinecraftServer> eventHandler)
+	{
+		NeoForge.EVENT_BUS.addListener((ServerStartingEvent e) -> {
+			eventHandler.accept(e.getServer());
+		});
+	}
+	
+	@Override
+	protected void runDelayedSetup()
+	{
+		NeoforgeDependencySetup.runDelayedSetup();
 	}
 	
 }
