@@ -37,7 +37,7 @@ public class MixinChunkMap
 		
 		// MC has a tendency to try saving incomplete or corrupted chunks (which show up as empty or black chunks)
 		// this logic should prevent that from happening
-		#if MC_1_16_5 || MC_1_17_1
+		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 		if (chunk.isUnsaved() || chunk.getUpgradeData() != null || !chunk.isLightCorrect())
 		{
 			return;
