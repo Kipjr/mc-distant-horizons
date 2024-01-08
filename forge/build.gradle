@@ -50,7 +50,6 @@ loom {
 remapJar {
     inputFile = shadowJar.archiveFile
     dependsOn shadowJar
-    classifier null
 }
 
 
