@@ -123,7 +123,7 @@ public class ForgeServerProxy implements IEventProxy
 	{
 		if (GetEventLevel(event) instanceof ServerLevel)
 		{
-			this.serverApi.serverLevelLoadEvent(this.getServerLevelWrapper((ServerLevel) GetEventLevel(event)));
+			this.serverApi.serverLevelLoadEvent(getServerLevelWrapper((ServerLevel) GetEventLevel(event)));
 		}
 	}
 	
@@ -137,7 +137,7 @@ public class ForgeServerProxy implements IEventProxy
 	{
 		if (GetEventLevel(event) instanceof ServerLevel)
 		{
-			this.serverApi.serverLevelUnloadEvent(this.getServerLevelWrapper((ServerLevel) GetEventLevel(event)));
+			this.serverApi.serverLevelUnloadEvent(getServerLevelWrapper((ServerLevel) GetEventLevel(event)));
 		}
 	}
 	
@@ -187,22 +187,10 @@ public class ForgeServerProxy implements IEventProxy
 	private static ServerLevelWrapper getServerLevelWrapper(ServerLevel level) { return ServerLevelWrapper.getWrapper(level); }
 	
 	
-	private static ServerLevelWrapper getServerLevelWrapper(ResourceKey<Level> resourceKey, PlayerEvent.PlayerChangedDimensionEvent event)
+	private static ServerLevelWrapper getServerLevelWrapper(ResourceKey<Level> resourceKey, PlayerEvent event)
 	{
-		return getServerLevelWrapper(
-				#if MC_VER >= MC_1_19_4
-				(ServerLevel) event.getEntity().getServer().registryAccess().registryOrThrow(Registries.DIMENSION).get(resourceKey)
-				#else // < 1.19.4
-				(ServerLevel) RegistryAccess 
-						#if MC_VER >= MC_1_18_2
-						.builtinCopy()
-						#else // < 1.18.2
-						.builtin()
-						#endif
-						.registry(Registry.DIMENSION_REGISTRY).get()
-						.get(resourceKey)
-				#endif
-		);
+		//noinspection DataFlowIssue (possible NPE after getServer())
+		return getServerLevelWrapper(event.getEntity().getServer().getLevel(resourceKey));
 	}
 	
 	private static ServerPlayerWrapper getServerPlayerWrapper(PlayerEvent event) {
