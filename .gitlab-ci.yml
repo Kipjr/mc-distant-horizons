@@ -43,7 +43,7 @@ build:
       - quilt/build/libs/*.jar
       - fabric/build/libs/*.jar
       - forge/build/libs/*.jar
-      - neoforged/build/libs/*.jar
+      - neoforge/build/libs/*.jar
     exclude:
       # TODO: There is a lot of duplicate stuff here, try to maybe make it smaller
       - fabric/build/libs/*-all.jar
@@ -52,8 +52,8 @@ build:
       - quilt/build/libs/*-sources.jar
       - forge/build/libs/*-all.jar
       - forge/build/libs/*-sources.jar
-      - neoforged/build/libs/*-all.jar
-      - neoforged/build/libs/*-sources.jar
+      - neoforge/build/libs/*-all.jar
+      - neoforge/build/libs/*-sources.jar
     expire_in: 14 days
     when: always
   extends: .build_java

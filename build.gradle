@@ -76,10 +76,10 @@ forgix {
             jarLocation = "build/libs/DistantHorizons-forge-${rootProject.versionStr}.jar"
         }
     
-    if (findProject(":neoforged"))
+    if (findProject(":neoforge"))
         custom {
-            projectName = "neoforged"
-            jarLocation = "build/libs/DistantHorizons-neoforged-${rootProject.versionStr}.jar"
+            projectName = "neoforge"
+            jarLocation = "build/libs/DistantHorizons-neoforge-${rootProject.versionStr}.jar"
         }
 
     if (findProject(":fabric"))
@@ -113,7 +113,7 @@ subprojects { p ->
     // Apply forge's loom
     if (
             (findProject(":forge") && p == project(":forge")) ||
-            (findProject(":neoforged") && p == project(":neoforged"))
+            (findProject(":neoforge") && p == project(":neoforge"))
     )
         apply plugin: "dev.architectury.loom"
 
@@ -152,10 +152,16 @@ subprojects { p ->
             shadowCommon // Don't use shadow from the shadow plugin because we don't want IDEA to index this.
             compileClasspath.extendsFrom common
             runtimeClasspath.extendsFrom common
-            developmentForge.extendsFrom common
+            if (findProject(":forge"))
+                developmentForge.extendsFrom common
+            if (findProject(":neoforge"))
+                developmentNeoForge.extendsFrom common
             compileClasspath.extendsFrom coreProjects
             runtimeClasspath.extendsFrom coreProjects
-            developmentForge.extendsFrom coreProjects
+            if (findProject(":forge"))
+                developmentForge.extendsFrom coreProjects
+            if (findProject(":neoforge"))
+                developmentNeoForge.extendsFrom coreProjects
 
             if (findProject(":fabricLike") && p != project(":fabricLike")) {
                 // Shadow fabricLike
@@ -163,7 +169,6 @@ subprojects { p ->
                 shadowFabricLike
                 compileClasspath.extendsFrom fabricLike
                 runtimeClasspath.extendsFrom fabricLike
-                developmentForge.extendsFrom fabricLike
             }
         }
     }

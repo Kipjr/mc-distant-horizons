@@ -1,6 +1,6 @@
-package com.seibel.distanthorizons.forge.mixins;
+package com.seibel.distanthorizons.neoforge.mixins;
 
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -12,10 +12,10 @@ import java.util.Set;
  * @author coolGi
  * @author cortex
  */
-public class ForgeMixinPlugin implements IMixinConfigPlugin
+public class NeoforgeMixinPlugin implements IMixinConfigPlugin
 {
 	private boolean firstRun = false;
-	private boolean isForgeMixinFile;
+	private boolean isNeoforgeMixinFile;
 	
 	
 	@Override
@@ -24,12 +24,12 @@ public class ForgeMixinPlugin implements IMixinConfigPlugin
 		if (!this.firstRun) {
 			try {
 				Class<?> cls = Class.forName("net.neoforged.fml.common.Mod"); // Check if a NeoForge exclusive class exists
-				this.isForgeMixinFile = false;
+				this.isNeoforgeMixinFile = true;
 			} catch (ClassNotFoundException e) {
-				this.isForgeMixinFile = true;
+				this.isNeoforgeMixinFile = false;
 			}
 		}
-		if (!this.isForgeMixinFile)
+		if (!this.isNeoforgeMixinFile)
 			return false;
 		
 		if (mixinClassName.contains(".mods."))
