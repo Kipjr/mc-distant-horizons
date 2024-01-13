@@ -17,7 +17,7 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.neoforged;
+package com.seibel.distanthorizons.neoforge;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.seibel.distanthorizons.common.AbstractModInitializer;
@@ -25,8 +25,8 @@ import com.seibel.distanthorizons.common.IEventProxy;
 import com.seibel.distanthorizons.common.wrappers.gui.GetConfigScreen;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IOptifineAccessor;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import com.seibel.distanthorizons.neoforged.wrappers.NeoforgeDependencySetup;
-import com.seibel.distanthorizons.neoforged.wrappers.modAccessor.OptifineAccessor;
+import com.seibel.distanthorizons.neoforge.wrappers.NeoforgeDependencySetup;
+import com.seibel.distanthorizons.neoforge.wrappers.modAccessor.OptifineAccessor;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.neoforged.bus.api.IEventBus;
@@ -52,6 +52,7 @@ import java.util.function.Consumer;
  * @version 8-15-2022
  */
 @Mod(ModInfo.ID)
+@SuppressWarnings("unused")
 public class NeoforgeMain extends AbstractModInitializer
 {
 	public NeoforgeMain(IEventBus eventBus)
