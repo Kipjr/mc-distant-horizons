@@ -59,7 +59,7 @@ build:
   extends: .build_java
 
 
-api:
+.api:
   stage: api
   needs: []
   script:
@@ -83,7 +83,7 @@ api:
 
 
 # generate and publish API javadocs
-pages:
+.pages:
   stage: pages
   needs: []
   script:
