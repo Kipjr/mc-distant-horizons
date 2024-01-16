@@ -32,12 +32,17 @@ import com.seibel.distanthorizons.fabric.wrappers.modAccessor.*;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+
+#if MC_VER >= MC_1_19_2
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+#else // < 1.19.2
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
+#endif
 
 import javax.swing.*;
 import java.util.function.Consumer;
