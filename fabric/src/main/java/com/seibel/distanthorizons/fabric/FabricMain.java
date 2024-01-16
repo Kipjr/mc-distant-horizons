@@ -21,7 +21,6 @@ package com.seibel.distanthorizons.fabric;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.seibel.distanthorizons.common.AbstractModInitializer;
-import com.seibel.distanthorizons.common.IEventProxy;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
@@ -29,22 +28,16 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.*;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import com.seibel.distanthorizons.fabric.wrappers.FabricDependencySetup;
 import com.seibel.distanthorizons.fabric.wrappers.modAccessor.*;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-
-#if MC_VER >= MC_1_19_2
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-#else // < 1.19.2
-import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
-#endif
 
 import javax.swing.*;
 import java.util.function.Consumer;
@@ -53,10 +46,6 @@ import java.util.function.Consumer;
  * Initialize and setup the Mod. <br>
  * If you are looking for the real start of the mod
  * check out the ClientProxy.
- *
- * @author coolGi
- * @author Ran
- * @version 9-2-2022
  */
 public class FabricMain extends AbstractModInitializer implements ClientModInitializer, DedicatedServerModInitializer
 {
@@ -65,22 +54,13 @@ public class FabricMain extends AbstractModInitializer implements ClientModIniti
 	
 	
 	@Override
-	protected void createInitialBindings()
-	{
-		FabricDependencySetup.createInitialBindings();
-	}
+	protected void createInitialBindings() { SingletonInjector.INSTANCE.bind(IModChecker.class, ModChecker.INSTANCE); }
 	
 	@Override
-	protected IEventProxy createClientProxy()
-	{
-		return new FabricClientProxy();
-	}
+	protected IEventProxy createClientProxy() { return new FabricClientProxy(); }
 	
 	@Override
-	protected IEventProxy createServerProxy(boolean isDedicated)
-	{
-		return new FabricServerProxy(isDedicated);
-	}
+	protected IEventProxy createServerProxy(boolean isDedicated) { return new FabricServerProxy(isDedicated); }
 	
 	@Override
 	protected void initializeModCompat()
@@ -106,7 +86,6 @@ public class FabricMain extends AbstractModInitializer implements ClientModIniti
 		}
 		
 		this.tryCreateModCompatAccessor("starlight", IStarlightAccessor.class, StarlightAccessor::new);
-		//this.tryCreateModCompatAccessor("imm_ptl_core", IImmersivePortalsAccessor.class, ImmersivePortalsAccessor::new);
 		this.tryCreateModCompatAccessor("optifine", IOptifineAccessor.class, OptifineAccessor::new);
 		this.tryCreateModCompatAccessor("bclib", IBCLibAccessor.class, BCLibAccessor::new);
 		#if MC_VER != MC_1_17_1 && MC_VER <= MC_1_20_1
@@ -124,10 +103,7 @@ public class FabricMain extends AbstractModInitializer implements ClientModIniti
 	}
 	
 	@Override
-	protected void subscribeClientStartedEvent(Runnable eventHandler)
-	{
-		ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> eventHandler.run());
-	}
+	protected void subscribeClientStartedEvent(Runnable eventHandler) { ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> eventHandler.run()); }
 	
 	@Override
 	protected void subscribeServerStartingEvent(Consumer<MinecraftServer> eventHandler)
@@ -139,10 +115,11 @@ public class FabricMain extends AbstractModInitializer implements ClientModIniti
 	@Override
 	protected void runDelayedSetup()
 	{
-		FabricDependencySetup.runDelayedSetup();
+		SingletonInjector.INSTANCE.runDelayedSetup();
 		
 		if (Config.Client.Advanced.Graphics.Fog.disableVanillaFog.get() && SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("bclib"))
 			ModAccessorInjector.INSTANCE.get(IBCLibAccessor.class).setRenderCustomFog(false); // Remove BCLib's fog
+		
 		#if MC_VER >= MC_1_20_1
 		if (SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("sodium"))
 			ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class).setFogOcclusion(false); // FIXME: This is a tmp fix for sodium 0.5.0, and 0.5.1. This is fixed in sodium 0.5.2

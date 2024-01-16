@@ -405,12 +405,18 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		{
 			try
 			{
-				LOAD_LOGGER.info("DistantHorizons: Loading chunk " + chunkPos + " from disk.");
+				LOAD_LOGGER.info("DistantHorizons: Loading chunk [" + chunkPos + "] from disk.");
 				return ChunkLoader.read(level, chunkPos, chunkData);
 			}
 			catch (Exception e)
 			{
-				LOAD_LOGGER.error("DistantHorizons: Couldn't load or make chunk " + chunkPos + ". Returning an empty chunk. Error: " + e.getMessage(), e);
+				LOAD_LOGGER.error(
+					"DistantHorizons: couldn't load or make chunk at ["+chunkPos+"]." +
+					"Please try optimizing your world to fix this issue. \n" +
+					"World optimization can be done from the singleplayer world selection screen.\n" +
+					"Error: ["+e.getMessage()+"]."
+					, e);
+				
 				return EmptyChunk(level, chunkPos);
 			}
 		}

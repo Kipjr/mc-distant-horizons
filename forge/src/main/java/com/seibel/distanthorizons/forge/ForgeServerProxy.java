@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.forge;
 
-import com.seibel.distanthorizons.common.IEventProxy;
+import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.common.util.ProxyUtil;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
@@ -50,7 +50,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.Supplier;
 
-public class ForgeServerProxy implements IEventProxy
+public class ForgeServerProxy implements AbstractModInitializer.IEventProxy
 {
 	#if MC_VER < MC_1_19_2
 	private static LevelAccessor GetEventLevel(WorldEvent e) { return e.getWorld(); }

@@ -21,12 +21,12 @@ package com.seibel.distanthorizons.forge;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.seibel.distanthorizons.common.AbstractModInitializer;
-import com.seibel.distanthorizons.common.IEventProxy;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.common.wrappers.gui.GetConfigScreen;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IOptifineAccessor;
-import com.seibel.distanthorizons.forge.wrappers.ForgeDependencySetup;
 
+import com.seibel.distanthorizons.forge.wrappers.modAccessor.ModChecker;
 import com.seibel.distanthorizons.forge.wrappers.modAccessor.OptifineAccessor;
 
 import net.minecraft.commands.CommandSourceStack;
@@ -68,11 +68,6 @@ import java.util.function.Consumer;
  * Initialize and setup the Mod. <br>
  * If you are looking for the real start of the mod
  * check out the ClientProxy.
- *
- * @author coolGi
- * @author Ran
- * @author James Seibel
- * @version 8-15-2022
  */
 @Mod(ModInfo.ID)
 public class ForgeMain extends AbstractModInitializer
@@ -85,22 +80,13 @@ public class ForgeMain extends AbstractModInitializer
 	}
 	
 	@Override
-	protected void createInitialBindings()
-	{
-		ForgeDependencySetup.createInitialBindings();
-	}
+	protected void createInitialBindings() { SingletonInjector.INSTANCE.bind(IModChecker.class, ModChecker.INSTANCE); }
 	
 	@Override
-	protected IEventProxy createClientProxy()
-	{
-		return new ForgeClientProxy();
-	}
+	protected IEventProxy createClientProxy() { return new ForgeClientProxy(); }
 	
 	@Override
-	protected IEventProxy createServerProxy(boolean isDedicated)
-	{
-		return new ForgeServerProxy(isDedicated);
-	}
+	protected IEventProxy createServerProxy(boolean isDedicated) { return new ForgeServerProxy(isDedicated); }
 	
 	@Override
 	protected void initializeModCompat()
@@ -122,16 +108,13 @@ public class ForgeMain extends AbstractModInitializer
 	@Override
 	protected void subscribeRegisterCommandsEvent(Consumer<CommandDispatcher<CommandSourceStack>> eventHandler)
 	{
-		MinecraftForge.EVENT_BUS.addListener((RegisterCommandsEvent e) ->
-		{
-			eventHandler.accept(e.getDispatcher());
-		});
+		MinecraftForge.EVENT_BUS.addListener((RegisterCommandsEvent e) -> { eventHandler.accept(e.getDispatcher()); });
 	}
 	
 	@Override
 	protected void subscribeClientStartedEvent(Runnable eventHandler)
 	{
-		// FIXME Why it's unused?
+		// FIXME What event is this?
 	}
 	
 	@Override
@@ -144,9 +127,6 @@ public class ForgeMain extends AbstractModInitializer
 	}
 	
 	@Override
-	protected void runDelayedSetup()
-	{
-		ForgeDependencySetup.runDelayedSetup();
-	}
+	protected void runDelayedSetup() { SingletonInjector.INSTANCE.runDelayedSetup(); }
 	
 }

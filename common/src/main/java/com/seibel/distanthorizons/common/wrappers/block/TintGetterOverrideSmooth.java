@@ -73,16 +73,7 @@ public class TintGetterOverrideSmooth implements BlockAndTintGetter
 		while (cursor3D.advance())
 		{
 			mutableBlockPos.set(cursor3D.nextX(), cursor3D.nextY(), cursor3D.nextZ());
-			int n;
-			//if (LodCommonMain.forgeMethodCaller != null)
-			//{
-			//	n = LodCommonMain.forgeMethodCaller.colorResolverGetColor(colorResolver, _getBiome(mutableBlockPos),
-			//			mutableBlockPos.getX(), mutableBlockPos.getZ());
-			//}
-			//else
-			//{
-				n = colorResolver.getColor(this._getBiome(mutableBlockPos), mutableBlockPos.getX(), mutableBlockPos.getZ());
-			//}
+			int n = colorResolver.getColor(this._getBiome(mutableBlockPos), mutableBlockPos.getX(), mutableBlockPos.getZ());
 			
 			k += (n & 0xFF0000) >> 16;
 			l += (n & 0xFF00) >> 8;
@@ -92,177 +83,96 @@ public class TintGetterOverrideSmooth implements BlockAndTintGetter
 	}
 	
 	@Override
-	public int getBlockTint(BlockPos blockPos, ColorResolver colorResolver)
-	{
-		return calculateBlockTint(blockPos, colorResolver);
-	}
+	public int getBlockTint(BlockPos blockPos, ColorResolver colorResolver) { return this.calculateBlockTint(blockPos, colorResolver); }
 	
 	@Override
 	public float getShade(Direction direction, boolean bl) { return this.parent.getShade(direction, bl); }
 	
 	@Override
-	public LevelLightEngine getLightEngine()
-	{
-		return parent.getLightEngine();
-	}
+	public LevelLightEngine getLightEngine() { return this.parent.getLightEngine(); }
 	
 	@Override
-	public int getBrightness(LightLayer lightLayer, BlockPos blockPos)
-	{
-		return parent.getBrightness(lightLayer, blockPos);
-	}
+	public int getBrightness(LightLayer lightLayer, BlockPos blockPos) { return this.parent.getBrightness(lightLayer, blockPos); }
 	
 	@Override
-	public int getRawBrightness(BlockPos blockPos, int i)
-	{
-		return parent.getRawBrightness(blockPos, i);
-	}
+	public int getRawBrightness(BlockPos blockPos, int i) { return this.parent.getRawBrightness(blockPos, i); }
 	
 	@Override
-	public boolean canSeeSky(BlockPos blockPos)
-	{
-		return parent.canSeeSky(blockPos);
-	}
+	public boolean canSeeSky(BlockPos blockPos) { return this.parent.canSeeSky(blockPos); }
 	
 	@Override
 	@Nullable
-	public BlockEntity getBlockEntity(BlockPos blockPos)
-	{
-		return parent.getBlockEntity(blockPos);
-	}
+	public BlockEntity getBlockEntity(BlockPos blockPos) { return this.parent.getBlockEntity(blockPos); }
 	
 	@Override
-	public BlockState getBlockState(BlockPos blockPos)
-	{
-		return parent.getBlockState(blockPos);
-	}
+	public BlockState getBlockState(BlockPos blockPos) { return this.parent.getBlockState(blockPos); }
 	
 	@Override
-	public FluidState getFluidState(BlockPos blockPos)
-	{
-		return parent.getFluidState(blockPos);
-	}
+	public FluidState getFluidState(BlockPos blockPos) { return this.parent.getFluidState(blockPos); }
 	
 	@Override
-	public int getLightEmission(BlockPos blockPos)
-	{
-		return parent.getLightEmission(blockPos);
-	}
+	public int getLightEmission(BlockPos blockPos) { return this.parent.getLightEmission(blockPos); }
 	
 	@Override
-	public int getMaxLightLevel()
-	{
-		return parent.getMaxLightLevel();
-	}
+	public int getMaxLightLevel() { return this.parent.getMaxLightLevel(); }
 	
 	@Override
-	public Stream<BlockState> getBlockStates(AABB aABB)
-	{
-		return parent.getBlockStates(aABB);
-	}
+	public Stream<BlockState> getBlockStates(AABB aABB) { return this.parent.getBlockStates(aABB); }
 	
 	@Override
-	public BlockHitResult clip(ClipContext clipContext)
-	{
-		return parent.clip(clipContext);
-	}
+	public BlockHitResult clip(ClipContext clipContext) { return this.parent.clip(clipContext); }
 	
 	@Override
 	@Nullable
 	public BlockHitResult clipWithInteractionOverride(Vec3 vec3, Vec3 vec32, BlockPos blockPos, VoxelShape voxelShape, BlockState blockState)
 	{
-		return parent.clipWithInteractionOverride(vec3, vec32, blockPos, voxelShape, blockState);
+		return this.parent.clipWithInteractionOverride(vec3, vec32, blockPos, voxelShape, blockState);
 	}
 	
 	@Override
-	public double getBlockFloorHeight(VoxelShape voxelShape, Supplier<VoxelShape> supplier)
-	{
-		return parent.getBlockFloorHeight(voxelShape, supplier);
-	}
+	public double getBlockFloorHeight(VoxelShape voxelShape, Supplier<VoxelShape> supplier) { return this.parent.getBlockFloorHeight(voxelShape, supplier); }
 	
 	@Override
-	public double getBlockFloorHeight(BlockPos blockPos)
-	{
-		return parent.getBlockFloorHeight(blockPos);
-	}
+	public double getBlockFloorHeight(BlockPos blockPos) { return this.parent.getBlockFloorHeight(blockPos); }
 	
 	@Override
-	public int getMaxBuildHeight()
-	{
-		return parent.getMaxBuildHeight();
-	}
+	public int getMaxBuildHeight() { return this.parent.getMaxBuildHeight(); }
 	
 	#if MC_VER >= MC_1_17_1
 	@Override
-	public <T extends BlockEntity> Optional<T> getBlockEntity(BlockPos blockPos, BlockEntityType<T> blockEntityType)
-	{
-		return parent.getBlockEntity(blockPos, blockEntityType);
-	}
+	public <T extends BlockEntity> Optional<T> getBlockEntity(BlockPos blockPos, BlockEntityType<T> blockEntityType) { return this.parent.getBlockEntity(blockPos, blockEntityType); }
 	
 	@Override
-	public BlockHitResult isBlockInLine(ClipBlockStateContext clipBlockStateContext)
-	{
-		return parent.isBlockInLine(clipBlockStateContext);
-	}
+	public BlockHitResult isBlockInLine(ClipBlockStateContext clipBlockStateContext) { return this.parent.isBlockInLine(clipBlockStateContext); }
 	
 	@Override
-	public int getHeight()
-	{
-		return parent.getHeight();
-	}
+	public int getHeight() { return this.parent.getHeight(); }
 	
 	@Override
-	public int getMinBuildHeight()
-	{
-		return parent.getMinBuildHeight();
-	}
+	public int getMinBuildHeight() { return this.parent.getMinBuildHeight(); }
 	
 	@Override
-	public int getSectionsCount()
-	{
-		return parent.getSectionsCount();
-	}
+	public int getSectionsCount() { return this.parent.getSectionsCount(); }
 	
 	@Override
-	public int getMinSection()
-	{
-		return parent.getMinSection();
-	}
+	public int getMinSection() { return this.parent.getMinSection(); }
 	
 	@Override
-	public int getMaxSection()
-	{
-		return parent.getMaxSection();
-	}
+	public int getMaxSection() { return this.parent.getMaxSection(); }
 	
 	@Override
-	public boolean isOutsideBuildHeight(BlockPos blockPos)
-	{
-		return parent.isOutsideBuildHeight(blockPos);
-	}
+	public boolean isOutsideBuildHeight(BlockPos blockPos) { return this.parent.isOutsideBuildHeight(blockPos); }
 	
 	@Override
-	public boolean isOutsideBuildHeight(int i)
-	{
-		return parent.isOutsideBuildHeight(i);
-	}
+	public boolean isOutsideBuildHeight(int i) { return this.parent.isOutsideBuildHeight(i); }
 	
 	@Override
-	public int getSectionIndex(int i)
-	{
-		return parent.getSectionIndex(i);
-	}
+	public int getSectionIndex(int i) { return this.parent.getSectionIndex(i); }
 	
 	@Override
-	public int getSectionIndexFromSectionY(int i)
-	{
-		return parent.getSectionIndexFromSectionY(i);
-	}
+	public int getSectionIndexFromSectionY(int i) { return this.parent.getSectionIndexFromSectionY(i); }
 	
 	@Override
-	public int getSectionYFromSectionIndex(int i)
-	{
-		return parent.getSectionYFromSectionIndex(i);
-	}
+	public int getSectionYFromSectionIndex(int i) { return this.parent.getSectionYFromSectionIndex(i); }
     #endif
 }

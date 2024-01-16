@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.neoforge;
 
-import com.seibel.distanthorizons.common.IEventProxy;
+import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.common.util.ProxyUtil;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftRenderWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
@@ -45,7 +45,6 @@ import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.minecraft.world.level.chunk.ChunkAccess;
 
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 //import net.neoforged.network.NetworkRegistry;
 //import net.neoforged.network.simple.SimpleChannel;
 import org.apache.logging.log4j.Logger;
@@ -66,7 +65,7 @@ import org.lwjgl.opengl.GL32;
  * @author James_Seibel
  * @version 2023-7-27
  */
-public class NeoforgeClientProxy implements IEventProxy
+public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 {
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();

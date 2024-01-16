@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.fabric;
 
-import com.seibel.distanthorizons.common.IEventProxy;
+import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.common.rendering.SeamlessOverdraw;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
@@ -50,7 +50,6 @@ import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
 
-import java.nio.FloatBuffer;
 import java.util.HashSet;
 
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -62,7 +61,6 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.phys.HitResult;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.opengl.GL15;
 
 /**
  * This handles all events sent to the client,
@@ -73,7 +71,7 @@ import org.lwjgl.opengl.GL15;
  * @version 2023-7-27
  */
 @Environment(EnvType.CLIENT)
-public class FabricClientProxy implements IEventProxy
+public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 {
 	private final ClientApi clientApi = ClientApi.INSTANCE;
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);

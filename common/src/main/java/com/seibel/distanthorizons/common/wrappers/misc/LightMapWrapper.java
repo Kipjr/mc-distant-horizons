@@ -25,35 +25,39 @@ import org.lwjgl.opengl.GL32;
 
 import java.nio.ByteBuffer;
 
-/**
- * @author James Seibel
- * @version 11-21-2021
- */
 public class LightMapWrapper implements ILightMapWrapper
 {
 	private int textureId = 0;
 	
-	public LightMapWrapper()
-	{
-	}
+	
+	//==============//
+	// constructors //
+	//==============//
+	
+	public LightMapWrapper() { }
 	
 	private void createLightmap(NativeImage image)
 	{
-		textureId = GL32.glGenTextures();
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, textureId);
+		this.textureId = GL32.glGenTextures();
+		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.textureId);
 		GL32.glTexImage2D(GL32.GL_TEXTURE_2D, 0, image.format().glFormat(), image.getWidth(), image.getHeight(),
 				0, image.format().glFormat(), GL32.GL_UNSIGNED_BYTE, (ByteBuffer) null);
 	}
 	
+	
+	
+	//=========//
+	// methods //
+	//=========//
+	
 	public void uploadLightmap(NativeImage image)
 	{
 		int currentBind = GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, textureId);
-		if (textureId == 0)
+		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.textureId);
+		if (this.textureId == 0)
 		{
-			createLightmap(image);
+			this.createLightmap(image);
 		}
-		// NativeImage::upload(int levelOfDetail, int xOffset, int yOffset, bool shouldCleanup?)
 		image.upload(0, 0, 0, false);
 		GL32.glBindTexture(GL32.GL_TEXTURE_2D, currentBind);
 	}
@@ -66,9 +70,6 @@ public class LightMapWrapper implements ILightMapWrapper
 	}
 	
 	@Override
-	public void unbind()
-	{
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, 0);
-	}
+	public void unbind() { GL32.glBindTexture(GL32.GL_TEXTURE_2D, 0); }
 	
 }

@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.fabric;
 
-import com.seibel.distanthorizons.common.IEventProxy;
+import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
@@ -33,7 +33,7 @@ import java.util.function.Supplier;
  * @author Tomlee
  * @version 5-11-2022
  */
-public class FabricServerProxy implements IEventProxy
+public class FabricServerProxy implements AbstractModInitializer.IEventProxy
 {
 	private static final ServerApi SERVER_API = ServerApi.INSTANCE;
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();

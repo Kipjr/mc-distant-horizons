@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.neoforge;
 
-import com.seibel.distanthorizons.common.IEventProxy;
+import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.common.util.ProxyUtil;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
@@ -25,7 +25,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.function.Supplier;
 
-public class NeoforgeServerProxy implements IEventProxy
+public class NeoforgeServerProxy implements AbstractModInitializer.IEventProxy
 {
 	private static LevelAccessor GetEventLevel(LevelEvent e) { return e.getLevel(); }
 	

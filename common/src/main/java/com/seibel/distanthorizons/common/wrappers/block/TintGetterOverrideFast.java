@@ -57,18 +57,7 @@ public class TintGetterOverrideFast implements BlockAndTintGetter
 	}
 	
 	@Override
-	public int getBlockTint(BlockPos blockPos, ColorResolver colorResolver)
-	{
-		//if (LodCommonMain.forgeMethodCaller != null)
-		//{
-		//	return LodCommonMain.forgeMethodCaller.colorResolverGetColor(colorResolver, _getBiome(blockPos),
-		//			blockPos.getX(), blockPos.getZ());
-		//}
-		//else
-		//{
-			return colorResolver.getColor(this._getBiome(blockPos), blockPos.getX(), blockPos.getZ());
-		//}
-	}
+	public int getBlockTint(BlockPos blockPos, ColorResolver colorResolver) { return colorResolver.getColor(this._getBiome(blockPos), blockPos.getX(), blockPos.getZ()); }
 	
 	@Override
 	public float getShade(Direction direction, boolean bl) { return this.parent.getShade(direction, bl); }

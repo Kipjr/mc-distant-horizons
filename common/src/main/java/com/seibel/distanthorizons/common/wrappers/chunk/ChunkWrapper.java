@@ -246,7 +246,7 @@ public class ChunkWrapper implements IChunkWrapper
 	{
 		// convert from an index to a block coordinate
 		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
-		return this.chunk.getSections()[index].bottomBlockY() * 16;
+		return this.chunk.getSections()[index].bottomBlockY();
 		#else
 		return this.chunk.getSectionYFromSectionIndex(index) * 16;
 		#endif

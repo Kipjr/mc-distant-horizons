@@ -81,6 +81,8 @@ import net.minecraft.world.level.material.Fluid;
 
 public class ChunkLoader
 {
+	private static boolean zeroChunkPosErrorLogged = false;
+	
 	#if MC_VER >= MC_1_19_2
 	private static final Codec<PalettedContainer<BlockState>> BLOCK_STATE_CODEC = PalettedContainer.codecRW(Block.BLOCK_STATE_REGISTRY, BlockState.CODEC, PalettedContainer.Strategy.SECTION_STATES, Blocks.AIR.defaultBlockState());
 	#elif MC_VER >= MC_1_18_2
@@ -232,8 +234,28 @@ public class ChunkLoader
 		ChunkPos actualPos = new ChunkPos(tagLevel.getInt("xPos"), tagLevel.getInt("zPos"));
 		if (!Objects.equals(chunkPos, actualPos))
 		{
-			LOGGER.error("Chunk file at {} is in the wrong location; Ignoring. (Expected {}, got {})", chunkPos, chunkPos, actualPos);
-			return null;
+			if (actualPos.equals(ChunkPos.ZERO))
+			{
+				if (!zeroChunkPosErrorLogged)
+				{
+					zeroChunkPosErrorLogged = true;
+					
+					// explicit chunkPos toString is necessary otherwise the JDK 17 compiler breaks
+					LOGGER.warn("Chunk file at ["+chunkPos.toString()+"] doesn't have a chunk pos. \n" +
+						"This might happen if the world was created using an external program. \n" +
+						"DH will attempt to parse the chunk anyway and won't log this message again.\n" +
+						"If issues arise please try optimizing your world to fix this issue. \n" +
+						"World optimization can be done from the singleplayer world selection screen."+
+						"");
+				}
+			}
+			else
+			{
+				// everything is on one line to fix a JDK 17 compiler issue
+				// if the issue is ever resolved, feel free to make this multi-line for readability
+				LOGGER.error("Chunk file at ["+chunkPos.toString()+"] is in the wrong location. \nPlease try optimizing your world to fix this issue. \nWorld optimization can be done from the singleplayer world selection screen. \n(Expected pos: ["+chunkPos.toString()+"], actual ["+actualPos.toString()+"])");
+				return null;
+			}
 		}
 		
 		ChunkStatus.ChunkType chunkType = readChunkType(tagLevel);
