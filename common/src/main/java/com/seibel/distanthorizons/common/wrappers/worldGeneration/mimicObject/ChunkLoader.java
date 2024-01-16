@@ -234,7 +234,7 @@ public class ChunkLoader
 		ChunkPos actualPos = new ChunkPos(tagLevel.getInt("xPos"), tagLevel.getInt("zPos"));
 		if (!Objects.equals(chunkPos, actualPos))
 		{
-			#if MC_VER > MC_1_16_5
+			#if MC_VER >= MC_1_18_2
 			if (actualPos.equals(ChunkPos.ZERO))
 			#else
 			if (actualPos.equals(ChunkPos.INVALID_CHUNK_POS))
