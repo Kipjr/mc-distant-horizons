@@ -21,6 +21,8 @@ public class RegionFileStorageExternalCache implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
+	/** Can be null due to the C2ME mod */
+	@Nullable
 	public final RegionFileStorage storage;
 	public static final int MAX_CACHE_SIZE = 16;
 	
@@ -56,6 +58,19 @@ public class RegionFileStorageExternalCache implements AutoCloseable
 	@Nullable
 	public RegionFile getRegionFile(ChunkPos pos) throws IOException
 	{
+		if (this.storage == null)
+		{
+			if (!regionCacheNullPointerWarningSent)
+			{
+				regionCacheNullPointerWarningSent = true;
+				LOGGER.warn("Unable to access Minecraft's chunk cache. This may be due to another mod changing said cache. DH will be unable to access any Minecraft chunk data until said mod is removed.");
+			}
+			
+			return null;
+		}
+		
+		
+		
 		long posLong = ChunkPos.asLong(pos.getRegionX(), pos.getRegionZ());
 		RegionFile rFile = null;
 		
