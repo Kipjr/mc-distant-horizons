@@ -24,6 +24,7 @@ variables:
       - .gradle
       - cache/
   allow_failure: true
+  retry: 1
 
 
 build:
