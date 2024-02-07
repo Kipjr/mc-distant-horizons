@@ -93,8 +93,8 @@ public class FabricMain extends AbstractModInitializer implements ClientModIniti
 		this.tryCreateModCompatAccessor("starlight", IStarlightAccessor.class, StarlightAccessor::new);
 		this.tryCreateModCompatAccessor("optifine", IOptifineAccessor.class, OptifineAccessor::new);
 		this.tryCreateModCompatAccessor("bclib", IBCLibAccessor.class, BCLibAccessor::new);
-		#if MC_VER != MC_1_17_1 && MC_VER <= MC_1_20_1
-		// 1.17.1 won't support this since there isn't a matching Iris version
+		#if MC_VER >= MC_1_19_4
+		// 1.19.4 is the lowest version Iris supports DH
 		this.tryCreateModCompatAccessor("iris", IIrisAccessor.class, IrisAccessor::new);
 		#endif
 	}

@@ -23,12 +23,6 @@ import java.nio.FloatBuffer;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-#if MC_VER < MC_1_19_4
-import com.mojang.math.Matrix4f;
-#else
-import org.joml.Matrix4f;
-#endif
-
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
@@ -51,8 +45,29 @@ public class McObjectConverter
 	{
 		return y * 4 + x;
 	}
+	
+	
+	/** 4x4 float matrix converter */
+	@Deprecated
+	public static Mat4f Convert(
+			#if MC_VER < MC_1_19_4 com.mojang.math.Matrix4f 
+			#else org.joml.Matrix4f #endif 
+			mcMatrix)
+	{
+		FloatBuffer buffer = FloatBuffer.allocate(16);
+		storeMatrix(mcMatrix, buffer);
+		Mat4f matrix = new Mat4f(buffer);
+        #if MC_VER < MC_1_19_4
+		matrix.transpose(); // In 1.19.3 and later, we no longer need to transpose it
+        #endif
+		return matrix;
+	}
 	/** Taken from Minecraft's com.mojang.math.Matrix4f class from 1.18.2 */
-	private static void storeMatrix(Matrix4f matrix, FloatBuffer buffer)
+	private static void storeMatrix(
+			#if MC_VER < MC_1_19_4 com.mojang.math.Matrix4f 
+			#else org.joml.Matrix4f #endif
+			matrix, 
+			FloatBuffer buffer)
 	{
         #if MC_VER < MC_1_19_4
 		matrix.store(buffer);
@@ -75,18 +90,6 @@ public class McObjectConverter
 		buffer.put(bufferIndex(3, 2), matrix.m32());
 		buffer.put(bufferIndex(3, 3), matrix.m33());
         #endif
-	}
-	
-	/** 4x4 float matrix converter */
-	public static Mat4f Convert(Matrix4f mcMatrix)
-	{
-		FloatBuffer buffer = FloatBuffer.allocate(16);
-		storeMatrix(mcMatrix, buffer);
-		Mat4f matrix = new Mat4f(buffer);
-        #if MC_VER < MC_1_19_4
-		matrix.transpose(); // In 1.19.3 and later, we no longer need to transpose it
-        #endif
-		return matrix;
 	}
 	
 	

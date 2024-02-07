@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.common.wrappers.minecraft;
 
 import java.awt.Color;
 import java.lang.invoke.MethodHandles;
+import java.nio.FloatBuffer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,8 +41,9 @@ import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 
 #if MC_VER < MC_1_19_4
-import com.mojang.math.Vector3f;
+import org.joml.Vector3f;
 #else
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 #endif
 #if MC_VER >= MC_1_20_2
@@ -78,6 +80,7 @@ import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.Logger;
+import org.joml.Matrix4f;
 
 
 /**
@@ -116,8 +119,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	public Vec3f getLookAtVector()
 	{
 		Camera camera = MC.gameRenderer.getMainCamera();
-		Vector3f cameraDir = camera.getLookVector();
-		return new Vec3f(cameraDir.x(), cameraDir.y(), cameraDir.z());
+		return new Vec3f(camera.getLookVector().x(), camera.getLookVector().y(), camera.getLookVector().z());
 	}
 	
 	@Override
@@ -146,6 +148,23 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 		Vec3 projectedView = camera.getPosition();
 		
 		return new Vec3d(projectedView.x, projectedView.y, projectedView.z);
+	}
+	
+	@Override
+	public Mat4f getWorldViewMatrix()
+	{
+		Camera camera = MC.gameRenderer.getMainCamera();
+		Vector3f cameraVec3 = new Vector3f(
+				(float)camera.getPosition().x,
+				(float)camera.getPosition().y,
+				(float)camera.getPosition().z);
+		cameraVec3 = cameraVec3.negate();
+		
+		Matrix4f matWorldView = new Matrix4f()
+				.rotateX((float)Math.toRadians(camera.getXRot()))
+				.rotateY((float)Math.toRadians(camera.getYRot() + 180f))
+				.translate(cameraVec3);
+		return new Mat4f(matWorldView);
 	}
 	
 	@Override
@@ -261,12 +280,6 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public int getTargetFrameBuffer()
 	{
-		int frameBufferOverrideId = DhApiRenderProxy.INSTANCE.targetFrameBufferOverride;
-		if (frameBufferOverrideId != -1)
-		{
-			return frameBufferOverrideId;
-		}
-		
 		// used so we can access the framebuffer shaders end up rendering to
 		if (AbstractOptifineAccessor.optifinePresent())
 		{

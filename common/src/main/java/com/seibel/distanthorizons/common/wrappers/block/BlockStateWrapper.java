@@ -24,7 +24,10 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrappe
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.apache.logging.log4j.Logger;
 
@@ -84,6 +87,8 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	 * Should be between {@link IBlockStateWrapper#FULLY_OPAQUE} and {@link IBlockStateWrapper#FULLY_OPAQUE}
 	 */
 	private int opacity = -1;
+	/** used by the Iris shader mod to determine how each LOD should be rendered */
+	private byte irisBlockMaterialId = 0;
 	
 	
 	
@@ -115,7 +120,8 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	{
 		this.blockState = blockState;
 		this.serialString = this.serialize(levelWrapper);
-		LOGGER.trace("Created BlockStateWrapper ["+this.serialString+"] for ["+blockState+"]");
+		this.irisBlockMaterialId = this.calculateIrisBlockMaterialId();
+		LOGGER.trace("Created BlockStateWrapper ["+this.serialString+"] for ["+blockState+"] with material ID ["+this.irisBlockMaterialId+"]");
 	}
 	
 	
@@ -272,6 +278,9 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		return !this.blockState.getFluidState().isEmpty();
         #endif
 	}
+	
+	@Override
+	public byte getIrisBlockMaterialId() { return this.irisBlockMaterialId; }
 	
 	@Override
 	public String toString() { return this.getSerialString(); }
@@ -453,5 +462,109 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	}
 	
 	
+	
+	//==============//
+	// Iris methods //
+	//==============//
+	
+	private byte calculateIrisBlockMaterialId() 
+	{
+		if (this.blockState == null)
+		{
+			return IrisBlockMaterial.AIR;
+		}
+		
+		
+		String serialString = this.getSerialString().toLowerCase();
+		
+		if (this.blockState.is(BlockTags.LEAVES) 
+			|| serialString.contains("bamboo") 
+			|| serialString.contains("cactus")
+			|| serialString.contains("chorus_flower")
+			|| serialString.contains("mushroom")
+			) 
+		{
+			return IrisBlockMaterial.LEAVES;
+		}
+		else if (this.isLiquid() || this.blockState.is(Blocks.WATER))
+		{
+			return IrisBlockMaterial.WATER;
+		}
+		else if (this.blockState.getSoundType() == SoundType.WOOD
+				|| serialString.contains("root")
+				#if MC_VER >= MC_1_19_4
+				|| this.blockState.getSoundType() == SoundType.CHERRY_WOOD
+				#endif
+				) 
+		{
+			return IrisBlockMaterial.WOOD;
+		}
+		else if (this.blockState.getSoundType() == SoundType.METAL
+				#if MC_VER >= MC_1_19_2
+				|| this.blockState.getSoundType() == SoundType.COPPER
+				#endif
+				#if MC_VER >= MC_1_20_4
+				|| this.blockState.getSoundType() == SoundType.COPPER_BULB
+				|| this.blockState.getSoundType() == SoundType.COPPER_GRATE
+				#endif
+				) 
+		{
+			return IrisBlockMaterial.METAL;
+		}
+		else if (
+			serialString.contains("dirt")
+			|| serialString.contains("grass_block")
+			|| serialString.contains("gravel")
+			|| serialString.contains("mud")
+			|| serialString.contains("podzol")
+			|| serialString.contains("mycelium")
+			)
+		{
+			return IrisBlockMaterial.DIRT;
+		} 
+		else if (this.blockState.is(Blocks.LAVA)) 
+		{
+			return IrisBlockMaterial.LAVA;
+		}
+		#if MC_VER >= MC_1_17_1
+		else if (this.blockState.getSoundType() == SoundType.DEEPSLATE
+				|| this.blockState.getSoundType() == SoundType.DEEPSLATE_BRICKS
+				|| this.blockState.getSoundType() == SoundType.DEEPSLATE_TILES 
+				|| this.blockState.getSoundType() == SoundType.POLISHED_DEEPSLATE
+				|| serialString.contains("deepslate") ) 
+		{
+			return IrisBlockMaterial.DEEPSLATE;
+		} 
+		#endif
+		else if (this.serialString.contains("snow"))
+		{
+			return IrisBlockMaterial.SNOW;
+		} 
+		else if (serialString.contains("sand"))
+		{
+			return IrisBlockMaterial.SAND;
+		}
+		else if (serialString.contains("terracotta"))
+		{
+			return IrisBlockMaterial.TERRACOTTA;
+		} 
+		else if (this.blockState.is(BlockTags.BASE_STONE_NETHER)) 
+		{
+			return IrisBlockMaterial.NETHER_STONE;
+		} 
+		else if (serialString.contains("stone")
+				|| serialString.contains("ore")) 
+		{
+			return IrisBlockMaterial.STONE;
+		}
+		else if (this.blockState.getLightEmission() > 0) 
+		{
+			return IrisBlockMaterial.ILLUMINATED;
+		}
+		else
+		{
+			return IrisBlockMaterial.UNKOWN;
+		}
+	}
 	
 }

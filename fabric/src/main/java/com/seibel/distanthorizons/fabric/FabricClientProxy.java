@@ -189,9 +189,6 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		// render event //
 		//==============//
 
-        //Define this in the MixinLevelRenderer so that it works with sodium without any changes to the code
-        // TODO: If all else is fine, can we remove these commented code
-		// Client Render Level
 		WorldRenderEvents.AFTER_SETUP.register((renderContext) ->
 		{
 			this.clientApi.renderLods(ClientLevelWrapper.getWrapper(renderContext.world()),

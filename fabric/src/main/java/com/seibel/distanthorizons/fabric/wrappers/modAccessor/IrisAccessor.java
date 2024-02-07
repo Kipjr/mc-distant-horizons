@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.fabric.wrappers.modAccessor;
 
-#if MC_VER != MC_1_17_1 && MC_VER <= MC_1_20_1
+#if MC_VER >= MC_1_19_4
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IIrisAccessor;
 import net.coderbot.iris.Iris;

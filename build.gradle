@@ -200,7 +200,7 @@ subprojects { p ->
         implementation("org.apache.logging.log4j:log4j-core:${rootProject.log4j_version}")
 
         // JOML
-        implementation("org.joml:joml:${rootProject.joml_version}")
+        forgeShadowMe("org.joml:joml:${rootProject.joml_version}")
 
         // JUnit tests
         implementation("org.junit.jupiter:junit-jupiter:5.8.2")
@@ -300,6 +300,9 @@ subprojects { p ->
         // Sqlite Database
         //At the moment, there is a bug in this library which doesnt allow it to be relocated
 //        relocate "org.sqlite", "${librariesLocation}.sqlite"
+        
+        // JOML
+        relocate "org.joml", "${librariesLocation}.joml"
 
         // NightConfig (includes Toml & Json)
         relocate "com.electronwill.nightconfig", "${librariesLocation}.electronwill.nightconfig"

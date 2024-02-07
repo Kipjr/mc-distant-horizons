@@ -19,24 +19,24 @@
 
 package com.seibel.distanthorizons.common.wrappers.worldGeneration.step;
 
-import java.util.ArrayList;
-
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.ThreadedParameters;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.mimicObject.DhLitWorldGenRegion;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.gridList.ArrayGridList;
 
-import net.minecraft.ReportedException;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
-#if MC_VER >= MC_1_18_2
-#endif
+import org.apache.logging.log4j.Logger;
+
 
 public final class StepFeatures
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
 	public static final ChunkStatus STATUS = ChunkStatus.FEATURES;
 	
 	private final BatchGenerationEnvironment environment;
@@ -51,36 +51,44 @@ public final class StepFeatures
 			ThreadedParameters tParams, DhLitWorldGenRegion worldGenRegion,
 			ArrayGridList<ChunkWrapper> chunkWrappers)
 	{
-		ArrayList<ChunkAccess> chunksToDo = new ArrayList<ChunkAccess>();
-		
 		for (ChunkWrapper chunkWrapper : chunkWrappers)
 		{
 			ChunkAccess chunk = chunkWrapper.getChunk();
-			if (chunk.getStatus().isOrAfter(STATUS)) continue;
-			((ProtoChunk) chunk).setStatus(STATUS);
-			chunksToDo.add(chunk);
-		}
-		
-		for (ChunkAccess chunk : chunksToDo)
-		{
+			if (chunk.getStatus().isOrAfter(STATUS))
+			{
+				continue;
+			}
+			
+			if (chunk instanceof ProtoChunk)
+			{
+				((ProtoChunk) chunk).setStatus(STATUS);
+			}
+			
+			
 			try
 			{
 				#if MC_VER < MC_1_18_2
 				worldGenRegion.setOverrideCenter(chunk.getPos());
 				environment.params.generator.applyBiomeDecoration(worldGenRegion, tParams.structFeat);
 				#else
-				environment.params.generator.applyBiomeDecoration(worldGenRegion, chunk,
-						tParams.structFeat.forWorldGenRegion(worldGenRegion));
+				if (worldGenRegion.hasChunk(chunkWrapper.getChunkPos().x, chunkWrapper.getChunkPos().z))
+				{
+					this.environment.params.generator.applyBiomeDecoration(worldGenRegion, chunk, tParams.structFeat.forWorldGenRegion(worldGenRegion));
+				}
+				else
+				{
+					LOGGER.warn("Unable to generate features for chunk at pos ["+chunkWrapper.getChunkPos()+"], world gen region doesn't contain the chunk.");
+				}
 				#endif
 				
 				Heightmap.primeHeightmaps(chunk, STATUS.heightmapsAfter());
 				BatchGenerationEnvironment.clearDistantGenerationMixinData();
 			}
-			catch (ReportedException e)
+			catch (Exception e)
 			{
-				e.printStackTrace();
+				LOGGER.warn("Unexpected issue when generating features for chunk at pos ["+chunkWrapper.getChunkPos()+"], error: ["+e.getMessage()+"].", e);
 				// FIXME: Features concurrent modification issue. Something about cocobeans might just
-				// error out. For now just retry.
+				//  error out. For now just retry.
 			}
 		}
 	}
