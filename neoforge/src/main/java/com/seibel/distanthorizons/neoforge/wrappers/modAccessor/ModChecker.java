@@ -40,10 +40,4 @@ public class ModChecker implements IModChecker
 		return ModList.get().getModFileById(modid).getFile().getFilePath().toFile(); 
 	}
 	
-	@Override
-	public File modLocation(String modid)
-	{
-		return ModList.get().getModFileById(modid).getFile().getFilePath().toFile();
-	}
-	
 }
