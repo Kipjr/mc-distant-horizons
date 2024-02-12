@@ -146,6 +146,11 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	@SubscribeEvent
 	public void rightClickBlockEvent(PlayerInteractEvent.RightClickBlock event)
 	{
+		if (SharedApi.isChunkAtBlockPosAlreadyUpdating(event.getPos().getX(), event.getPos().getZ()))
+		{
+			return;
+		}
+		
 		LOGGER.trace("interact or block place event at blockPos: " + event.getPos());
 		
 		LevelAccessor level = event.getLevel();
@@ -156,6 +161,11 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	@SubscribeEvent
 	public void leftClickBlockEvent(PlayerInteractEvent.LeftClickBlock event)
 	{
+		if (SharedApi.isChunkAtBlockPosAlreadyUpdating(event.getPos().getX(), event.getPos().getZ()))
+		{
+			return;
+		}
+		
 		LOGGER.trace("break or block attack at blockPos: " + event.getPos());
 		
 		LevelAccessor level = event.getLevel();

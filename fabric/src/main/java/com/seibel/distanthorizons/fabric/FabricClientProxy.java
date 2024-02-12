@@ -32,6 +32,8 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
@@ -129,17 +131,20 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 			// if we have access to the server, use the chunk save event instead 
 			if (MC.clientConnectedToDedicatedServer())
 			{
-				// Since fabric doesn't have a client-side break-block API event, this is the next best thing
-				ChunkAccess chunk = level.getChunk(blockPos);
-				if (chunk != null)
+				if (SharedApi.isChunkAtBlockPosAlreadyUpdating(blockPos.getX(), blockPos.getZ()))
 				{
-					LOGGER.trace("attack block at blockPos: " + blockPos);
-					
-					IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
-					SharedApi.INSTANCE.chunkBlockChangedEvent(
-							new ChunkWrapper(chunk, level, wrappedLevel),
-							wrappedLevel
-					);
+					// Since fabric doesn't have a client-side break-block API event, this is the next best thing
+					ChunkAccess chunk = level.getChunk(blockPos);
+					if (chunk != null)
+					{
+						LOGGER.trace("attack block at blockPos: " + blockPos);
+						
+						IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
+						SharedApi.INSTANCE.chunkBlockChangedEvent(
+								new ChunkWrapper(chunk, level, wrappedLevel),
+								wrappedLevel
+						);
+					}	
 				}
 			}
 			
@@ -153,20 +158,23 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 			// if we have access to the server, use the chunk save event instead 
 			if (MC.clientConnectedToDedicatedServer())
 			{
-				// Since fabric doesn't have a client-side place-block API event, this is the next best thing
-				if (hitResult.getType() == HitResult.Type.BLOCK
-						&& !hitResult.isInside())
+				if (SharedApi.isChunkAtBlockPosAlreadyUpdating(hitResult.getBlockPos().getX(), hitResult.getBlockPos().getZ()))
 				{
-					ChunkAccess chunk = level.getChunk(hitResult.getBlockPos());
-					if (chunk != null)
+					// Since fabric doesn't have a client-side place-block API event, this is the next best thing
+					if (hitResult.getType() == HitResult.Type.BLOCK
+							&& !hitResult.isInside())
 					{
-						LOGGER.trace("use block at blockPos: " + hitResult.getBlockPos());
-						
-						IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
-						SharedApi.INSTANCE.chunkBlockChangedEvent(
-								new ChunkWrapper(chunk, level, wrappedLevel),
-								wrappedLevel
-						);
+						ChunkAccess chunk = level.getChunk(hitResult.getBlockPos());
+						if (chunk != null)
+						{
+							LOGGER.trace("use block at blockPos: " + hitResult.getBlockPos());
+							
+							IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
+							SharedApi.INSTANCE.chunkBlockChangedEvent(
+									new ChunkWrapper(chunk, level, wrappedLevel),
+									wrappedLevel
+							);
+						}
 					}
 				}
 			}

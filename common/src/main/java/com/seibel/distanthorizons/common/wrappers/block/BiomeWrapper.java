@@ -65,7 +65,7 @@ public class BiomeWrapper implements IBiomeWrapper
     #endif
 	
 	public static final String EMPTY_STRING = "EMPTY";
-	public static final BiomeWrapper EMPTY_WRAPPER = new BiomeWrapper(null, null);
+	public static final BiomeWrapper EMPTY_WRAPPER = new BiomeWrapper();
 	
 	/** keep track of broken biomes so we don't log every time */
 	private static final HashSet<String> brokenResourceLocationStrings = new HashSet<>();
@@ -115,12 +115,18 @@ public class BiomeWrapper implements IBiomeWrapper
 			return newWrapper;
 		}
 	}
-	
 	private BiomeWrapper(#if MC_VER < MC_1_18_2 Biome #else Holder<Biome> #endif biome, ILevelWrapper levelWrapper)
 	{
 		this.biome = biome;
 		this.serialString = this.serialize(levelWrapper);
 		LOGGER.trace("Created BiomeWrapper ["+this.serialString+"] for ["+biome+"]");
+	}
+	
+	/** should only be used to create {@link BiomeWrapper#EMPTY_WRAPPER} */
+	private BiomeWrapper()
+	{
+		this.biome = null;
+		this.serialString = EMPTY_STRING;
 	}
 	
 	
