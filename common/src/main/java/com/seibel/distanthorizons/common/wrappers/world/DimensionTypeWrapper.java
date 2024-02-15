@@ -44,7 +44,9 @@ public class DimensionTypeWrapper implements IDimensionTypeWrapper
 	{
 		//first we check if the biome has already been wrapped
 		if (dimensionTypeWrapperMap.containsKey(dimensionType) && dimensionTypeWrapperMap.get(dimensionType) != null)
+		{
 			return dimensionTypeWrapperMap.get(dimensionType);
+		}
 		
 		
 		//if it hasn't been created yet, we create it and save it in the map
@@ -65,7 +67,7 @@ public class DimensionTypeWrapper implements IDimensionTypeWrapper
 	public String getDimensionName()
 	{
 		#if MC_VER >= MC_1_17_1
-		return dimensionType.effectsLocation().getPath();
+		return this.dimensionType.effectsLocation().getPath();
 		#else // < 1.17.1
 		// effectsLocation() is marked as client only, so using the backing field directly
 		return dimensionType.effectsLocation.getPath();
@@ -75,13 +77,13 @@ public class DimensionTypeWrapper implements IDimensionTypeWrapper
 	@Override
 	public boolean hasCeiling()
 	{
-		return dimensionType.hasCeiling();
+		return this.dimensionType.hasCeiling();
 	}
 	
 	@Override
 	public boolean hasSkyLight()
 	{
-		return dimensionType.hasSkyLight();
+		return this.dimensionType.hasSkyLight();
 	}
 	
 	@Override
@@ -90,7 +92,11 @@ public class DimensionTypeWrapper implements IDimensionTypeWrapper
 		return this.dimensionType;
 	}
 	
-	
+	@Override
+	public double getTeleportationScale(IDimensionTypeWrapper to)
+	{
+		return DimensionType.getTeleportationScale(this.dimensionType, (DimensionType) to.getWrappedMcObject());
+	}
 	
 	@Override
 	public boolean equals(Object obj)
