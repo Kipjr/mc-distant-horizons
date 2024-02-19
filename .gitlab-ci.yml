@@ -1,6 +1,3 @@
-# use Eclipse's JDK
-# The ci should always use a unix(-like) OS to work
-#image: eclipse-temurin:17
 image: gradle:8.6-jdk17
 
 # all stages need to be defined here
@@ -14,20 +11,15 @@ variables:
   # Pull core when building
   GIT_SUBMODULE_STRATEGY: recursive
 
-
-# These can be extended so code is a bit less duplicated
-# .build_java:
-#   cache:
-#     key: "gradleCache"
-#     policy: pull-push
-#     paths:
-#       - .gradle
-#       - .gradle-${MC_VER}
-#   allow_failure: true
+before_script:
+  - GRADLE_USER_HOME="$(pwd)/.gradle"
+  - export GRADLE_USER_HOME
 
 
 build:
   stage: build
+  needs: []
+  dependencies: []
   parallel:
     matrix:
       - MC_VER: ["1.16.5", "1.17.1", "1.18.2", "1.19.2", "1.19.4", "1.20.1", "1.20.2", "1.20.4"]
@@ -57,20 +49,20 @@ build:
     expire_in: 14 days
     when: always
   cache:
-    - key: "gradle"
-      policy: pull-push
+    - key: gradle
       paths:
         - .gradle
-    - key: "gradle-${MC_VER}"
-      policy: pull-push
+    - key: gradle-$MC_VER
       paths:
         - .gradle-${MC_VER}
+        - build
   allow_failure: true
 
 
 api:
   stage: api
   needs: []
+  dependencies: []
   script:
     # this should only run for the API
     #- ./gradlew api:clean  --no-daemon --gradle-user-home cache/;
@@ -89,14 +81,15 @@ api:
     expire_in: 1 day
     when: always
   cache:
-    - key: "gradle"
+    - key: gradle
       policy: pull-push
       paths:
         - .gradle
-    - key: "gradle-api"
+    - key: gradle-api
       policy: pull-push
       paths:
         - .gradle-api
+        - build
   allow_failure: true
 
 
@@ -104,6 +97,7 @@ api:
 pages:
   stage: pages
   needs: []
+  dependencies: []
   script:
     # this should only run for the API
     #- ./gradlew api:clean  --no-daemon --gradle-user-home cache/;
@@ -117,12 +111,13 @@ pages:
       - public
   # allow_failure: false
   cache:
-    - key: "gradle"
+    - key: gradle
       policy: pull-push
       paths:
         - .gradle
-    - key: "gradle-pages"
+    - key: gradle-pages
       policy: pull-push
       paths:
         - .gradle-pages
+        - build
   allow_failure: true
