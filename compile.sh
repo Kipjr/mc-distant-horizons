@@ -12,7 +12,7 @@ publish_version()
 {
     if [[ "$MC_VER" == "all" || "$1" == "$MC_VER" ]]
     then
-        docker run --name="dh-build-$1" --rm -v "/${PWD}:/home/build" dh-eclipse-temurin $BUILD_TASK -PmcVer="$1" --gradle-user-home ".gradle-cache/"
+        docker run --name="dh-build-$1" --rm -v "/${PWD}:/home/build" dh-eclipse-temurin $BUILD_TASK -PmcVer="$1"  --no-daemon --gradle-user-home ".gradle-cache/"
 
         cp ./fabric/build/libs/*$1.jar ./buildAllJars/fabric/
         # cp ./forge/build/libs/*$1.jar ./buildAllJars/forge/
