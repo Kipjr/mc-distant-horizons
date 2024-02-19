@@ -15,8 +15,8 @@ publish_version()
         docker run --rm --name="dh-build-$1" \
             -v "/$(PWD)://home/gradle/project" \
             -w "//home/gradle/project" \
-             gradle:8.5-alpine \
-             gradle $BUILD_TASK -PmcVer="$1" --no-daemon #--gradle-user-home ".gradle-cache/"
+            gradle:8.5-alpine \
+            gradle $BUILD_TASK -PmcVer="$1" --no-daemon --gradle-user-home ".gradle-cache/"
 
         cp ./fabric/build/libs/*$1.jar ./buildAllJars/fabric/
         # cp ./forge/build/libs/*$1.jar ./buildAllJars/forge/
@@ -30,8 +30,6 @@ then
     echo "Build target is undefined! [all] [1.20.4] [1.20.2] [1.20.1] [1.19.4] [1.19.2] [1.18.2] [1.17.1] [1.16.5]"
     exit 1
 fi
-
-# docker build --tag=dh-eclipse-temurin -q .
 
 mkdir -p buildAllJars/fabric
 # mkdir -p buildAllJars/forge
