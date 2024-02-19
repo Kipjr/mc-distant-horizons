@@ -16,7 +16,8 @@ publish_version()
             -v "/$(PWD)://home/gradle/project" \
             -w "//home/gradle/project" \
             gradle:8.5-alpine \
-            gradle $BUILD_TASK -PmcVer="$1" --no-daemon --gradle-user-home ".gradle-cache/"
+            gradle $BUILD_TASK -PmcVer="$1" --no-daemon \
+            --project-cache-dir ".gradle-$1/"
 
         cp ./fabric/build/libs/*$1.jar ./buildAllJars/fabric/
         # cp ./forge/build/libs/*$1.jar ./buildAllJars/forge/

@@ -22,7 +22,7 @@ variables:
     policy: pull-push
     paths:
       - .gradle
-      - cache/
+      - .gradle-${MC_VER}
   allow_failure: true
 
 
@@ -34,8 +34,8 @@ build:
   script:
     # this both runs the unit tests and assembles the code
     # - ./gradlew clean -PmcVer="${MC_VER}" -PinfoGitCommit="${CI_COMMIT_SHA}" -PinfoGitBranch="${CI_COMMIT_BRANCH}" -PinfoBuildSource="GitLab CI (${CI_PIPELINE_ID})" --no-daemon --gradle-user-home cache/;
-    - gradle build -PmcVer="${MC_VER}" -PinfoGitCommit="${CI_COMMIT_SHA}" -PinfoGitBranch="${CI_COMMIT_BRANCH}" -PinfoBuildSource="GitLab CI (${CI_PIPELINE_ID})" --no-daemon --stacktrace --gradle-user-home cache/;
-    - gradle mergeJars -PmcVer="${MC_VER}" -PinfoGitCommit="${CI_COMMIT_SHA}" -PinfoGitBranch="${CI_COMMIT_BRANCH}" -PinfoBuildSource="GitLab CI (${CI_PIPELINE_ID})" --no-daemon --gradle-user-home cache/;
+    - gradle build -PmcVer="${MC_VER}" -PinfoGitCommit="${CI_COMMIT_SHA}" -PinfoGitBranch="${CI_COMMIT_BRANCH}" -PinfoBuildSource="GitLab CI (${CI_PIPELINE_ID})" --no-daemon --stacktrace --project-cache-dir ".gradle-${MC_VER}/"
+    - gradle mergeJars -PmcVer="${MC_VER}" -PinfoGitCommit="${CI_COMMIT_SHA}" -PinfoGitBranch="${CI_COMMIT_BRANCH}" -PinfoBuildSource="GitLab CI (${CI_PIPELINE_ID})" --no-daemon --project-cache-dir ".gradle-${MC_VER}/"
   artifacts:
     name: "NightlyBuild_${MC_VER}-${CI_COMMIT_SHORT_SHA}-${CI_COMMIT_TIMESTAMP}"
     paths:
