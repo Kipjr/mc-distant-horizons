@@ -16,14 +16,14 @@ variables:
 
 
 # These can be extended so code is a bit less duplicated
-.build_java:
-  cache:
-    key: "gradleCache"
-    policy: pull-push
-    paths:
-      - .gradle
-      - .gradle-${MC_VER}
-  allow_failure: true
+# .build_java:
+#   cache:
+#     key: "gradleCache"
+#     policy: pull-push
+#     paths:
+#       - .gradle
+#       - .gradle-${MC_VER}
+#   allow_failure: true
 
 
 build:
@@ -56,7 +56,16 @@ build:
       - neoforge/build/libs/*-sources.jar
     expire_in: 14 days
     when: always
-  extends: .build_java
+  cache:
+    - key: "gradle"
+      policy: pull-push
+      paths:
+        - .gradle
+    - key: "gradle-${MC_VER}"
+      policy: pull-push
+      paths:
+        - .gradle-${MC_VER}
+  allow_failure: true
 
 
 api:
@@ -66,8 +75,8 @@ api:
     # this should only run for the API
     #- ./gradlew api:clean  --no-daemon --gradle-user-home cache/;
     # this also runs unit tests
-    - gradle api:build  --no-daemon --gradle-user-home cache/;
-    - gradle api:addSourcesToCompiledJar  --no-daemon --gradle-user-home cache/;
+    - gradle api:build --no-daemon --project-cache-dir ".gradle-api/"
+    - gradle api:addSourcesToCompiledJar --no-daemon --project-cache-dir ".gradle-api/"
   artifacts:
     name: "Api_NightlyBuild-${CI_COMMIT_SHORT_SHA}-${CI_COMMIT_TIMESTAMP}"
     paths:
@@ -79,7 +88,16 @@ api:
       - coreSubProjects/api/build/libs/merged/*-sources.jar
     expire_in: 1 day
     when: always
-  extends: .build_java
+  cache:
+    - key: "gradle"
+      policy: pull-push
+      paths:
+        - .gradle
+    - key: "gradle-api"
+      policy: pull-push
+      paths:
+        - .gradle-api
+  allow_failure: true
 
 
 # generate and publish API javadocs
@@ -90,12 +108,21 @@ pages:
     # this should only run for the API
     #- ./gradlew api:clean  --no-daemon --gradle-user-home cache/;
     # this also runs unit tests
-    - gradle api:build  --no-daemon --gradle-user-home cache/;
-    - gradle api:javadoc  --no-daemon --gradle-user-home cache/;
+    - gradle api:build --no-daemon --project-cache-dir ".gradle-pages/"
+    - gradle api:javadoc --no-daemon --project-cache-dir ".gradle-pages/"
     - mkdir public
     - cp -r $CI_PROJECT_DIR/coreSubProjects/api/build/docs/javadoc/. public
   artifacts:
     paths:
       - public
-  allow_failure: false
-  extends: .build_java
+  # allow_failure: false
+  cache:
+    - key: "gradle"
+      policy: pull-push
+      paths:
+        - .gradle
+    - key: "gradle-pages"
+      policy: pull-push
+      paths:
+        - .gradle-pages
+  allow_failure: true
