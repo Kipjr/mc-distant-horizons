@@ -1,7 +1,7 @@
 # use Eclipse's JDK
 # The ci should always use a unix(-like) OS to work
 #image: eclipse-temurin:17
-image: gradle:8.5-alpine
+image: gradle:8.6-jdk17
 
 # all stages need to be defined here
 # TODO: Make stages depend on what is in versionProperties

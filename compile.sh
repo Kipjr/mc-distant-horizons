@@ -12,7 +12,11 @@ publish_version()
 {
     if [[ "$MC_VER" == "all" || "$1" == "$MC_VER" ]]
     then
-        docker run --name="dh-build-$1" --rm -v "/${PWD}:/home/build" dh-eclipse-temurin $BUILD_TASK -PmcVer="$1"  --no-daemon --gradle-user-home ".gradle-cache/"
+        docker run --rm --name="dh-build-$1" \
+            -v "/$(PWD)://home/gradle/project" \
+            -w "//home/gradle/project" \
+             gradle:8.5-alpine \
+             gradle $BUILD_TASK -PmcVer="$1" --no-daemon #--gradle-user-home ".gradle-cache/"
 
         cp ./fabric/build/libs/*$1.jar ./buildAllJars/fabric/
         # cp ./forge/build/libs/*$1.jar ./buildAllJars/forge/
@@ -27,7 +31,7 @@ then
     exit 1
 fi
 
-docker build --tag=dh-eclipse-temurin -q .
+# docker build --tag=dh-eclipse-temurin -q .
 
 mkdir -p buildAllJars/fabric
 # mkdir -p buildAllJars/forge
