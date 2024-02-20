@@ -11,6 +11,10 @@ variables:
   # Pull core when building
   GIT_SUBMODULE_STRATEGY: recursive
 
+before_script:
+  - GRADLE_USER_HOME="$(pwd)/.gradle"
+  - export GRADLE_USER_HOME
+
 
 build:
   stage: build
@@ -19,14 +23,11 @@ build:
   parallel:
     matrix:
       - MC_VER: ["1.16.5", "1.17.1", "1.18.2", "1.19.2", "1.19.4", "1.20.1", "1.20.2", "1.20.4"]
-  before_script:
-    - GRADLE_USER_HOME="$(pwd)/.gradle-${MC_VER}"
-    - export GRADLE_USER_HOME
   script:
     # this both runs the unit tests and assembles the code
-    # - ./gradlew clean -PmcVer="${MC_VER}" -PinfoGitCommit="${CI_COMMIT_SHA}" -PinfoGitBranch="${CI_COMMIT_BRANCH}" -PinfoBuildSource="GitLab CI (${CI_PIPELINE_ID})" --no-daemon --build-cache
-    - gradle build -PmcVer="${MC_VER}" -PinfoGitCommit="${CI_COMMIT_SHA}" -PinfoGitBranch="${CI_COMMIT_BRANCH}" -PinfoBuildSource="GitLab CI (${CI_PIPELINE_ID})" --no-daemon --build-cache
-    - gradle mergeJars -PmcVer="${MC_VER}" -PinfoGitCommit="${CI_COMMIT_SHA}" -PinfoGitBranch="${CI_COMMIT_BRANCH}" -PinfoBuildSource="GitLab CI (${CI_PIPELINE_ID})" --no-daemon --build-cache
+    # - ./gradlew clean -PmcVer="${MC_VER}" -PinfoGitCommit="${CI_COMMIT_SHA}" -PinfoGitBranch="${CI_COMMIT_BRANCH}" -PinfoBuildSource="GitLab CI (${CI_PIPELINE_ID})"
+    - gradle build -PmcVer="${MC_VER}" -PinfoGitCommit="${CI_COMMIT_SHA}" -PinfoGitBranch="${CI_COMMIT_BRANCH}" -PinfoBuildSource="GitLab CI (${CI_PIPELINE_ID})"
+    - gradle mergeJars -PmcVer="${MC_VER}" -PinfoGitCommit="${CI_COMMIT_SHA}" -PinfoGitBranch="${CI_COMMIT_BRANCH}" -PinfoBuildSource="GitLab CI (${CI_PIPELINE_ID})"
   artifacts:
     name: "NightlyBuild_${MC_VER}-${CI_COMMIT_SHORT_SHA}-${CI_COMMIT_TIMESTAMP}"
     paths:
@@ -51,8 +52,8 @@ build:
     key: gradle-${MC_VER}
     policy: pull-push
     paths:
-      - .gradle-${MC_VER}/caches/
-      - .gradle-${MC_VER}/notifications/
+      - .gradle/caches/
+      - .gradle/notifications/
       - coreSubProjects/api/build
       - coreSubProjects/core/build
       - build
@@ -63,15 +64,12 @@ api:
   stage: api
   needs: []
   dependencies: []
-  before_script:
-    - GRADLE_USER_HOME="$(pwd)/.gradle-api"
-    - export GRADLE_USER_HOME
   script:
     # this should only run for the API
-    #- ./gradlew api:clean  --no-daemon --gradle-user-home cache/;
+    #- ./gradlew api:clean
     # this also runs unit tests
-    - gradle api:build --no-daemon --build-cache
-    - gradle api:addSourcesToCompiledJar --no-daemon --build-cache
+    - gradle api:build
+    - gradle api:addSourcesToCompiledJar
   artifacts:
     name: "Api_NightlyBuild-${CI_COMMIT_SHORT_SHA}-${CI_COMMIT_TIMESTAMP}"
     paths:
@@ -87,8 +85,8 @@ api:
     key: gradle-api
     policy: pull-push
     paths:
-      - .gradle-api/caches/
-      - .gradle-api/notifications/
+      - .gradle/caches/
+      - .gradle/notifications/
       - coreSubProjects/api/build
       - coreSubProjects/core/build
       - build
@@ -100,15 +98,12 @@ pages:
   stage: pages
   needs: []
   dependencies: []
-  before_script:
-    - GRADLE_USER_HOME="$(pwd)/.gradle-pages"
-    - export GRADLE_USER_HOME
   script:
     # this should only run for the API
     #- ./gradlew api:clean  --no-daemon --gradle-user-home cache/;
     # this also runs unit tests
-    - gradle api:build --no-daemon --build-cache
-    - gradle api:javadoc --no-daemon --build-cache
+    - gradle api:build
+    - gradle api:javadoc
     - mkdir public
     - cp -r $CI_PROJECT_DIR/coreSubProjects/api/build/docs/javadoc/. public
   artifacts:
@@ -119,8 +114,8 @@ pages:
     key: gradle-pages
     policy: pull-push
     paths:
-      - .gradle-pages/caches/
-      - .gradle-pages/notifications/
+      - .gradle/caches/
+      - .gradle/notifications/
       - coreSubProjects/api/build
       - coreSubProjects/core/build
       - build
