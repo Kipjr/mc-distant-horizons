@@ -53,7 +53,9 @@ build:
     paths:
       - .gradle-${MC_VER}/caches/
       - .gradle-${MC_VER}/notifications/
-      # - .gradle-${MC_VER}/wrapper/
+      - coreSubProjects/api/build
+      - coreSubProjects/core/build
+      - build
   allow_failure: true
 
 
@@ -87,7 +89,9 @@ api:
     paths:
       - .gradle-api/caches/
       - .gradle-api/notifications/
-      # - .gradle-api/wrapper/
+      - coreSubProjects/api/build
+      - coreSubProjects/core/build
+      - build
   allow_failure: true
 
 
@@ -117,5 +121,7 @@ pages:
     paths:
       - .gradle-pages/caches/
       - .gradle-pages/notifications/
-      # - .gradle-pages/wrapper/
+      - coreSubProjects/api/build
+      - coreSubProjects/core/build
+      - build
   allow_failure: true
