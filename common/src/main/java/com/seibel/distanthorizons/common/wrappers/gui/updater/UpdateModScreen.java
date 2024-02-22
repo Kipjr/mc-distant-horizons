@@ -66,13 +66,6 @@ public class UpdateModScreen extends DhScreen
 		
 		try
 		{
-			// We cannot get assets from the root of the mod so we use this hack
-			// TODO: Load the icon.png and logo.png in the mod initialise rather than here
-			ResourceLocation logoLocation = new ResourceLocation(ModInfo.ID, "logo.png");
-			Minecraft.getInstance().getTextureManager().register(
-					logoLocation,
-					new DynamicTexture(NativeImage.read(JarUtils.accessFile("logo.png")))
-			);
 			
 			
 			// Logo image
@@ -84,7 +77,7 @@ public class UpdateModScreen extends DhScreen
 					// Offset
 					0, 0,
 					// Some textuary stuff
-					0, logoLocation, 130, 65,
+					0, new ResourceLocation(ModInfo.ID, "logo.png"), 130, 65,
 					// Create the button and tell it where to go
 					// For now it goes to the client option by default
 					(buttonWidget) -> System.out.println("Nice, you found an easter egg :)"), // TODO: Add a proper easter egg to pressing the logo (maybe with confetti)

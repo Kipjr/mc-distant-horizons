@@ -17,6 +17,12 @@ import java.nio.file.Path;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
+/** 
+ * @deprecated should be replaced with net.minecraft.world.level.chunk.storage.IOWorker to
+ *              prevent potential file corruption and issues with the C2ME mod.
+ *              Generally this would be done via (MC ServerLevel) level.getChunkSource().chunkMap.worker#loadAsync()
+ */
+@Deprecated
 public class RegionFileStorageExternalCache implements AutoCloseable
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();

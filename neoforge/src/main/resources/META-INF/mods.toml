@@ -12,8 +12,8 @@ issueTrackerURL = "${issues}"
     #//updateJSONURL="https://change.me.example.invalid/updates.json" # A URL to query for updates for this mod. See the JSON update specification https://mcforge.readthedocs.io/en/latest/gettingstarted/autoupdate/
     displayURL = "${homepage}"
     description = "${description}" #//mandatory. The description text for the mod
-    logoFile = "logo.png"
-    catalogueImageIcon = "icon.png"
+    logoFile = "assets/distanthorizons/logo.png"
+    catalogueImageIcon = "assets/distanthorizons/icon.png"
     credits = "Massive thanks to: Leonardo, Cola, Ran, CoolGi, and Leetom. For their hard work to bring Distant Horizons to where it is today. - James"
     #// if not set defaults to "false"
     clientSideOnly = "true"
