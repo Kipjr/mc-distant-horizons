@@ -92,7 +92,7 @@ public abstract class AbstractModInitializer
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDhInitEvent.class, null);
 		
 		this.startup();
-		this.printModInfo(true);
+		this.printModInfo();
 		
 		this.createClientProxy().registerEvents();
 		this.createServerProxy(false).registerEvents();
@@ -116,7 +116,7 @@ public abstract class AbstractModInitializer
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDhInitEvent.class, null);
 		
 		this.startup();
-		this.printModInfo(false);
+		this.printModInfo();
 		
 		// This prevents returning uninitialized Config values,
 		// resulting from a circular reference mid-initialization in a static class
@@ -155,17 +155,14 @@ public abstract class AbstractModInitializer
 		this.createInitialBindings();
 	}
 	
-	private void printModInfo(boolean printGitInfo)
+	private void printModInfo()
 	{
 		LOGGER.info(ModInfo.READABLE_NAME + ", Version: " + ModInfo.VERSION);
 		
-		if (printGitInfo)
-		{
-			// Useful for dev builds
-			LOGGER.info("DH Branch: " + ModJarInfo.Git_Branch);
-			LOGGER.info("DH Commit: " + ModJarInfo.Git_Commit);
-			LOGGER.info("DH Jar Build Source: " + ModJarInfo.Build_Source);
-		}
+		// Useful for dev builds
+		LOGGER.info("DH Branch: " + ModJarInfo.Git_Branch);
+		LOGGER.info("DH Commit: " + ModJarInfo.Git_Commit);
+		LOGGER.info("DH Jar Build Source: " + ModJarInfo.Build_Source);
 	}
 	
 	protected <T extends IModAccessor> void tryCreateModCompatAccessor(String modId, Class<? super T> accessorClass, Supplier<T> accessorConstructor)
@@ -199,10 +196,16 @@ public abstract class AbstractModInitializer
 		
 		for (AbstractConfigType<?, ?> type : ConfigBase.INSTANCE.entries)
 		{
-			if (!(type instanceof ConfigEntry)) continue;
+			if (!(type instanceof ConfigEntry))
+			{
+				continue;
+			}
 			//noinspection PatternVariableCanBeUsed
 			ConfigEntry configEntry = (ConfigEntry) type;
-			if (configEntry.getServersideShortName() == null) continue;
+			if (configEntry.getServersideShortName() == null)
+			{
+				continue;
+			}
 			
 			Function<
 					Function<CommandContext<CommandSourceStack>, Object>,
@@ -255,12 +258,15 @@ public abstract class AbstractModInitializer
 								Supplier<ArgumentType<?>>,
 								BiFunction<CommandContext<?>, String, ?>>
 						>() {{
-					put(Integer.class, new Pair<>(() -> integer((int) configEntry.getMin(), (int) configEntry.getMax()), IntegerArgumentType::getInteger));
-					put(Double.class, new Pair<>(() -> doubleArg((double) configEntry.getMin(), (double) configEntry.getMax()), DoubleArgumentType::getDouble));
-					put(Boolean.class, new Pair<>(BoolArgumentType::bool, BoolArgumentType::getBool));
+					this.put(Integer.class, new Pair<>(() -> integer((int) configEntry.getMin(), (int) configEntry.getMax()), IntegerArgumentType::getInteger));
+					this.put(Double.class, new Pair<>(() -> doubleArg((double) configEntry.getMin(), (double) configEntry.getMax()), DoubleArgumentType::getDouble));
+					this.put(Boolean.class, new Pair<>(BoolArgumentType::bool, BoolArgumentType::getBool));
 				}}.entrySet())
 				{
-					if (!pair.getKey().isAssignableFrom(configEntry.getType())) continue;
+					if (!pair.getKey().isAssignableFrom(configEntry.getType()))
+					{
+						continue;
+					}
 					
 					subcommand.then(argument("value", pair.getValue().first.get())
 							.executes(makeConfigUpdater.apply(c -> pair.getValue().second.apply(c, "value"))));
@@ -270,13 +276,15 @@ public abstract class AbstractModInitializer
 				}
 				
 				if (!setterAdded)
+				{
 					throw new RuntimeException("Config type of "+type.getName()+" is not supported: "+configEntry.getType().getSimpleName());
+				}
 			}
 			
 			builder.then(subcommand);
 		}
 		
-		commandDispatcher.register(builder);
+		this.commandDispatcher.register(builder);
 	}
 	
 	
