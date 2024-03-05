@@ -79,8 +79,6 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.lwjgl.opengl.GL32;
 
-import java.util.function.Predicate;
-
 /**
  * This handles all events sent to the client,
  * and is the starting point for most of the mod.
@@ -277,10 +275,10 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 	{
 		#if MC_VER >= MC_1_20_2
 		Channel.VersionTest versionTest = (status, version)
-				-> status != Channel.VersionTest.Status.PRESENT || version == ModInfo.MULTIVERSE_PLUGIN_PROTOCOL_VERSION;
+				-> status != Channel.VersionTest.Status.PRESENT || version == ModInfo.PLUGIN_PROTOCOL_VERSION;
 		
-		multiversePluginChannel = ChannelBuilder.named(new ResourceLocation(ModInfo.NETWORKING_RESOURCE_NAMESPACE, ModInfo.MULTIVERSE_PLUGIN_NAMESPACE))
-				.networkProtocolVersion(ModInfo.MULTIVERSE_PLUGIN_PROTOCOL_VERSION)
+		multiversePluginChannel = ChannelBuilder.named(new ResourceLocation(ModInfo.RESOURCE_NAMESPACE, ModInfo.PLUGIN_CHANNEL_PATH))
+				.networkProtocolVersion(ModInfo.PLUGIN_PROTOCOL_VERSION)
 				.serverAcceptedVersions(versionTest)
 				.clientAcceptedVersions(versionTest)
 				.simpleChannel();
@@ -289,7 +287,7 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 				.decoder(FriendlyByteBuf::asReadOnly)
 				.consumerNetworkThread((nettyByteBuf, contextRef) ->
 				{
-					ClientApi.INSTANCE.serverMessageReceived(nettyByteBuf);
+					ClientApi.INSTANCE.pluginMessageReceived(nettyByteBuf);
 					contextRef.setPacketHandled(true);
 				})
 				.add();

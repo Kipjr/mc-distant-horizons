@@ -3,19 +3,23 @@ package com.seibel.distanthorizons.fabric;
 import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
+import com.seibel.distanthorizons.common.wrappers.network.AbstractPluginPacketSender;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.ServerApi;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import io.netty.buffer.ByteBuf;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -52,7 +56,7 @@ public class FabricServerProxy implements AbstractModInitializer.IEventProxy
 	
 	private boolean isValidTime()
 	{
-		if (isDedicated)
+		if (this.isDedicated)
 		{
 			return true;
 		}
@@ -66,6 +70,7 @@ public class FabricServerProxy implements AbstractModInitializer.IEventProxy
 	private ServerPlayerWrapper getServerPlayerWrapper(ServerPlayer player) { return ServerPlayerWrapper.getWrapper(player); }
 	
 	/** Registers Fabric Events */
+	@Override
 	public void registerEvents()
 	{
 		LOGGER.info("Registering Fabric Server Events");
@@ -80,15 +85,15 @@ public class FabricServerProxy implements AbstractModInitializer.IEventProxy
 		//TODO: Check if both of these use the correct timed events. (i.e. is it 'ed' or 'ing' one?)
 		ServerLifecycleEvents.SERVER_STARTING.register((server) ->
 		{
-			if (isValidTime())
+			if (this.isValidTime())
 			{
-				ServerApi.INSTANCE.serverLoadEvent(isDedicated);
+				ServerApi.INSTANCE.serverLoadEvent(this.isDedicated);
 			}
 		});
 		// ServerWorldUnloadEvent
 		ServerLifecycleEvents.SERVER_STOPPED.register((server) ->
 		{
-			if (isValidTime())
+			if (this.isValidTime())
 			{
 				ServerApi.INSTANCE.serverUnloadEvent();
 			}
@@ -97,25 +102,25 @@ public class FabricServerProxy implements AbstractModInitializer.IEventProxy
 		// ServerLevelLoadEvent
 		ServerWorldEvents.LOAD.register((server, level) ->
 		{
-			if (isValidTime())
+			if (this.isValidTime())
 			{
-				ServerApi.INSTANCE.serverLevelLoadEvent(getServerLevelWrapper(level));
+				ServerApi.INSTANCE.serverLevelLoadEvent(this.getServerLevelWrapper(level));
 			}
 		});
 		// ServerLevelUnloadEvent
 		ServerWorldEvents.UNLOAD.register((server, level) ->
 		{
-			if (isValidTime())
+			if (this.isValidTime())
 			{
-				ServerApi.INSTANCE.serverLevelUnloadEvent(getServerLevelWrapper(level));
+				ServerApi.INSTANCE.serverLevelUnloadEvent(this.getServerLevelWrapper(level));
 			}
 		});
 		
 		// ServerChunkLoadEvent
 		ServerChunkEvents.CHUNK_LOAD.register((server, chunk) ->
 		{
-			ILevelWrapper level = getServerLevelWrapper((ServerLevel) chunk.getLevel());
-			if (isValidTime())
+			ILevelWrapper level = this.getServerLevelWrapper((ServerLevel) chunk.getLevel());
+			if (this.isValidTime())
 			{
 				ServerApi.INSTANCE.serverChunkLoadEvent(
 						new ChunkWrapper(chunk, chunk.getLevel(), level),
@@ -126,29 +131,43 @@ public class FabricServerProxy implements AbstractModInitializer.IEventProxy
 		
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
 		{
-			if (isValidTime())
+			if (this.isValidTime())
 			{
-				ServerApi.INSTANCE.serverPlayerJoinEvent(getServerPlayerWrapper(handler.player));
+				ServerApi.INSTANCE.serverPlayerJoinEvent(this.getServerPlayerWrapper(handler.player));
 			}
 		});
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
 		{
-			if (isValidTime())
+			if (this.isValidTime())
 			{
-				ServerApi.INSTANCE.serverPlayerDisconnectEvent(getServerPlayerWrapper(handler.player));
+				ServerApi.INSTANCE.serverPlayerDisconnectEvent(this.getServerPlayerWrapper(handler.player));
 			}
 		});
 		ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, dest) ->
 		{
-			if (isValidTime())
+			if (this.isValidTime())
 			{
 				ServerApi.INSTANCE.serverPlayerLevelChangeEvent(
-						getServerPlayerWrapper(player),
-						getServerLevelWrapper(origin),
-						getServerLevelWrapper(dest)
+						this.getServerPlayerWrapper(player),
+						this.getServerLevelWrapper(origin),
+						this.getServerLevelWrapper(dest)
 				);
 			}
 		});
+		
+		//if (this.isDedicated)
+		//{
+		//	ServerPlayNetworking.registerGlobalReceiver(AbstractPluginPacketSender.PLUGIN_CHANNEL_RESOURCE, (server, serverPlayer, handler, friendlyByteBuf, responseSender) ->
+		//	{
+		//		// converting to a ByteBuf is necessary otherwise Fabric will complain when the game boots
+		//		ByteBuf nettyByteBuf = friendlyByteBuf.asReadOnly();
+		//		
+		//		// remove the Bukkit/Forge packet ID byte
+		//		nettyByteBuf.readByte();
+		//		
+		//		ClientApi.INSTANCE.pluginMessageReceived(nettyByteBuf);
+		//	});
+		//}
 	}
 	
 }

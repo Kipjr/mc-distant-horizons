@@ -27,7 +27,7 @@ public class MixinClientPacketListener
 	void onHandleLoginEnd(CallbackInfo ci) { ClientApi.INSTANCE.onClientOnlyConnected(); }
 	
 	@Inject(method = "handleRespawn", at = @At("HEAD"))
-	void onHandleRespawnStart(CallbackInfo ci) { ClientApi.INSTANCE.clientLevelUnloadEvent(ClientLevelWrapper.getWrapper(this.level)); }
+	void onHandleRespawnStart(CallbackInfo ci) { ClientApi.INSTANCE.clientLevelUnloadEvent(ClientLevelWrapper.getWrapper(this.level), true); }
 	@Inject(method = "handleRespawn", at = @At("RETURN"))
 	void onHandleRespawnEnd(CallbackInfo ci) { ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper(this.level)); }
 	
