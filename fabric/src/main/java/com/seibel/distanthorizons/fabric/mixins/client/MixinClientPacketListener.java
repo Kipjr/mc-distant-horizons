@@ -24,12 +24,22 @@ public class MixinClientPacketListener
 	private ClientLevel level;
 	
 	@Inject(method = "handleLogin", at = @At("RETURN"))
-	void onHandleLoginEnd(CallbackInfo ci) { ClientApi.INSTANCE.onClientOnlyConnected(); }
+	void onHandleLoginEnd(CallbackInfo ci)
+	{
+		ClientApi.INSTANCE.onClientOnlyConnected();
+		ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper(this.level));
+	}
 	
 	@Inject(method = "handleRespawn", at = @At("HEAD"))
-	void onHandleRespawnStart(CallbackInfo ci) { ClientApi.INSTANCE.clientLevelUnloadEvent(ClientLevelWrapper.getWrapper(this.level), true); }
+	void onHandleRespawnStart(CallbackInfo ci)
+	{
+		ClientApi.INSTANCE.clientLevelUnloadEvent(ClientLevelWrapper.getWrapper(this.level), true);
+	}
 	@Inject(method = "handleRespawn", at = @At("RETURN"))
-	void onHandleRespawnEnd(CallbackInfo ci) { ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper(this.level)); }
+	void onHandleRespawnEnd(CallbackInfo ci)
+	{
+		ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper(this.level));
+	}
 	
 	#if MC_VER < MC_1_19_4
 	@Inject(method = "cleanup", at = @At("HEAD"))

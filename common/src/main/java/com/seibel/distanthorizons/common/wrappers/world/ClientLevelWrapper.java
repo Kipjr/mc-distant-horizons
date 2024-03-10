@@ -53,24 +53,31 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	// wrapper logic //
 	//===============//
 	
-	@Nullable
-	public static IClientLevelWrapper getWrapper(@Nullable ClientLevel level)
+	public static IClientLevelWrapper getWrapper(@NotNull ClientLevel level)
 	{
-		if (level == null)
-		{
-			return null;
-		}
-		
-		// used if the client is connected to a server that defines the currently loaded level
-		IServerKeyedClientLevel overrideLevel = KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel();
-		if (overrideLevel != null)
-		{
-			return overrideLevel;
-		}
-		
-		return getWrapperIgnoringOverride(level);
+		return getWrapper(level, false);
 	}
-	public static IClientLevelWrapper getWrapperIgnoringOverride(@NotNull ClientLevel level) { return LEVEL_WRAPPER_BY_CLIENT_LEVEL.computeIfAbsent(level, ClientLevelWrapper::new); }
+	
+	@Nullable
+	public static IClientLevelWrapper getWrapper(@Nullable ClientLevel level, boolean bypassMultiverse)
+	{
+		if (!bypassMultiverse)
+		{
+			if (level == null)
+			{
+				return null;
+			}
+			
+			// used if the client is connected to a server that defines the currently loaded level
+			IServerKeyedClientLevel overrideLevel = KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel();
+			if (overrideLevel != null)
+			{
+				return overrideLevel;
+			}
+		}
+		
+		return LEVEL_WRAPPER_BY_CLIENT_LEVEL.computeIfAbsent(level, ClientLevelWrapper::new);
+	}
 	
 	@Nullable
 	@Override

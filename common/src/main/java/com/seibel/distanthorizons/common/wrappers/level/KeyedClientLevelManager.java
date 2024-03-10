@@ -13,7 +13,7 @@ public class KeyedClientLevelManager implements IKeyedClientLevelManager
 	/** This is set and managed by the ClientApi for servers with support for DH. */
 	@Nullable
 	private IServerKeyedClientLevel serverKeyedLevel = null;
-	private boolean managedByServer = false;
+	private boolean enabled = false;
 	
 	
 	
@@ -42,7 +42,7 @@ public class KeyedClientLevelManager implements IKeyedClientLevelManager
 	{
 		IServerKeyedClientLevel keyedLevel = new ServerKeyedClientLevel((ClientLevel) clientLevel.getWrappedMcObject(), levelKey);
 		this.serverKeyedLevel = keyedLevel;
-		this.managedByServer = true;
+		this.enabled = true;
 		return keyedLevel;
 	}
 	
@@ -55,14 +55,14 @@ public class KeyedClientLevelManager implements IKeyedClientLevelManager
 	@Override
 	public boolean isEnabled()
 	{
-		return this.managedByServer;
+		return this.enabled;
 	}
 	
 	@Override
 	public void disable()
 	{
 		this.clearServerKeyedLevel();
-		this.managedByServer = false;
+		this.enabled = false;
 	}
 	
 }

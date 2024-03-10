@@ -29,8 +29,8 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 		}
 	}
 	
-	protected abstract void sendPluginPacketClient(FriendlyByteBuf mcBuffer);
-	
 	protected abstract void sendPluginPacketServer(ServerPlayer serverPlayer, FriendlyByteBuf mcBuffer);
+	
+	protected abstract void sendPluginPacketClient(FriendlyByteBuf mcBuffer);
 	
 }
