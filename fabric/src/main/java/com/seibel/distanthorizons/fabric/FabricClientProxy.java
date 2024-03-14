@@ -238,15 +238,14 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		//==================//
 		
 		ClientPlayNetworking.registerGlobalReceiver(AbstractPluginPacketSender.PLUGIN_CHANNEL_RESOURCE,
-				(Minecraft client, ClientPacketListener handler, FriendlyByteBuf friendlyByteBuf, PacketSender responseSender) ->
+				(Minecraft client, ClientPacketListener handler, FriendlyByteBuf mcBuffer, PacketSender responseSender) ->
 				{
-					// converting to a ByteBuf is necessary otherwise Fabric will complain when the game boots
-					ByteBuf nettyByteBuf = friendlyByteBuf.asReadOnly();
+					ByteBuf buffer = mcBuffer.asReadOnly();
 					
-					// remove the Bukkit/Forge packet ID byte
-					//nettyByteBuf.readByte();
+					// (Neo)Forge packet ID (Unused, always expected to be 0)
+					buffer.readByte();
 					
-					ClientApi.INSTANCE.pluginMessageReceived(nettyByteBuf);
+					ClientApi.INSTANCE.pluginMessageReceived(buffer);
 				});
 	}
 	

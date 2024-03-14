@@ -17,20 +17,17 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 	@Override
 	public final void sendPluginPacket(@Nullable IServerPlayerWrapper serverPlayer, ByteBuf buffer)
 	{
-		FriendlyByteBuf mcBuffer = new FriendlyByteBuf(buffer);
-		
 		if (serverPlayer != null)
 		{
-			this.sendPluginPacketServer((ServerPlayer) serverPlayer.getWrappedMcObject(), mcBuffer);
+			this.sendPluginPacketServer((ServerPlayer) serverPlayer.getWrappedMcObject(), buffer);
 		}
 		else
 		{
-			this.sendPluginPacketClient(mcBuffer);
+			this.sendPluginPacketClient(buffer);
 		}
 	}
 	
-	protected abstract void sendPluginPacketServer(ServerPlayer serverPlayer, FriendlyByteBuf mcBuffer);
-	
-	protected abstract void sendPluginPacketClient(FriendlyByteBuf mcBuffer);
+	protected abstract void sendPluginPacketServer(ServerPlayer serverPlayer, ByteBuf buffer);
+	protected abstract void sendPluginPacketClient(ByteBuf buffer);
 	
 }

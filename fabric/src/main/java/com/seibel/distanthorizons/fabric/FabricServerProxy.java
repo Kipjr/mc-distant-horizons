@@ -155,19 +155,18 @@ public class FabricServerProxy implements AbstractModInitializer.IEventProxy
 			}
 		});
 		
-		//if (this.isDedicated)
-		//{
-		//	ServerPlayNetworking.registerGlobalReceiver(AbstractPluginPacketSender.PLUGIN_CHANNEL_RESOURCE, (server, serverPlayer, handler, friendlyByteBuf, responseSender) ->
-		//	{
-		//		// converting to a ByteBuf is necessary otherwise Fabric will complain when the game boots
-		//		ByteBuf nettyByteBuf = friendlyByteBuf.asReadOnly();
-		//		
-		//		// remove the Bukkit/Forge packet ID byte
-		//		nettyByteBuf.readByte();
-		//		
-		//		ClientApi.INSTANCE.pluginMessageReceived(nettyByteBuf);
-		//	});
-		//}
+		if (this.isDedicated)
+		{
+			ServerPlayNetworking.registerGlobalReceiver(AbstractPluginPacketSender.PLUGIN_CHANNEL_RESOURCE, (server, serverPlayer, handler, friendlyByteBuf, responseSender) ->
+			{
+				ByteBuf nettyByteBuf = friendlyByteBuf.asReadOnly();
+				
+				// (Neo)Forge packet ID (Unused, always expected to be 0)
+				nettyByteBuf.readByte();
+				
+				ServerApi.INSTANCE.pluginMessageReceived(ServerPlayerWrapper.getWrapper(serverPlayer), nettyByteBuf);
+			});
+		}
 	}
 	
 }
