@@ -27,7 +27,11 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 {
 	public static final SimpleChannel PLUGIN_CHANNEL =
 			#if MC_VER >= MC_1_20_2
-			ChannelBuilder.named(AbstractPluginPacketSender.PLUGIN_CHANNEL_RESOURCE).simpleChannel();
+			ChannelBuilder.named(AbstractPluginPacketSender.PLUGIN_CHANNEL_RESOURCE)
+					.networkProtocolVersion(1)
+					.serverAcceptedVersions((status, version) -> true)
+					.clientAcceptedVersions((status, version) -> true)
+					.simpleChannel();
 			#else // < 1.20.2
 			NetworkRegistry.newSimpleChannel(
 					AbstractPluginPacketSender.PLUGIN_CHANNEL_RESOURCE,
