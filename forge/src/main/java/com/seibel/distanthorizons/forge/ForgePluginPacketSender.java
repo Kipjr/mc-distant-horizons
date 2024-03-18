@@ -1,6 +1,8 @@
 package com.seibel.distanthorizons.forge;
 
+import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
 import com.seibel.distanthorizons.common.wrappers.network.AbstractPluginPacketSender;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
@@ -9,6 +11,8 @@ import net.minecraftforge.network.PacketDistributor;
 #if MC_VER >= MC_1_20_2
 import net.minecraftforge.network.ChannelBuilder;
 import net.minecraftforge.network.SimpleChannel;
+import org.apache.commons.lang3.ObjectUtils;
+import org.checkerframework.checker.nullness.qual.Nullable;
 #elif MC_VER >= MC_1_18_2
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
@@ -20,6 +24,7 @@ import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 #endif
 
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -45,28 +50,39 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 	{
 		setPacketHandler((player, buffer) -> consumer.accept(buffer));
 	}
-	public static void setPacketHandler(BiConsumer<ServerPlayer, ByteBuf> consumer)
+	public static void setPacketHandler(BiConsumer<IServerPlayerWrapper, ByteBuf> consumer)
 	{
 		#if MC_VER >= MC_1_20_2
-		PLUGIN_CHANNEL.messageBuilder(ByteBuf.class, 0)
+		PLUGIN_CHANNEL.messageBuilder(FriendlyByteBuf.class, 0)
 				.encoder((buffer, mcBuffer) -> mcBuffer.writeBytes(buffer))
-				.decoder(FriendlyByteBuf::asReadOnly)
+				.decoder(FriendlyByteBuf::new)
 				.consumerNetworkThread((buffer, context) ->
 				{
-					consumer.accept(context.getSender(), buffer);
+					if (context.getSender() != null)
+					{
+						consumer.accept(ServerPlayerWrapper.getWrapper(context.getSender()), buffer);
+					}
+					else
+					{
+						consumer.accept(null, buffer);
+					}
 					context.setPacketHandled(true);
 				})
 				.add();
 		#else // < 1.20.2
-		PLUGIN_CHANNEL.registerMessage(0, ByteBuf.class,
-				// encoder
+		PLUGIN_CHANNEL.registerMessage(0, FriendlyByteBuf.class,
 				(buffer, mcBuffer) -> mcBuffer.writeBytes(buffer),
-				// decoder
-				FriendlyByteBuf::asReadOnly,
-				// message consumer
+				FriendlyByteBuf::new,
 				(buffer, context) ->
 				{
-					consumer.accept(context.get().getSender(), buffer);
+					if (context.get().getSender() != null)
+					{
+						consumer.accept(ServerPlayerWrapper.getWrapper(context.get().getSender()), buffer);
+					}
+					else
+					{
+						consumer.accept(null, buffer);
+					}
 					context.get().setPacketHandled(true);
 				}
 		);
@@ -74,7 +90,7 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 	}
 	
 	@Override
-	protected void sendPluginPacketClient(ByteBuf buffer)
+	protected void sendPluginPacketClient(FriendlyByteBuf buffer)
 	{
 		#if MC_VER >= MC_1_20_2
 		PLUGIN_CHANNEL.send(buffer, PacketDistributor.SERVER.noArg());
@@ -84,7 +100,7 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 	}
 	
 	@Override
-	protected void sendPluginPacketServer(ServerPlayer serverPlayer, ByteBuf buffer)
+	protected void sendPluginPacketServer(ServerPlayer serverPlayer, FriendlyByteBuf buffer)
 	{
 		#if MC_VER >= MC_1_20_2
 		PLUGIN_CHANNEL.send(buffer, PacketDistributor.PLAYER.with(serverPlayer));
