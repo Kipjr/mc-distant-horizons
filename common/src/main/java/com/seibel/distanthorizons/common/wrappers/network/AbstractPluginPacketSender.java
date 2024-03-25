@@ -8,7 +8,6 @@ import io.netty.buffer.ByteBufAllocator;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
 
@@ -18,7 +17,20 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 	
 	
 	@Override
-	public final void sendPluginPacket(@Nullable IServerPlayerWrapper serverPlayer, Consumer<ByteBuf> encoder)
+	public final void sendPluginPacketClient(Consumer<ByteBuf> encoder)
+	{
+		FriendlyByteBuf buffer = this.createBuffer(encoder);
+		this.sendPluginPacketClient(buffer);
+	}
+	
+	@Override
+	public final void sendPluginPacketServer(IServerPlayerWrapper serverPlayer, Consumer<ByteBuf> encoder)
+	{
+		FriendlyByteBuf buffer = this.createBuffer(encoder);
+		this.sendPluginPacketServer((ServerPlayer) serverPlayer.getWrappedMcObject(), buffer);
+	}
+	
+	private FriendlyByteBuf createBuffer(Consumer<ByteBuf> encoder)
 	{
 		FriendlyByteBuf buffer = new FriendlyByteBuf(ByteBufAllocator.DEFAULT.buffer());
 		
@@ -28,15 +40,7 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 		}
 		
 		encoder.accept(buffer);
-		
-		if (serverPlayer != null)
-		{
-			this.sendPluginPacketServer((ServerPlayer) serverPlayer.getWrappedMcObject(), buffer);
-		}
-		else
-		{
-			this.sendPluginPacketClient(buffer);
-		}
+		return buffer;
 	}
 	
 	protected boolean shouldAddForgePacketId()
@@ -44,7 +48,7 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 		return false;
 	}
 	
-	protected abstract void sendPluginPacketServer(ServerPlayer serverPlayer, FriendlyByteBuf buffer);
 	protected abstract void sendPluginPacketClient(FriendlyByteBuf buffer);
+	protected abstract void sendPluginPacketServer(ServerPlayer serverPlayer, FriendlyByteBuf buffer);
 	
 }
