@@ -125,6 +125,8 @@ public abstract class AbstractModInitializer
 		
 		this.createServerProxy(true).registerEvents();
 		
+		this.initializeModCompat();
+		
 		LOGGER.info(ModInfo.READABLE_NAME + " Initialized");
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterDhInitEvent.class, null);
 		
