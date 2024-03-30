@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.common.wrappers.minecraft;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import com.mojang.blaze3d.platform.NativeImage;
@@ -31,6 +32,7 @@ import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -321,6 +323,12 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	public File getInstallationDirectory()
 	{
 		return this.mc.gameDirectory;
+	}
+	
+	@Override
+	public List<IServerPlayerWrapper> getPlayerList()
+	{
+		return null;
 	}
 	
 	@Override

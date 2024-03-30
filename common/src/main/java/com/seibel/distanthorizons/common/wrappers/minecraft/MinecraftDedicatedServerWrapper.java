@@ -1,9 +1,12 @@
 package com.seibel.distanthorizons.common.wrappers.minecraft;
 
+import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import net.minecraft.server.dedicated.DedicatedServer;
 
 import java.io.File;
+import java.util.List;
 
 //@Environment(EnvType.SERVER)
 public class MinecraftDedicatedServerWrapper implements IMinecraftSharedWrapper
@@ -19,9 +22,19 @@ public class MinecraftDedicatedServerWrapper implements IMinecraftSharedWrapper
 	@Override
 	public File getInstallationDirectory()
 	{
-		if (dedicatedServer == null)
+		if (this.dedicatedServer == null)
+		{
 			throw new IllegalStateException("Trying to get Installation Direction before Dedicated server complete initialization!");
-		return dedicatedServer.getServerDirectory();
+		}
+		return this.dedicatedServer.getServerDirectory();
+	}
+	
+	@Override
+	public List<IServerPlayerWrapper> getPlayerList()
+	{
+		return this.dedicatedServer.getPlayerList().getPlayers().stream()
+				.map(serverPlayer -> (IServerPlayerWrapper) ServerPlayerWrapper.getWrapper(serverPlayer))
+				.toList();
 	}
 	
 }
