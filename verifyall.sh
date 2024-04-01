@@ -16,11 +16,18 @@ for version in $(ls ./versionProperties/); do
     result=""
     if ./gradlew "$prefix"classes -PmcVer=$version; then
         result+="\e[1;32m"
+        echo -ne "\e[1;32m"
     else
         result+="\e[1;31m"
+        echo -ne "\e[1;31m"
     fi
     result+=$version
     result+="\e[0m"
+    
+    echo "#"
+    echo "# $version"
+    echo "#"
+    echo -e "\e[0m"
     
     completed_builds+=($result)
 done

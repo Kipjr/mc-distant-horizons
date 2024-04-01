@@ -7,6 +7,7 @@ import net.minecraft.server.dedicated.DedicatedServer;
 
 import java.io.File;
 import java.util.List;
+import java.util.stream.Collectors;
 
 //@Environment(EnvType.SERVER)
 public class MinecraftDedicatedServerWrapper implements IMinecraftSharedWrapper
@@ -34,7 +35,7 @@ public class MinecraftDedicatedServerWrapper implements IMinecraftSharedWrapper
 	{
 		return this.dedicatedServer.getPlayerList().getPlayers().stream()
 				.map(serverPlayer -> (IServerPlayerWrapper) ServerPlayerWrapper.getWrapper(serverPlayer))
-				.toList();
+				.collect(Collectors.toList());
 	}
 	
 }

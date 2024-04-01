@@ -6,25 +6,27 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapp
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.PacketDistributor;
 
 #if MC_VER >= MC_1_20_2
+import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.ChannelBuilder;
 import net.minecraftforge.network.SimpleChannel;
 import org.apache.commons.lang3.ObjectUtils;
 import org.checkerframework.checker.nullness.qual.Nullable;
 #elif MC_VER >= MC_1_18_2
+import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 #elif MC_VER >= MC_1_17_1
 import net.minecraftforge.fmllegacy.network.NetworkRegistry;
+import net.minecraftforge.fmllegacy.network.PacketDistributor;
 import net.minecraftforge.fmllegacy.network.simple.SimpleChannel;
 #else // < 1.17.1
 import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
+import net.minecraftforge.fml.network.PacketDistributor;
 #endif
 
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 

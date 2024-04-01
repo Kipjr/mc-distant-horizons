@@ -29,12 +29,14 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper
 		this.serverPlayer = serverPlayer;
 	}
 	
-	@Override public UUID getUUID()
+	@Override
+	public UUID getUUID()
 	{
 		return this.serverPlayer.getUUID();
 	}
 	
-	@Override public IServerLevelWrapper getLevel()
+	@Override
+	public IServerLevelWrapper getLevel()
 	{
 		#if MC_VER < MC_1_20_1
 		return ServerLevelWrapper.getWrapper(this.serverPlayer.getLevel());
@@ -43,23 +45,31 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper
 		#endif
     }
 	
-	@Override public Vec3d getPosition()
+	@Override
+	public Vec3d getPosition()
 	{
 		Vec3 position = this.serverPlayer.position();
         return new Vec3d(position.x, position.y, position.z);
     }
 	
-	@Override public int getViewDistance()
+	@Override
+	public int getViewDistance()
 	{
 		return this.serverPlayer.server.getPlayerList().getViewDistance();
 	}
 	
-	@Override public SocketAddress getRemoteAddress()
+	@Override
+	public SocketAddress getRemoteAddress()
 	{
+		#if MC_VER >= MC_1_19_4
 		return this.serverPlayer.connection.getRemoteAddress();
+		#else // < 1.19.4
+		return this.serverPlayer.connection.connection.getRemoteAddress();
+		#endif
 	}
 	
-	@Override public Object getWrappedMcObject()
+	@Override
+	public Object getWrappedMcObject()
 	{
 		return this.serverPlayer;
     }
