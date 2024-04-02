@@ -5,7 +5,7 @@
 if [ -n "$1" ]; then
     prefix="$1:"
 fi
-z
+
 clear
 trap "echo; exit" INT
 
