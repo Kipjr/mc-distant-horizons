@@ -36,5 +36,5 @@ done
 ./gradlew classes
 
 echo
-echo "Build results:"
+echo -e "\e[1mBuild results:\e[0m"
 echo -e "${completed_builds[*]}"
