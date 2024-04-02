@@ -1,7 +1,6 @@
 package com.seibel.distanthorizons.common.wrappers.world;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiLevelType;
-import com.seibel.distanthorizons.api.interfaces.world.IDhApiDimensionTypeWrapper;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.block.BiomeWrapper;
 import com.seibel.distanthorizons.common.wrappers.block.BlockStateWrapper;
@@ -10,6 +9,7 @@ import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftClientWrapper;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.IKeyedClientLevelManager;
+import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
@@ -20,9 +20,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapp
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IDimensionTypeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkSource;
 import net.minecraft.world.level.chunk.ChunkStatus;
@@ -55,23 +53,31 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	// wrapper logic //
 	//===============//
 	
-	@Nullable
-	public static IClientLevelWrapper getWrapper(@Nullable ClientLevel level)
+	public static IClientLevelWrapper getWrapper(@NotNull ClientLevel level)
 	{
-		if (level == null)
-		{
-			return null;
-		}
-		
-		// used if the client is connected to a server that defines the currently loaded level
-		if (KEYED_CLIENT_LEVEL_MANAGER.getUseOverrideWrapper())
-		{
-			return KEYED_CLIENT_LEVEL_MANAGER.getOverrideWrapper();
-		}
-		
-		return getWrapperIgnoringOverride(level);
+		return getWrapper(level, false);
 	}
-	public static IClientLevelWrapper getWrapperIgnoringOverride(@NotNull ClientLevel level) { return LEVEL_WRAPPER_BY_CLIENT_LEVEL.computeIfAbsent(level, ClientLevelWrapper::new); }
+	
+	@Nullable
+	public static IClientLevelWrapper getWrapper(@Nullable ClientLevel level, boolean bypassMultiverse)
+	{
+		if (!bypassMultiverse)
+		{
+			if (level == null)
+			{
+				return null;
+			}
+			
+			// used if the client is connected to a server that defines the currently loaded level
+			IServerKeyedClientLevel overrideLevel = KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel();
+			if (overrideLevel != null)
+			{
+				return overrideLevel;
+			}
+		}
+		
+		return LEVEL_WRAPPER_BY_CLIENT_LEVEL.computeIfAbsent(level, ClientLevelWrapper::new);
+	}
 	
 	@Nullable
 	@Override
@@ -99,12 +105,10 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 		}
 		catch (Exception e)
 		{
-			LOGGER.error("Failed to get server side wrapper for client level: " + level);
+			LOGGER.error("Failed to get server side wrapper for client level: " + this.level);
 			return null;
 		}
 	}
-	
-	
 	
 	//====================//
 	// base level methods //

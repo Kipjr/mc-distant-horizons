@@ -32,11 +32,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import com.seibel.distanthorizons.coreapi.ModInfo;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.resources.ResourceLocation;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 #if MC_VER < MC_1_19_2
@@ -54,20 +50,6 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraft.world.level.chunk.ChunkAccess;
 
 import net.minecraftforge.common.MinecraftForge;
-#if MC_VER >= MC_1_20_2
-import net.minecraftforge.network.Channel;
-import net.minecraftforge.network.ChannelBuilder;
-import net.minecraftforge.network.SimpleChannel;
-#elif MC_VER >= MC_1_18_2
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
-#elif MC_VER >= MC_1_17_1
-import net.minecraftforge.fmllegacy.network.NetworkRegistry;
-import net.minecraftforge.fmllegacy.network.simple.SimpleChannel;
-#else // < 1.17.1
-import net.minecraftforge.fml.network.NetworkRegistry;
-import net.minecraftforge.fml.network.simple.SimpleChannel;
-#endif
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 
@@ -78,8 +60,6 @@ import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.lwjgl.opengl.GL32;
-
-import java.util.function.Predicate;
 
 /**
  * This handles all events sent to the client,
@@ -92,8 +72,6 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 {
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-
-	private static SimpleChannel multiversePluginChannel;
 	
 	
 	#if MC_VER < MC_1_19_2
@@ -108,7 +86,7 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 	public void registerEvents()
 	{
 		MinecraftForge.EVENT_BUS.register(this);
-		this.setupNetworkingListeners();
+		ForgePluginPacketSender.setPacketHandler(ClientApi.INSTANCE::pluginMessageReceived);
 	}
 	
 	
@@ -265,77 +243,6 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 		}
 		
 		ClientApi.INSTANCE.keyPressedEvent(event.getKey());
-	}
-	
-	
-	
-	//============//
-	// networking //
-	//============//
-	
-	public void setupNetworkingListeners()
-	{
-		#if MC_VER >= MC_1_20_2
-		Channel.VersionTest versionTest = (status, version)
-				-> status != Channel.VersionTest.Status.PRESENT || version == ModInfo.MULTIVERSE_PLUGIN_PROTOCOL_VERSION;
-		
-		multiversePluginChannel = ChannelBuilder.named(new ResourceLocation(ModInfo.NETWORKING_RESOURCE_NAMESPACE, ModInfo.MULTIVERSE_PLUGIN_NAMESPACE))
-				.networkProtocolVersion(ModInfo.MULTIVERSE_PLUGIN_PROTOCOL_VERSION)
-				.serverAcceptedVersions(versionTest)
-				.clientAcceptedVersions(versionTest)
-				.simpleChannel();
-		
-		multiversePluginChannel.messageBuilder(ByteBuf.class, 0)
-				.decoder(FriendlyByteBuf::asReadOnly)
-				.consumerNetworkThread((nettyByteBuf, contextRef) ->
-				{
-					ClientApi.INSTANCE.serverMessageReceived(nettyByteBuf);
-					contextRef.setPacketHandled(true);
-				})
-				.add();
-		#else // < 1.20.2
-		Predicate<String> versionTest = versionString ->
-		{
-			if (versionString.equals(NetworkRegistry.ABSENT #if MC_VER >= MC_1_19_4 .version() #endif) || versionString.equals(NetworkRegistry.ACCEPTVANILLA))
-			{
-				// allow using networking on vanilla servers or if DH isn't installed on the server
-				return true;
-			}
-			
-			try
-			{
-				int version = Integer.parseInt(versionString);
-				return ModInfo.MULTIVERSE_PLUGIN_PROTOCOL_VERSION == version;
-			}
-			catch (NumberFormatException ignored)
-			{
-				return false;
-			}
-		};
-		
-		multiversePluginChannel = NetworkRegistry.newSimpleChannel(
-				new ResourceLocation(ModInfo.NETWORKING_RESOURCE_NAMESPACE, ModInfo.MULTIVERSE_PLUGIN_NAMESPACE),
-				// network protocol version
-				() -> ModInfo.MULTIVERSE_PLUGIN_PROTOCOL_VERSION +"",
-				// client accepted versions
-				versionTest,
-				// server accepted versions
-				versionTest
-		);
-		
-		multiversePluginChannel.registerMessage(0/*should be incremented for each simple channel we listen to*/, ByteBuf.class,
-				// encoder
-				(pack, friendlyByteBuf) -> { },
-				// decoder
-				FriendlyByteBuf::asReadOnly,
-				// message consumer
-				(nettyByteBuf, contextRef) ->
-				{
-					ClientApi.INSTANCE.serverMessageReceived(nettyByteBuf);
-					contextRef.get().setPacketHandled(true);
-				}
-		);
-		#endif
 	}
 	
 	

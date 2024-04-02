@@ -2,10 +2,7 @@ package com.seibel.distanthorizons.common;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.ArgumentType;
-import com.mojang.brigadier.arguments.BoolArgumentType;
-import com.mojang.brigadier.arguments.DoubleArgumentType;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.*;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiAfterDhInitEvent;
@@ -263,6 +260,7 @@ public abstract class AbstractModInitializer
 					this.put(Integer.class, new Pair<>(() -> integer((int) configEntry.getMin(), (int) configEntry.getMax()), IntegerArgumentType::getInteger));
 					this.put(Double.class, new Pair<>(() -> doubleArg((double) configEntry.getMin(), (double) configEntry.getMax()), DoubleArgumentType::getDouble));
 					this.put(Boolean.class, new Pair<>(BoolArgumentType::bool, BoolArgumentType::getBool));
+					this.put(String.class, new Pair<>(StringArgumentType::string, StringArgumentType::getString));
 				}}.entrySet())
 				{
 					if (!pair.getKey().isAssignableFrom(configEntry.getType()))

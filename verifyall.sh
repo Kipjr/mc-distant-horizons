@@ -5,7 +5,7 @@
 if [ -n "$1" ]; then
     prefix="$1:"
 fi
-z
+
 clear
 trap "echo; exit" INT
 
@@ -16,11 +16,18 @@ for version in $(ls ./versionProperties/); do
     result=""
     if ./gradlew "$prefix"classes -PmcVer=$version; then
         result+="\e[1;32m"
+        echo -ne "\e[1;32m"
     else
         result+="\e[1;31m"
+        echo -ne "\e[1;31m"
     fi
     result+=$version
     result+="\e[0m"
+    
+    echo "#"
+    echo "# $version"
+    echo "#"
+    echo -e "\e[0m"
     
     completed_builds+=($result)
 done
@@ -29,5 +36,5 @@ done
 ./gradlew classes
 
 echo
-echo "Build results:"
+echo -e "\e[1mBuild results:\e[0m"
 echo -e "${completed_builds[*]}"

@@ -266,7 +266,7 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 			try
 			{
 				int version = Integer.parseInt(versionString);
-				return ModInfo.MULTIVERSE_PLUGIN_PROTOCOL_VERSION == version;
+				return ModInfo.PLUGIN_PROTOCOL_VERSION == version;
 			}
 			catch (NumberFormatException ignored)
 			{

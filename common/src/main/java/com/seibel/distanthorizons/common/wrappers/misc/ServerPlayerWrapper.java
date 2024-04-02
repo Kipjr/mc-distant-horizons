@@ -8,6 +8,7 @@ import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
+import java.net.SocketAddress;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 
@@ -27,12 +28,14 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper
 	{
 		this.serverPlayer = serverPlayer;
 	}
-
+	
+	@Override
 	public UUID getUUID()
 	{
-		return serverPlayer.getUUID();
+		return this.serverPlayer.getUUID();
 	}
-
+	
+	@Override
 	public IServerLevelWrapper getLevel()
 	{
 		#if MC_VER < MC_1_20_1
@@ -41,22 +44,38 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper
 		return ServerLevelWrapper.getWrapper(this.serverPlayer.serverLevel());
 		#endif
     }
-
-    public Vec3d getPosition() {
-        Vec3 position = serverPlayer.position();
+	
+	@Override
+	public Vec3d getPosition()
+	{
+		Vec3 position = this.serverPlayer.position();
         return new Vec3d(position.x, position.y, position.z);
     }
 	
-	public int getViewDistance() {
-		return serverPlayer.server.getPlayerList().getViewDistance();
+	@Override
+	public int getViewDistance()
+	{
+		return this.serverPlayer.server.getPlayerList().getViewDistance();
 	}
-
-    public Object getWrappedMcObject() {
-        return serverPlayer;
+	
+	@Override
+	public SocketAddress getRemoteAddress()
+	{
+		#if MC_VER >= MC_1_19_4
+		return this.serverPlayer.connection.getRemoteAddress();
+		#else // < 1.19.4
+		return this.serverPlayer.connection.connection.getRemoteAddress();
+		#endif
+	}
+	
+	@Override
+	public Object getWrappedMcObject()
+	{
+		return this.serverPlayer;
     }
 
     @Override
     public String toString() {
-        return "Wrapped{" + serverPlayer.toString() + "}";
+	    return "Wrapped{" + this.serverPlayer.toString() + "}";
     }
 }

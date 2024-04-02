@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.fabric;
 import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.common.rendering.SeamlessOverdraw;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
+import com.seibel.distanthorizons.common.wrappers.network.AbstractPluginPacketSender;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -32,12 +33,9 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.fabric.wrappers.modAccessor.SodiumAccessor;
 import io.netty.buffer.ByteBuf;
 import net.fabricmc.api.EnvType;
@@ -56,11 +54,13 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import java.nio.FloatBuffer;
 #endif
 import java.util.HashSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
+import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.phys.HitResult;
@@ -93,6 +93,7 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 	 * Registers Fabric Events
 	 * @author Ran
 	 */
+	@Override
 	public void registerEvents()
 	{
 		LOGGER.info("Registering Fabric Client Events");
@@ -236,16 +237,15 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		// networking event //
 		//==================//
 		
-		ClientPlayNetworking.registerGlobalReceiver(new ResourceLocation(ModInfo.NETWORKING_RESOURCE_NAMESPACE, ModInfo.MULTIVERSE_PLUGIN_NAMESPACE),
-				(Minecraft client, ClientPacketListener handler, FriendlyByteBuf friendlyByteBuf, PacketSender responseSender) ->
+		ClientPlayNetworking.registerGlobalReceiver(AbstractPluginPacketSender.PLUGIN_CHANNEL_RESOURCE,
+				(Minecraft client, ClientPacketListener handler, FriendlyByteBuf mcBuffer, PacketSender responseSender) ->
 				{
-					// converting to a ByteBuf is necessary otherwise Fabric will complain when the game boots
-					ByteBuf nettyByteBuf = friendlyByteBuf.asReadOnly();
+					ByteBuf buffer = mcBuffer.asReadOnly();
 					
-					// remove the Bukkit/Forge packet ID byte
-					nettyByteBuf.readByte();
+					// (Neo)Forge packet ID (Unused, always expected to be 0)
+					buffer.readByte();
 					
-					ClientApi.INSTANCE.serverMessageReceived(nettyByteBuf);
+					ClientApi.INSTANCE.pluginMessageReceived(buffer);
 				});
 	}
 	
@@ -275,14 +275,14 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		// Diff and trigger events
 		for (int keyCode : currentKeyDown)
 		{
-			if (!previouslyPressKeyCodes.contains(keyCode))
+			if (!this.previouslyPressKeyCodes.contains(keyCode))
 			{
 				ClientApi.INSTANCE.keyPressedEvent(keyCode);
 			}
 		}
 		
 		// Update the set
-		previouslyPressKeyCodes = currentKeyDown;
+		this.previouslyPressKeyCodes = currentKeyDown;
 	}
 	
 }

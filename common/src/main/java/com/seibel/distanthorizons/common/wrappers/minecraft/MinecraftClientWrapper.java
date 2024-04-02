@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.common.wrappers.minecraft;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import com.mojang.blaze3d.platform.NativeImage;
@@ -31,6 +32,7 @@ import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -43,6 +45,7 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 
 import net.minecraft.CrashReport;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.core.BlockPos;
@@ -101,7 +104,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Override
 	public void clearFrameObjectCache()
 	{
-		lightMap = null;
+		this.lightMap = null;
 	}
 	
 	
@@ -150,20 +153,20 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	}
 	
 	@Override
-	public boolean hasSinglePlayerServer() { return mc.hasSingleplayerServer(); }
+	public boolean hasSinglePlayerServer() { return this.mc.hasSingleplayerServer(); }
 	@Override
-	public boolean clientConnectedToDedicatedServer() { return mc.getCurrentServer() != null && !this.hasSinglePlayerServer(); }
+	public boolean clientConnectedToDedicatedServer() { return this.mc.getCurrentServer() != null && !this.hasSinglePlayerServer(); }
 	
 	@Override
-	public String getCurrentServerName() { return mc.getCurrentServer().name; }
+	public String getCurrentServerName() { return this.mc.getCurrentServer().name; }
 	
 	@Override
-	public String getCurrentServerIp() { return mc.getCurrentServer().ip; }
+	public String getCurrentServerIp() { return this.mc.getCurrentServer().ip; }
 	
 	@Override
 	public String getCurrentServerVersion()
 	{
-		return mc.getCurrentServer().version.getString();
+		return this.mc.getCurrentServer().version.getString();
 	}
 	
 	//=============//
@@ -172,25 +175,25 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	
 	public LocalPlayer getPlayer()
 	{
-		return mc.player;
+		return this.mc.player;
 	}
 	
 	@Override
 	public boolean playerExists()
 	{
-		return mc.player != null;
+		return this.mc.player != null;
 	}
 	
 	@Override
 	public UUID getPlayerUUID()
 	{
-		return getPlayer().getUUID();
+		return this.getPlayer().getUUID();
 	}
 	
 	@Override
 	public DhBlockPos getPlayerBlockPos()
 	{
-		BlockPos playerPos = getPlayer().blockPosition();
+		BlockPos playerPos = this.getPlayer().blockPosition();
 		return new DhBlockPos(playerPos.getX(), playerPos.getY(), playerPos.getZ());
 	}
 	
@@ -200,26 +203,34 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
         #if MC_VER < MC_1_17_1
         ChunkPos playerPos = new ChunkPos(getPlayer().blockPosition());
         #else
-		ChunkPos playerPos = getPlayer().chunkPosition();
+		ChunkPos playerPos = this.getPlayer().chunkPosition();
         #endif
 		return new DhChunkPos(playerPos.x, playerPos.z);
 	}
 	
 	public ModelManager getModelManager()
 	{
-		return mc.getModelManager();
+		return this.mc.getModelManager();
 	}
 	
 	@Nullable
 	@Override
 	public IClientLevelWrapper getWrappedClientLevel()
 	{
-		if (this.mc.level == null)
+		return this.getWrappedClientLevel(false);
+	}
+	
+	@Override
+	@Nullable
+	public IClientLevelWrapper getWrappedClientLevel(boolean bypassMultiverse)
+	{
+		ClientLevel level = this.mc.level;
+		if (level == null)
 		{
 			return null;
 		}
 		
-		return ClientLevelWrapper.getWrapperIgnoringOverride(this.mc.level);
+		return ClientLevelWrapper.getWrapper(level, bypassMultiverse);
 	}
 	
 	/** Please move over to getInstallationDirectory() */
@@ -227,17 +238,21 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Override
 	public File getGameDirectory()
 	{
-		return getInstallationDirectory();
+		return this.getInstallationDirectory();
 	}
 	
 	@Override
 	public IProfilerWrapper getProfiler()
 	{
-		if (profilerWrapper == null)
-			profilerWrapper = new ProfilerWrapper(mc.getProfiler());
-		else if (mc.getProfiler() != profilerWrapper.profiler)
-			profilerWrapper.profiler = mc.getProfiler();
-		return profilerWrapper;
+		if (this.profilerWrapper == null)
+		{
+			this.profilerWrapper = new ProfilerWrapper(this.mc.getProfiler());
+		}
+		else if (this.mc.getProfiler() != this.profilerWrapper.profiler)
+		{
+			this.profilerWrapper.profiler = this.mc.getProfiler();
+		}
+		return this.profilerWrapper;
 	}
 	
 	/** Returns all worlds available to the server */
@@ -246,7 +261,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	{
 		ArrayList<ILevelWrapper> worlds = new ArrayList<ILevelWrapper>();
 		
-		Iterable<ServerLevel> serverWorlds = mc.getSingleplayerServer().getAllLevels();
+		Iterable<ServerLevel> serverWorlds = this.mc.getSingleplayerServer().getAllLevels();
 		for (ServerLevel world : serverWorlds)
 		{
 			worlds.add(ServerLevelWrapper.getWrapper(world));
@@ -260,8 +275,11 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Override
 	public void sendChatMessage(String string)
 	{
-		LocalPlayer p = getPlayer();
-		if (p == null) return;
+		LocalPlayer p = this.getPlayer();
+		if (p == null)
+		{
+			return;
+		}
         #if MC_VER < MC_1_19_2
 		p.sendMessage(new TextComponent(string), getPlayer().getUUID());
         #else
@@ -292,7 +310,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Override
 	public Object getOptionsObject()
 	{
-		return mc.options;
+		return this.mc.options;
 	}
 	
 	@Override
@@ -304,7 +322,13 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Override
 	public File getInstallationDirectory()
 	{
-		return mc.gameDirectory;
+		return this.mc.gameDirectory;
+	}
+	
+	@Override
+	public List<IServerPlayerWrapper> getPlayerList()
+	{
+		return null;
 	}
 	
 	@Override

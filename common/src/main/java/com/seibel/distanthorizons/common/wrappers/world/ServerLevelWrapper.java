@@ -29,6 +29,7 @@ import com.seibel.distanthorizons.common.wrappers.block.BlockStateWrapper;
 import com.seibel.distanthorizons.common.wrappers.block.cache.ServerBlockDetailMap;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftClientWrapper;
+import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
@@ -92,13 +93,13 @@ public class ServerLevelWrapper implements IServerLevelWrapper
 	@Override
 	public File getSaveFolder()
 	{
-		return level.getChunkSource().getDataStorage().dataFolder;
+		return this.level.getChunkSource().getDataStorage().dataFolder;
 	}
 	
 	@Override
 	public DimensionTypeWrapper getDimensionType()
 	{
-		return DimensionTypeWrapper.getDimensionTypeWrapper(level.dimensionType());
+		return DimensionTypeWrapper.getDimensionTypeWrapper(this.level.dimensionType());
 	}
 	
 	@Override
@@ -106,25 +107,25 @@ public class ServerLevelWrapper implements IServerLevelWrapper
 	
 	public ServerLevel getLevel()
 	{
-		return level;
+		return this.level;
 	}
 	
 	@Override
 	public boolean hasCeiling()
 	{
-		return level.dimensionType().hasCeiling();
+		return this.level.dimensionType().hasCeiling();
 	}
 	
 	@Override
 	public boolean hasSkyLight()
 	{
-		return level.dimensionType().hasSkyLight();
+		return this.level.dimensionType().hasSkyLight();
 	}
 	
 	@Override
 	public int getHeight()
 	{
-		return level.getHeight();
+		return this.level.getHeight();
 	}
 	
 	@Override
@@ -133,42 +134,48 @@ public class ServerLevelWrapper implements IServerLevelWrapper
         #if MC_VER < MC_1_17_1
         return 0;
         #else
-		return level.getMinBuildHeight();
+		return this.level.getMinBuildHeight();
         #endif
 	}
 	@Override
 	public IChunkWrapper tryGetChunk(DhChunkPos pos)
 	{
-		if (!level.hasChunk(pos.x, pos.z)) return null;
-		ChunkAccess chunk = level.getChunk(pos.x, pos.z, ChunkStatus.FULL, false);
-		if (chunk == null) return null;
-		return new ChunkWrapper(chunk, level, this);
+		if (!this.level.hasChunk(pos.x, pos.z))
+		{
+			return null;
+		}
+		ChunkAccess chunk = this.level.getChunk(pos.x, pos.z, ChunkStatus.FULL, false);
+		if (chunk == null)
+		{
+			return null;
+		}
+		return new ChunkWrapper(chunk, this.level, this);
 	}
 	
 	@Override
 	public boolean hasChunkLoaded(int chunkX, int chunkZ)
 	{
 		// world.hasChunk(chunkX, chunkZ); THIS DOES NOT WORK FOR CLIENT LEVEL CAUSE MOJANG ALWAYS RETURN TRUE FOR THAT!
-		ChunkSource source = level.getChunkSource();
+		ChunkSource source = this.level.getChunkSource();
 		return source.hasChunk(chunkX, chunkZ);
 	}
 	
 	@Override
 	public IBlockStateWrapper getBlockState(DhBlockPos pos)
 	{
-		return BlockStateWrapper.fromBlockState(level.getBlockState(McObjectConverter.Convert(pos)), this);
+		return BlockStateWrapper.fromBlockState(this.level.getBlockState(McObjectConverter.Convert(pos)), this);
 	}
 	
 	@Override
 	public IBiomeWrapper getBiome(DhBlockPos pos)
 	{
-		return BiomeWrapper.getBiomeWrapper(level.getBiome(McObjectConverter.Convert(pos)), this);
+		return BiomeWrapper.getBiomeWrapper(this.level.getBiome(McObjectConverter.Convert(pos)), this);
 	}
 	
 	@Override
 	public ServerLevel getWrappedMcObject()
 	{
-		return level;
+		return this.level;
 	}
 	
 	@Override
@@ -177,7 +184,7 @@ public class ServerLevelWrapper implements IServerLevelWrapper
 	@Override
 	public String toString()
 	{
-		return "Wrapped{" + level.toString() + "@" + getDimensionType().getDimensionName() + "}";
+		return "Wrapped{" + this.level.toString() + "@" + this.getDimensionType().getDimensionName() + "}";
 	}
 	
 }
