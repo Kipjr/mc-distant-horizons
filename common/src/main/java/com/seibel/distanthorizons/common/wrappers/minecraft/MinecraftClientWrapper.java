@@ -326,12 +326,6 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	}
 	
 	@Override
-	public List<IServerPlayerWrapper> getPlayerList()
-	{
-		return null;
-	}
-	
-	@Override
 	public void executeOnRenderThread(Runnable runnable) { this.mc.execute(runnable); }
 	
 }

@@ -22,7 +22,10 @@ package com.seibel.distanthorizons.neoforge;
 import com.mojang.brigadier.CommandDispatcher;
 import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.common.wrappers.gui.GetConfigScreen;
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
+import com.seibel.distanthorizons.core.api.internal.ServerApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IModChecker;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IOptifineAccessor;
 import com.seibel.distanthorizons.coreapi.ModInfo;
@@ -39,6 +42,7 @@ import net.neoforged.neoforge.client.ConfigScreenHandler;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlerEvent;
 
 import java.util.function.Consumer;
 
@@ -53,15 +57,41 @@ public class NeoforgeMain extends AbstractModInitializer
 {
 	public NeoforgeMain(IEventBus eventBus)
 	{
-		eventBus.addListener((FMLClientSetupEvent e) -> this.onInitializeClient());
-		eventBus.addListener((FMLDedicatedServerSetupEvent e) -> this.onInitializeServer());
+		eventBus.addListener((FMLClientSetupEvent e) -> {
+			this.onInitializeClient();
+			eventBus.addListener(this::registerNetworkingClient);
+		});
+		eventBus.addListener((FMLDedicatedServerSetupEvent e) -> {
+			this.onInitializeServer();
+			eventBus.addListener(this::registerNetworkingServer);
+		});
 	}
+	
+	
+	
+	//============//
+	// networking //
+	//============//
+	public void registerNetworkingClient(RegisterPayloadHandlerEvent event)
+	{
+		NeoforgePluginPacketSender.setPacketHandler(event, ClientApi.INSTANCE::pluginMessageReceived);
+	}
+	public void registerNetworkingServer(RegisterPayloadHandlerEvent event)
+	{
+		NeoforgePluginPacketSender.setPacketHandler(event, ServerApi.INSTANCE::pluginMessageReceived);
+	}
+	
+	
 	
 	@Override
 	protected IEventProxy createServerProxy(boolean isDedicated) { return new NeoforgeServerProxy(isDedicated); }
 	
 	@Override
-	protected void createInitialBindings() { SingletonInjector.INSTANCE.bind(IModChecker.class, ModChecker.INSTANCE); }
+	protected void createInitialBindings()
+	{
+		SingletonInjector.INSTANCE.bind(IModChecker.class, ModChecker.INSTANCE);
+		SingletonInjector.INSTANCE.bind(IPluginPacketSender.class, new NeoforgePluginPacketSender());
+	}
 	
 	@Override
 	protected IEventProxy createClientProxy() { return new NeoforgeClientProxy(); }

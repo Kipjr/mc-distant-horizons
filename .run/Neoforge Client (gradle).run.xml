@@ -10,7 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value="neoforged:runClient" />
+          <option value="neoforge:runClient" />
         </list>
       </option>
       <option name="vmOptions" />

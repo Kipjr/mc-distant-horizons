@@ -30,12 +30,4 @@ public class MinecraftDedicatedServerWrapper implements IMinecraftSharedWrapper
 		return this.dedicatedServer.getServerDirectory();
 	}
 	
-	@Override
-	public List<IServerPlayerWrapper> getPlayerList()
-	{
-		return this.dedicatedServer.getPlayerList().getPlayers().stream()
-				.map(serverPlayer -> (IServerPlayerWrapper) ServerPlayerWrapper.getWrapper(serverPlayer))
-				.collect(Collectors.toList());
-	}
-	
 }

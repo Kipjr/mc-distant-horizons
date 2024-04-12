@@ -53,14 +53,14 @@ loom {
             client()
             setConfigName("NeoForge Client")
             ideConfigGenerated(false)
-            runDir("../run")
+            runDir("../run/client")
 //            vmArgs("-XX:-OmitStackTraceInFastThrow", minecraftMemoryJavaArg)
         }
         server {
             server()
             setConfigName("NeoForge Server")
             ideConfigGenerated(false)
-            runDir("../run")
+            runDir("../run/server")
         }
     }
 }

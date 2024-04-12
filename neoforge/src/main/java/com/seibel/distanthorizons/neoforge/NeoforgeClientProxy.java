@@ -32,8 +32,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import com.seibel.distanthorizons.coreapi.ModInfo;
-//import io.netty.buffer.ByteBuf;
 import net.minecraft.world.level.LevelAccessor;
 
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -45,8 +43,6 @@ import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.minecraft.world.level.chunk.ChunkAccess;
 
-//import net.neoforged.network.NetworkRegistry;
-//import net.neoforged.network.simple.SimpleChannel;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.glfw.GLFW;
 
@@ -81,7 +77,6 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	public void registerEvents()
 	{
 		NeoForge.EVENT_BUS.register(this);
-		setupNetworkingListeners();
 	}
 	
 	
@@ -214,65 +209,6 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 		}
 		
 		ClientApi.INSTANCE.keyPressedEvent(event.getKey());
-	}
-	
-	
-	
-	//============//
-	// networking //
-	//============//
-	
-	public static void setupNetworkingListeners()
-	{
-//		multiversePluginChannel = NetworkRegistry.newSimpleChannel(
-//				new ResourceLocation(ModInfo.NETWORKING_RESOURCE_NAMESPACE, ModInfo.MULTIVERSE_PLUGIN_NAMESPACE),
-//				// network protocol version
-//				() -> ModInfo.MULTIVERSE_PLUGIN_PROTOCOL_VERSION +"",
-//				// client accepted versions
-//				ForgeClientProxy::isReceivedProtocolVersionAcceptable,
-//				// server accepted versions
-//				ForgeClientProxy::isReceivedProtocolVersionAcceptable
-//		);
-//		
-//		multiversePluginChannel.registerMessage(0/*should be incremented for each simple channel we listen to*/, ByteBuf.class,
-//				// encoder
-//				(pack, friendlyByteBuf) -> { },
-//				// decoder
-//				(friendlyByteBuf) -> friendlyByteBuf.asByteBuf(),
-//				// message consumer
-//				(nettyByteBuf, contextRef) ->
-//				{
-//					ClientApi.INSTANCE.serverMessageReceived(nettyByteBuf);
-//					contextRef.get().setPacketHandled(true);
-//				}
-//		);
-	}
-	
-	public static boolean isReceivedProtocolVersionAcceptable(String versionString)
-	{
-		if (versionString.toLowerCase().contains("allowvanilla"))
-		{
-			// allow using networking on vanilla servers
-			return true;
-		}
-		else if (versionString.toLowerCase().contains("absent"))
-		{
-			// allow using networking even if DH isn't installed on the server
-			return true;
-		}
-		else
-		{
-			// DH is installed on the server, check if the version is valid to use
-			try
-			{
-				int version = Integer.parseInt(versionString);
-				return ModInfo.PLUGIN_PROTOCOL_VERSION == version;
-			}
-			catch (NumberFormatException ignored)
-			{
-				return false;
-			}
-		}
 	}
 	
 	

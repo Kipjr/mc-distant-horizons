@@ -3,16 +3,21 @@ package com.seibel.distanthorizons.neoforge;
 import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.common.util.ProxyUtil;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
+import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
 import com.seibel.distanthorizons.core.api.internal.ServerApi;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.TickEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -119,6 +124,26 @@ public class NeoforgeServerProxy implements AbstractModInitializer.IEventProxy
 		this.serverApi.serverChunkSaveEvent(chunk, levelWrapper);
 	}
 	
+	@SubscribeEvent
+	public void playerLoggedInEvent(PlayerEvent.PlayerLoggedInEvent event)
+	{
+		this.serverApi.serverPlayerJoinEvent(getServerPlayerWrapper(event));
+	}
+	@SubscribeEvent
+	public void playerLoggedOutEvent(PlayerEvent.PlayerLoggedOutEvent event)
+	{
+		this.serverApi.serverPlayerDisconnectEvent(getServerPlayerWrapper(event));
+	}
+	@SubscribeEvent
+	public void playerChangedDimensionEvent(PlayerEvent.PlayerChangedDimensionEvent event)
+	{
+		this.serverApi.serverPlayerLevelChangeEvent(
+				getServerPlayerWrapper(event),
+				getServerLevelWrapper(event.getFrom(), event),
+				getServerLevelWrapper(event.getTo(), event)
+		);
+	}
+	
 	
 	
 	//================//
@@ -126,6 +151,15 @@ public class NeoforgeServerProxy implements AbstractModInitializer.IEventProxy
 	//================//
 	
 	private static ServerLevelWrapper getServerLevelWrapper(ServerLevel level) { return ServerLevelWrapper.getWrapper(level); }
+	private static ServerLevelWrapper getServerLevelWrapper(ResourceKey<Level> resourceKey, PlayerEvent event)
+	{
+		//noinspection DataFlowIssue (possible NPE after getServer())
+		return getServerLevelWrapper(event.getEntity().getServer().getLevel(resourceKey));
+	}
 	
+	private static ServerPlayerWrapper getServerPlayerWrapper(PlayerEvent event)
+	{
+		return ServerPlayerWrapper.getWrapper((ServerPlayer) event.getEntity());
+	}
 	
 }

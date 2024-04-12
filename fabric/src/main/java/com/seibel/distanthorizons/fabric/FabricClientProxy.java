@@ -54,10 +54,7 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import java.nio.FloatBuffer;
 #endif
 import java.util.HashSet;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
-import net.minecraft.client.multiplayer.ClientHandshakePacketListenerImpl;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.FriendlyByteBuf;
