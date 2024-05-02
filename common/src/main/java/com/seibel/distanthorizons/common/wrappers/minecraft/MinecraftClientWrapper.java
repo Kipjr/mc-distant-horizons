@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import com.seibel.distanthorizons.api.enums.config.ELodShading;
+import com.seibel.distanthorizons.api.enums.config.EDhApiLodShading;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
@@ -116,11 +116,11 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Override
 	public float getShade(EDhDirection lodDirection)
 	{
-		ELodShading lodShading = Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading.get();
+		EDhApiLodShading lodShading = Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading.get();
 		switch (lodShading)
 		{
 			default:
-			case MINECRAFT:
+			case AUTO:
 				if (this.mc.level != null)
 				{
 					Direction mcDir = McObjectConverter.Convert(lodDirection);
@@ -131,7 +131,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 					return 0.0f;
 				}
 			
-			case OLD_LIGHTING:
+			case ENABLED:
 				switch (lodDirection)
 				{
 					case DOWN:
@@ -147,7 +147,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 						return 0.6F;
 				}
 			
-			case NONE:
+			case DISABLED:
 				return 1.0F;
 		}
 	}

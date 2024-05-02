@@ -52,12 +52,16 @@ build:
     exclude:
       # TODO: There is a lot of duplicate stuff here, try to maybe make it smaller
       - fabric/build/libs/*-all.jar
+      - fabric/build/libs/*-dev.jar
       - fabric/build/libs/*-sources.jar
       - quilt/build/libs/*-all.jar
+      - quilt/build/libs/*-dev.jar
       - quilt/build/libs/*-sources.jar
       - forge/build/libs/*-all.jar
+      - forge/build/libs/*-dev.jar
       - forge/build/libs/*-sources.jar
       - neoforge/build/libs/*-all.jar
+      - neoforge/build/libs/*-dev.jar
       - neoforge/build/libs/*-sources.jar
     expire_in: 14 days
     when: always

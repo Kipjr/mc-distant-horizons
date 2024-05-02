@@ -25,6 +25,7 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.*;
@@ -38,6 +39,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import org.apache.logging.log4j.Logger;
 
 #if MC_VER >= MC_1_19_2
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -46,6 +48,7 @@ import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 #endif
 
 import javax.swing.*;
+import java.awt.*;
 import java.util.function.Consumer;
 
 /**
@@ -56,6 +59,8 @@ import java.util.function.Consumer;
 public class FabricMain extends AbstractModInitializer implements ClientModInitializer, DedicatedServerModInitializer
 {
 	private static final ResourceLocation INITIAL_PHASE = new ResourceLocation(ModInfo.RESOURCE_NAMESPACE, ModInfo.DEDICATED_SERVER_INITIAL_PATH);
+	
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	
 	
@@ -83,10 +88,13 @@ public class FabricMain extends AbstractModInitializer implements ClientModIniti
 			// If sodium is installed Indium is also necessary in order to use the Fabric rendering API
 			if (!modChecker.isModLoaded("indium"))
 			{
-				// People don't read the crash logs!!!
-				// So, just put a notification, so they hopefully realise what's the problem (and dont just open issues)
-				System.setProperty("java.awt.headless", "false"); // Required to make it work
-				JOptionPane.showMessageDialog(null, ModInfo.READABLE_NAME + " now relies on Indium to work with Sodium.\nPlease download Indium from https://modrinth.com/mod/indium", ModInfo.READABLE_NAME, JOptionPane.INFORMATION_MESSAGE);
+				String indiumMissingMessage = ModInfo.READABLE_NAME + " now relies on Indium to work with Sodium.\nPlease download Indium from https://modrinth.com/mod/indium";
+				LOGGER.fatal(indiumMissingMessage);
+				
+				if (!GraphicsEnvironment.isHeadless())
+				{
+					JOptionPane.showMessageDialog(null, indiumMissingMessage, ModInfo.READABLE_NAME, JOptionPane.INFORMATION_MESSAGE);
+				}
 				
 				IMinecraftClientWrapper mc = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 				String errorMessage = "loading Distant Horizons. Distant Horizons requires Indium in order to run with Sodium.";

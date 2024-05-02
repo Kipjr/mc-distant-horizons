@@ -23,11 +23,16 @@ issueTrackerURL = "${issues}"
     #// Allow any version to be present (or not) on the server
     acceptableRemoteVersions = "*"
 
+[[dependencies.distanthorizons]]
+    modId="forge" #mandatory
+    mandatory = true  # Forge syntax
+    versionRange="[0,)" #mandatory
+    ordering="NONE"
+    side="BOTH"
 
 [[dependencies.distanthorizons]]
     modId = "minecraft"
     mandatory = true  # Forge syntax
-    type = "required" # Neoforge syntax
     versionRange = "${compatible_forgemc_versions}" # Where we set what version of mc it is avalible for
-    ordering = "NONE"
+    ordering = "AFTER"
     side = "BOTH"

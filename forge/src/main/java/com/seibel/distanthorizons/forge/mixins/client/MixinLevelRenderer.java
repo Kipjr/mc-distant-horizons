@@ -29,7 +29,6 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import org.joml.Matrix4f;
 #endif
-import com.seibel.distanthorizons.common.rendering.SeamlessOverdraw;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
@@ -141,20 +140,6 @@ public class MixinLevelRenderer
 		if (renderType.equals(RenderType.solid()))
 		{
 			ClientApi.INSTANCE.renderLods(ClientLevelWrapper.getWrapper(this.level), mcModelViewMatrix, mcProjectionMatrix, Minecraft.getInstance().getFrameTime());
-			
-			// experimental proof-of-concept option
-			if (Config.Client.Advanced.Graphics.AdvancedGraphics.seamlessOverdraw.get())
-			{
-				float[] matrixFloatArray = SeamlessOverdraw.overwriteMinecraftNearFarClipPlanes(mcProjectionMatrix, previousPartialTicks);
-				
-				#if MC_VER == MC_1_16_5
-				SeamlessOverdraw.applyLegacyProjectionMatrix(matrixFloatArray);
-				#elif MC_VER < MC_1_19_4
-				projectionMatrix.load(FloatBuffer.wrap(matrixFloatArray));
-				#else
-				projectionMatrix.set(matrixFloatArray);
-				#endif
-			}
 		} 
 		else if (renderType.equals(RenderType.translucent())) 
 		{

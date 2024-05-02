@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 // Logger (for debug stuff)
 
 import com.seibel.distanthorizons.api.enums.config.DisallowSelectingViaConfigGui;
-import com.seibel.distanthorizons.api.enums.config.EUpdateBranch;
+import com.seibel.distanthorizons.api.enums.config.EDhApiUpdateBranch;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.config.types.*;
@@ -244,7 +244,7 @@ public class ClassicConfigGUI
 			}
 			
 			// Changelog button
-			if (Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get() && Config.Client.Advanced.AutoUpdater.updateBranch.get() == EUpdateBranch.STABLE)
+			if (Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get() && Config.Client.Advanced.AutoUpdater.updateBranch.get() == EDhApiUpdateBranch.STABLE)
 			{
 				this.addBtn(new TexturedButtonWidget(
 						// Where the button is on the screen

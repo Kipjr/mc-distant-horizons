@@ -1,7 +1,7 @@
 plugins {
     id "java"
 
-    // Plugin to handle dependencies
+    // Plugin to put dependencies inside our final jar
     id "com.github.johnrengelman.shadow" version '7.1.2' apply false
 
     // Plugin to create merged jars
@@ -10,12 +10,10 @@ plugins {
     // Manifold preprocessor
     id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
 
-//    // Provides mc libraries to core
-//    id "org.spongepowered.gradle.vanilla" version '0.2.1-SNAPSHOT' apply false
-
     // Architectury is used here only as a replacement for forge's own loom
-    id "dev.architectury.loom" version "1.4-SNAPSHOT" apply false
+    id "dev.architectury.loom" version "1.5-SNAPSHOT" apply false
 }
+
 
 /**
  * Creates the list of preprocessors to use.
@@ -23,15 +21,15 @@ plugins {
  * @param mcVers array of all MC versions
  * @param mcIndex array index of the currently active MC version
  */
-def writeBuildGradlePredefine(List<String> mcVers, int mcIndex) 
+def writeBuildGradlePredefine(List<String> mcVers, int mcIndex)
 {
     // Build the list of preprocessors to use
     StringBuilder sb = new StringBuilder();
 
     sb.append("# DON'T TOUCH THIS FILE, This is handled by the build script\n");
-    
-    
-    for (int i = 0; i < mcVers.size(); i++) 
+
+
+    for (int i = 0; i < mcVers.size(); i++)
     {
         String verStr = mcVers[i].replace(".", "_");
         sb.append("MC_" + verStr + "=" + i.toString() + "\n");
@@ -42,13 +40,13 @@ def writeBuildGradlePredefine(List<String> mcVers, int mcIndex)
     
 
     // Check if this is a development build
-    if (mod_version.toLowerCase().contains("dev")) 
+    if (mod_version.toLowerCase().contains("dev"))
     {
         // WARNING: only use this for logging, we don't want to have confusion
         // when a method doesn't work correctly in the release build.
         sb.append("DEV_BUILD=\n");
     }
-    
+
     new File(projectDir, "build.properties").text = sb.toString()
 }
 
@@ -106,14 +104,11 @@ subprojects { p ->
     apply plugin: "com.github.johnrengelman.shadow"
     if (isMinecraftSubProject)
         apply plugin: "systems.manifold.manifold-gradle-plugin"
-    if (p == project(":core"))
-        apply plugin: "application"
-//    apply plugin: "org.spongepowered.gradle.vanilla" // Provides minecraft libraries
 
     // Apply forge's loom
     if (
             (findProject(":forge") && p == project(":forge")) ||
-            (findProject(":neoforge") && p == project(":neoforge"))
+                    (findProject(":neoforge") && p == project(":neoforge"))
     )
         apply plugin: "dev.architectury.loom"
 
@@ -134,8 +129,8 @@ subprojects { p ->
         // Configuration fpr core & api
         coreProjects
         shadowMe.extendsFrom(coreProjects)
-        
-        
+
+
         // FIXME this additional configuration is necessary because forge 
         //  needs forgeRuntimeLibrary, although adding it to shadowMe
         //  causes runtime issues where the libraries aren't properly added
@@ -144,8 +139,8 @@ subprojects { p ->
         implementation.extendsFrom(forgeShadowMe)
         shadowMe.extendsFrom(forgeShadowMe)
         forgeRuntimeLibrary.extendsFrom(forgeShadowMe)
-        
-        
+
+
         if (isMinecraftSubProject && p != project(":common")) {
             // Shadow common
             common
@@ -174,19 +169,10 @@ subprojects { p ->
     }
 
 
-    // Let the application plugin know where the main class is
-    // (This will point to a non-existent class in all sub-projects except "Core")
-    if (p == project(":core")) {
-        application {
-            mainClass.set("com.seibel.distanthorizons.core.jar.JarMain")
-        }
-    }
-
     dependencies {
         //=====================//
         // shared dependencies //
         //=====================//
-        
         
         // Manifold
         if (isMinecraftSubProject) {
@@ -209,25 +195,18 @@ subprojects { p ->
         implementation("org.junit.jupiter:junit-jupiter:5.8.2")
         implementation("org.junit.jupiter:junit-jupiter-engine:5.8.2")
         implementation("junit:junit:4.13")
-        
-        // Compression
-        forgeShadowMe("org.lz4:lz4-java:${rootProject.lz4_version}")
-        
-        // Sqlite Database
-        forgeShadowMe("org.xerial:sqlite-jdbc:${rootProject.sqlite_jdbc_version}")
-        
+
+
         // NightConfig (includes Toml & Json)
+        // needs to be here and in core to prevent runtime/compiler errors
         forgeShadowMe("com.electronwill.night-config:toml:${rootProject.nightconfig_version}")
         forgeShadowMe("com.electronwill.night-config:json:${rootProject.nightconfig_version}")
 
-        // SVG (not needed atm)
-//        forgeShadowMe("com.formdev:svgSalamander:${rootProject.svgSalamander_version}")
-        
-        // Netty
-        implementation("io.netty:netty-buffer:${rootProject.netty_version}")
-        implementation("io.netty:netty-codec:${rootProject.netty_version}")
-        implementation("io.netty:netty-transport:${rootProject.netty_version}")
-        implementation("io.netty:netty-handler:${rootProject.netty_version}")
+        // Compression
+        // needs to be here and in core to prevent runtime/compiler errors
+        forgeShadowMe("org.lz4:lz4-java:${rootProject.lz4_version}") // LZ4
+        forgeShadowMe("com.github.luben:zstd-jni:${rootProject.zstd_version}") // Zstd
+        forgeShadowMe("org.tukaani:xz:${rootProject.xz_version}") // LZMA
 
         // Remember, for lwjgl dependencies that arent included in Minecraft, you need to also need to add it to the ShadowJar thing
         forgeShadowMe("org.lwjgl:lwjgl-jawt:${rootProject.lwjgl_version}") {
@@ -293,26 +272,16 @@ subprojects { p ->
         }
         def librariesLocation = "distanthorizons.libraries"
 
-        // LWJGL
-        // Only ever shadow the dependencies we use otherwise some stuff would break when running on an external client
-        relocate "org.lwjgl.system.jawt", "${librariesLocation}.lwjgl.system.jawt"
+        // SVG (not needed atm)
+//        relocate "com.kitfox.svg", "${librariesLocation}.kitfox.svg"
 
         // Compression (LZ4)
         relocate "net.jpountz", "${librariesLocation}.jpountz"
-        
-        // Sqlite Database
-        //At the moment, there is a bug in this library which doesnt allow it to be relocated
-//        relocate "org.sqlite", "${librariesLocation}.sqlite"
-        
-        // JOML
-        if (project.hasProperty("embed_joml") && embed_joml == "true")
-            relocate "org.joml", "${librariesLocation}.joml"
+        relocate "com.github.luben", "${librariesLocation}.github.luben"
+        relocate "org.tukaani", "${librariesLocation}.tukaani"
 
-        // NightConfig (includes Toml & Json)
+        // night config
         relocate "com.electronwill.nightconfig", "${librariesLocation}.electronwill.nightconfig"
-
-        // SVG (not needed atm)
-//        relocate "com.kitfox.svg", "${librariesLocation}.kitfox.svg"
 
         mergeServiceFiles()
     }
@@ -323,17 +292,17 @@ subprojects { p ->
     // Put stuff from gradle.properties into the mod info
     processResources {
         def resourceTargets = [ // Location of where to inject the properties
-                // Holds info like git commit
-                // TODO: For some reason this script doesnt work with the core project
-                "build_info.json",
+                                // Holds info like git commit
+                                // TODO: For some reason this script doesnt work with the core project
+                                "build_info.json",
 
-                // Properties for each of the loaders
-                "fabric.mod.json",
-                "quilt.mod.json",
-                "META-INF/mods.toml",
+                                // Properties for each of the loaders
+                                "fabric.mod.json",
+                                "quilt.mod.json",
+                                "META-INF/mods.toml",
 
-                // The mixins for each of the loaders
-                "DistantHorizons."+ p.name +".fabricLike.mixins.json"
+                                // The mixins for each of the loaders
+                                "DistantHorizons." + p.name + ".fabricLike.mixins.json"
         ]
         def intoTargets = ["$buildDir/resources/main/"] // Location of the built resources folder
 
@@ -351,9 +320,9 @@ subprojects { p ->
             quilt_contributors.push("\"${dev.strip()}\": \"Developer\"")
         }
         quilt_contributors.reverse()
-//        println quilt_contributors.join(", ")
+        //println quilt_contributors.join(", ")
 
-        // TODOI: Find something we can use so we can basically re-map only when the jar is shadowed and relocated
+        // TODO: Find something we can use so we can basically re-map only when the jar is shadowed and relocated
 //        println p.tasks.findByName('shadowJar')
 
         
@@ -368,6 +337,7 @@ subprojects { p ->
             println "Git or Git project not found"
         }
 
+        // The left side is what gets replaced in the mod info and the right side is where to get it from in the gradle.properties
         def replaceProperties = [
                 version                      : mod_version,
                 mod_name                     : mod_readable_name,
@@ -391,8 +361,8 @@ subprojects { p ->
                 fabric_incompatibility_list  : fabric_incompatibility_list,
                 fabric_recommend_list  : fabric_recommend_list,
         ]
-        // The left side is what gets replaced in the mod info and the right side is where to get it from in the gradle.properties
 
+        // replace any properties in the sub-projects with the values defined here
         inputs.properties replaceProperties
         replaceProperties.put "project", project
         filesMatching(resourceTargets) {
@@ -456,13 +426,6 @@ subprojects { p ->
         }
     }
     */
-
-    // Run mergeJars when running build
-    // TODO: Fix later
-//    if (isMinecraftSubProject) {
-//        build.finalizedBy(mergeJars)
-//        assemble.finalizedBy(mergeJars)
-//    }
 }
 
 allprojects { p ->
@@ -597,7 +560,6 @@ allprojects { p ->
             implementation("com.google.code.findbugs:jsr305:3.0.2")
             implementation("com.google.common:google-collect:0.5")
             implementation("com.google.guava:guava:31.1-jre")
-            implementation("it.unimi.dsi:fastutil:8.5.11")
         }
     }
 

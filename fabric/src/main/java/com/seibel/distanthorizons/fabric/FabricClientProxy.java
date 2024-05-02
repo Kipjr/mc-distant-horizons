@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.fabric;
 
 import com.seibel.distanthorizons.common.AbstractModInitializer;
-import com.seibel.distanthorizons.common.rendering.SeamlessOverdraw;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.network.AbstractPluginPacketSender;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
@@ -135,7 +134,7 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 					ChunkAccess chunk = level.getChunk(blockPos);
 					if (chunk != null)
 					{
-						LOGGER.trace("attack block at blockPos: " + blockPos);
+						//LOGGER.trace("attack block at blockPos: " + blockPos);
 						
 						IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
 						SharedApi.INSTANCE.chunkBlockChangedEvent(
@@ -165,7 +164,7 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 						ChunkAccess chunk = level.getChunk(hitResult.getBlockPos());
 						if (chunk != null)
 						{
-							LOGGER.trace("use block at blockPos: " + hitResult.getBlockPos());
+							//LOGGER.trace("use block at blockPos: " + hitResult.getBlockPos());
 							
 							IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
 							SharedApi.INSTANCE.chunkBlockChangedEvent(
@@ -201,21 +200,6 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 					McObjectConverter.Convert(renderContext.matrixStack().last().pose()),
 					McObjectConverter.Convert(renderContext.projectionMatrix()),
 					renderContext.tickDelta());
-			
-			
-			// experimental proof-of-concept option
-			if (Config.Client.Advanced.Graphics.AdvancedGraphics.seamlessOverdraw.get())
-			{
-				float[] matrixFloatArray = SeamlessOverdraw.overwriteMinecraftNearFarClipPlanes(renderContext.projectionMatrix(), renderContext.tickDelta());
-				
-				#if MC_VER == MC_1_16_5
-				SeamlessOverdraw.applyLegacyProjectionMatrix(matrixFloatArray);
-				#elif MC_VER < MC_1_19_4
-				renderContext.projectionMatrix().load(FloatBuffer.wrap(matrixFloatArray));
-				#else
-				renderContext.projectionMatrix().set(matrixFloatArray);
-				#endif
-			}
 		});
 
 		// Debug keyboard event

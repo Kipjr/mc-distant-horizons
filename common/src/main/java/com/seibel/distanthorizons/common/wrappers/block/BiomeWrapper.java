@@ -56,7 +56,9 @@ import net.minecraft.world.level.biome.Biomes;
 /** This class wraps the minecraft BlockPos.Mutable (and BlockPos) class */
 public class BiomeWrapper implements IBiomeWrapper
 {
+	// must be defined before AIR, otherwise a null pointer will be thrown
 	private static final Logger LOGGER = LogManager.getLogger();
+	
 	
 	#if MC_VER < MC_1_18_2
 	public static final ConcurrentMap<Biome, BiomeWrapper> WRAPPER_BY_BIOME = new ConcurrentHashMap<>();
@@ -65,7 +67,7 @@ public class BiomeWrapper implements IBiomeWrapper
     #endif
 	
 	public static final String EMPTY_STRING = "EMPTY";
-	public static final BiomeWrapper EMPTY_WRAPPER = new BiomeWrapper();
+	public static final BiomeWrapper EMPTY_WRAPPER = new BiomeWrapper(null, null);
 	
 	/** keep track of broken biomes so we don't log every time */
 	private static final HashSet<String> brokenResourceLocationStrings = new HashSet<>();
@@ -88,7 +90,8 @@ public class BiomeWrapper implements IBiomeWrapper
     #endif
 	
 	/** technically final, but since it requires a method call to generate it can't be marked as such */
-	private String serialString = null;
+	private String serialString;
+	private final int hashCode;
 	
 	
 	
@@ -119,7 +122,9 @@ public class BiomeWrapper implements IBiomeWrapper
 	{
 		this.biome = biome;
 		this.serialString = this.serialize(levelWrapper);
-		LOGGER.trace("Created BiomeWrapper ["+this.serialString+"] for ["+biome+"]");
+		this.hashCode = Objects.hash(this.serialString);
+		
+		//LOGGER.trace("Created BiomeWrapper ["+this.serialString+"] for ["+biome+"]");
 	}
 	
 	/** should only be used to create {@link BiomeWrapper#EMPTY_WRAPPER} */
@@ -127,6 +132,7 @@ public class BiomeWrapper implements IBiomeWrapper
 	{
 		this.biome = null;
 		this.serialString = EMPTY_STRING;
+		this.hashCode = Objects.hash(this.serialString);
 	}
 	
 	
@@ -168,7 +174,7 @@ public class BiomeWrapper implements IBiomeWrapper
 	}
 	
 	@Override
-	public int hashCode() { return Objects.hash(this.getSerialString()); }
+	public int hashCode() { return this.hashCode; }
 	
 	@Override
 	public String getSerialString() { return this.serialString; }
@@ -209,7 +215,8 @@ public class BiomeWrapper implements IBiomeWrapper
 		
 		// generate the serial string //
 		
-		net.minecraft.core.RegistryAccess registryAccess = ((Level) levelWrapper.getWrappedMcObject()).registryAccess();
+		Level level = (Level)levelWrapper.getWrappedMcObject();
+		net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
 		
 		ResourceLocation resourceLocation;
 		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1

@@ -1,23 +1,19 @@
 package com.seibel.distanthorizons.common.wrappers.gui.updater;
 
-import com.mojang.blaze3d.platform.NativeImage;
-import com.seibel.distanthorizons.api.enums.config.EUpdateBranch;
+import com.seibel.distanthorizons.api.enums.config.EDhApiUpdateBranch;
 import com.seibel.distanthorizons.common.wrappers.gui.DhScreen;
 import com.seibel.distanthorizons.common.wrappers.gui.TexturedButtonWidget;
 import com.seibel.distanthorizons.core.jar.ModJarInfo;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.jar.JarUtils;
 import com.seibel.distanthorizons.core.jar.installer.ModrinthGetter;
 import com.seibel.distanthorizons.core.jar.updater.SelfUpdater;
-import net.minecraft.client.Minecraft;
 #if MC_VER >= MC_1_20_1
 import net.minecraft.client.gui.GuiGraphics;
 #else
 import com.mojang.blaze3d.vertex.PoseStack;
 #endif
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
 
 import static com.seibel.distanthorizons.common.wrappers.gui.GuiHelper.*;
@@ -92,7 +88,7 @@ public class UpdateModScreen extends DhScreen
 			e.printStackTrace();
 		}
 		
-		if (Config.Client.Advanced.AutoUpdater.updateBranch.get() == EUpdateBranch.STABLE)
+		if (Config.Client.Advanced.AutoUpdater.updateBranch.get() == EDhApiUpdateBranch.STABLE)
 		{
 			this.addBtn(new TexturedButtonWidget(
 					// Where the button is on the screen

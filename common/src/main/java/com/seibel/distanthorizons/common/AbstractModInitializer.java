@@ -25,7 +25,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IModChecker
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
 import org.apache.logging.log4j.Logger;

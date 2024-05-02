@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.neoforge.mixins.client;
 
-import com.seibel.distanthorizons.api.enums.config.EUpdateBranch;
+import com.seibel.distanthorizons.api.enums.config.EDhApiUpdateBranch;
 import com.seibel.distanthorizons.common.wrappers.gui.updater.UpdateModScreen;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -76,7 +76,7 @@ public class MixinMinecraft
 				Minecraft.getInstance().setScreen(new UpdateModScreen(
 						// TODO: Change to runnable, instead of tittle screen
 						new TitleScreen(false), // We don't want to use the vanilla title screen as it would fade the buttons
-						(Config.Client.Advanced.AutoUpdater.updateBranch.get() == EUpdateBranch.STABLE ? ModrinthGetter.getLatestIDForVersion(SingletonInjector.INSTANCE.get(IVersionConstants.class).getMinecraftVersion()) : GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha"))
+						(Config.Client.Advanced.AutoUpdater.updateBranch.get() == EDhApiUpdateBranch.STABLE ? ModrinthGetter.getLatestIDForVersion(SingletonInjector.INSTANCE.get(IVersionConstants.class).getMinecraftVersion()) : GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha"))
 				));
 			};
 		}

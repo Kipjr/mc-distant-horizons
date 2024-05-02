@@ -28,6 +28,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ClientLevelWrapper implements IClientLevelWrapper
@@ -38,6 +39,8 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	
 	private final ClientLevel level;
 	private final ClientBlockDetailMap blockMap = new ClientBlockDetailMap(this);
+	
+	private BlockStateWrapper dirtBlockWrapper;
 	
 	
 	
@@ -118,6 +121,26 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	public int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper blockState)
 	{
 		return this.blockMap.getColor(((BlockStateWrapper) blockState).blockState, (BiomeWrapper) biome, pos);
+	}
+	
+	@Override
+	public int getDirtBlockColor()
+	{
+		if (this.dirtBlockWrapper == null)
+		{
+			try
+			{
+				this.dirtBlockWrapper = (BlockStateWrapper) BlockStateWrapper.deserialize(BlockStateWrapper.DIRT_RESOURCE_LOCATION_STRING, this);
+			}
+			catch (IOException e)
+			{
+				// shouldn't happen, but just in case
+				LOGGER.warn("Unable to get dirt color with resource location ["+BlockStateWrapper.DIRT_RESOURCE_LOCATION_STRING+"] with level ["+this+"].", e);
+				return -1;
+			}
+		}
+		
+		return this.blockMap.getColor(this.dirtBlockWrapper.blockState, BiomeWrapper.EMPTY_WRAPPER, DhBlockPos.ZERO);
 	}
 	
 	@Override

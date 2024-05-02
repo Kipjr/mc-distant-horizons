@@ -1,13 +1,9 @@
 package com.seibel.distanthorizons.common.wrappers.minecraft;
 
-import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftSharedWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import net.minecraft.server.dedicated.DedicatedServer;
 
 import java.io.File;
-import java.util.List;
-import java.util.stream.Collectors;
 
 //@Environment(EnvType.SERVER)
 public class MinecraftDedicatedServerWrapper implements IMinecraftSharedWrapper

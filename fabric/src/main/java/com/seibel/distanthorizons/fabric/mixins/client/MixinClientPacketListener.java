@@ -7,6 +7,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -23,22 +24,28 @@ public class MixinClientPacketListener
 	@Shadow
 	private ClientLevel level;
 	
+	@Unique
+	private ClientLevel previousLevel;
+	
+	
 	@Inject(method = "handleLogin", at = @At("RETURN"))
-	void onHandleLoginEnd(CallbackInfo ci)
-	{
-		ClientApi.INSTANCE.onClientOnlyConnected();
-		ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper(this.level));
-	}
+	void onHandleLoginEnd(CallbackInfo ci) { ClientApi.INSTANCE.onClientOnlyConnected(); }
 	
 	@Inject(method = "handleRespawn", at = @At("HEAD"))
-	void onHandleRespawnStart(CallbackInfo ci)
-	{
-		ClientApi.INSTANCE.clientLevelUnloadEvent(ClientLevelWrapper.getWrapper(this.level), true);
-	}
+	void onHandleRespawnStart(CallbackInfo ci) { this.previousLevel = this.level; }
 	@Inject(method = "handleRespawn", at = @At("RETURN"))
-	void onHandleRespawnEnd(CallbackInfo ci)
+	void onHandleRespawnEnd(CallbackInfo ci) 
 	{
-		ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper(this.level));
+		// If the player changes dimensions the "this.level" will be changed halfway through the respawn method.
+		// By checking if the object references are the same, we can see if the previous level should be unloaded
+		// or if the player just respawned in the same level. 
+		if (this.previousLevel != this.level)
+		{
+			ClientApi.INSTANCE.clientLevelUnloadEvent(ClientLevelWrapper.getWrapper(this.previousLevel));
+			ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper(this.level));
+		}
+		
+		this.previousLevel = null;
 	}
 	
 	#if MC_VER < MC_1_19_4

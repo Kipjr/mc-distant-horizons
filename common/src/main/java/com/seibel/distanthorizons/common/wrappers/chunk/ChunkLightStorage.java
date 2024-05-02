@@ -42,26 +42,49 @@ public class ChunkLightStorage
 	/** the data stored in this storage, split up into 16x16x16 areas. */
 	public LightSection[] lightSections;
 	
+	/** 
+	 * If the get method is called on a Y position above what's stored
+	 * this value will be returned. <br><br>
+	 * 
+	 * This needs to be manually defined since sky and block lights behave differently
+	 * for values both above and below what's defined.
+	 */
+	public int aboveMaxYValue;
+	/** @see ChunkLightStorage#aboveMaxYValue */
+	public int belowMinYValue;
 	
 	
-	public ChunkLightStorage(int minY, int maxY) 
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+	public ChunkLightStorage(int minY, int maxY, int aboveMaxYValue, int belowMinYValue) 
 	{
 		this.minY = minY;
 		this.maxY = maxY;
+		
+		this.aboveMaxYValue = aboveMaxYValue;
+		this.belowMinYValue = belowMinYValue;
 	}
 	
 	
+	
+	//=====================//
+	// getters and setters //
+	//=====================//
 	
 	public int get(int x, int y, int z)
 	{
 		if (y < this.minY)
 		{
-			return 0;
-		}	
-		if (y >= this.maxY)
-		{
-			return 15;
+			return this.belowMinYValue;
 		}
+		else if (y >= this.maxY)
+		{
+			return  this.aboveMaxYValue;
+		}
+		
 		
 		if (this.lightSections != null)
 		{
