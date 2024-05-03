@@ -21,32 +21,8 @@ import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 @Mixin(ClientPacketListener.class)
 public class MixinClientPacketListener
 {
-	@Shadow
-	private ClientLevel level;
-	
-	@Unique
-	private ClientLevel previousLevel;
-	
-	
 	@Inject(method = "handleLogin", at = @At("RETURN"))
 	void onHandleLoginEnd(CallbackInfo ci) { ClientApi.INSTANCE.onClientOnlyConnected(); }
-	
-	@Inject(method = "handleRespawn", at = @At("HEAD"))
-	void onHandleRespawnStart(CallbackInfo ci) { this.previousLevel = this.level; }
-	@Inject(method = "handleRespawn", at = @At("RETURN"))
-	void onHandleRespawnEnd(CallbackInfo ci) 
-	{
-		// If the player changes dimensions the "this.level" will be changed halfway through the respawn method.
-		// By checking if the object references are the same, we can see if the previous level should be unloaded
-		// or if the player just respawned in the same level. 
-		if (this.previousLevel != this.level)
-		{
-			ClientApi.INSTANCE.clientLevelUnloadEvent(ClientLevelWrapper.getWrapper(this.previousLevel));
-			ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper(this.level));
-		}
-		
-		this.previousLevel = null;
-	}
 	
 	#if MC_VER < MC_1_19_4
 	@Inject(method = "cleanup", at = @At("HEAD"))
@@ -55,10 +31,6 @@ public class MixinClientPacketListener
 	#endif
 	void onCleanupStart(CallbackInfo ci)
 	{
-		if (this.level != null)
-		{
-			ClientApi.INSTANCE.clientLevelUnloadEvent(ClientLevelWrapper.getWrapper(this.level));
-		}
 		ClientApi.INSTANCE.onClientOnlyDisconnected();
 	}
 	

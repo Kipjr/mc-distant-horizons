@@ -6,7 +6,7 @@ loom {
     accessWidenerPath = project(":common").file("src/main/resources/${accessWidenerVersion}.distanthorizons.accesswidener")
     
     // Custom logging
-    //log4jConfigs.from(file("log4j-dev.xml"))
+    log4jConfigs.from(file("log4j-dev.xml"))
     
     // "runs" isn't required, but when we do need it then it can be useful
     runs {
