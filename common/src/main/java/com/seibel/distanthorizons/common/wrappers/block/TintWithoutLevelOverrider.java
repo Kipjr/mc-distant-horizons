@@ -19,14 +19,20 @@
 
 package com.seibel.distanthorizons.common.wrappers.block;
 
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.util.ColorUtil;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.*;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.material.FluidState;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 #if MC_VER >= MC_1_18_2
@@ -35,18 +41,54 @@ import net.minecraft.core.Holder;
 
 public class TintWithoutLevelOverrider implements BlockAndTintGetter
 {
-	final BiomeWrapper biome;
+	/** 
+	 * This will only ever be null if there was an issue with {@link IClientLevelWrapper#getPlainsBiomeWrapper()}
+	 * but {@link Nullable} is there just in case. 
+	 */
+	@Nullable
+	private final Biome biome;
 	
-	public TintWithoutLevelOverrider(BiomeWrapper biome)
+	
+	
+	public TintWithoutLevelOverrider(BiomeWrapper biomeWrapper, IClientLevelWrapper clientLevelWrapper)
 	{
-		this.biome = biome;
+		// try to get the wrapped biome
+		Biome unwrappedBiome = null;
+		if (biomeWrapper.biome != null)
+		{
+			unwrappedBiome = unwrap(biomeWrapper.biome);
+		}
+		
+		if(unwrappedBiome == null)
+		{
+			// we are looking at the empty biome wrapper, try using plains as a backup
+			BiomeWrapper plainsBiomeWrapper = ((BiomeWrapper) clientLevelWrapper.getPlainsBiomeWrapper());
+			if (plainsBiomeWrapper != null)
+			{
+				unwrappedBiome = unwrap(plainsBiomeWrapper.biome);
+			}
+		}
+		
+		this.biome = unwrappedBiome;
 	}
+	
+	
+	
 	@Override
-	public int getBlockTint(BlockPos blockPos, ColorResolver colorResolver)
-	{
-		return colorResolver.getColor(_unwrap(biome.biome), blockPos.getX(), blockPos.getZ());
+	public int getBlockTint(@NotNull BlockPos blockPos, @NotNull ColorResolver colorResolver) 
+	{ 
+		if (this.biome != null)
+		{
+			return colorResolver.getColor(this.biome, blockPos.getX(), blockPos.getZ());
+		}
+		else
+		{
+			// hopefully unneeded debug color
+			return ColorUtil.CYAN;
+		}
 	}
-	private Biome _unwrap(#if MC_VER >= MC_1_18_2 Holder<Biome> #else Biome #endif biome)
+	
+	private static Biome unwrap(#if MC_VER >= MC_1_18_2 Holder<Biome> #else Biome #endif biome)
 	{
 		#if MC_VER >= MC_1_18_2
 		return biome.value();
@@ -55,30 +97,36 @@ public class TintWithoutLevelOverrider implements BlockAndTintGetter
 		#endif
 	}
 	
+	
+	
+	//================//
+	// unused methods //
+	//================//
+	
 	@Override
-	public float getShade(Direction direction, boolean shade)
+	public float getShade(@NotNull Direction direction, boolean shade)
 	{
 		throw new UnsupportedOperationException("ERROR: getShade() called on TintWithoutLevelOverrider. Object is for tinting only.");
 	}
 	@Override
-	public LevelLightEngine getLightEngine()
+	public @NotNull LevelLightEngine getLightEngine()
 	{
 		throw new UnsupportedOperationException("ERROR: getLightEngine() called on TintWithoutLevelOverrider. Object is for tinting only.");
 	}
 	@Nullable
 	@Override
-	public BlockEntity getBlockEntity(BlockPos pos)
+	public BlockEntity getBlockEntity(@NotNull BlockPos pos)
 	{
 		throw new UnsupportedOperationException("ERROR: getBlockEntity() called on TintWithoutLevelOverrider. Object is for tinting only.");
 	}
 	
 	@Override
-	public BlockState getBlockState(BlockPos pos)
+	public @NotNull BlockState getBlockState(@NotNull BlockPos pos)
 	{
 		throw new UnsupportedOperationException("ERROR: getBlockState() called on TintWithoutLevelOverrider. Object is for tinting only.");
 	}
 	@Override
-	public FluidState getFluidState(BlockPos pos)
+	public @NotNull FluidState getFluidState(@NotNull BlockPos pos)
 	{
 		throw new UnsupportedOperationException("ERROR: getFluidState() called on TintWithoutLevelOverrider. Object is for tinting only.");
 	}

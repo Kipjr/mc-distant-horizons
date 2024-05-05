@@ -20,10 +20,13 @@
 package com.seibel.distanthorizons.forge.mixins.client;
 
 
-import com.seibel.distanthorizons.common.util.ILightTextureMarker;
+import com.mojang.blaze3d.platform.NativeImage;
 
+import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftRenderWrapper;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,11 +38,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LightTexture.class)
 public class MixinLightTexture
 {
-	@Shadow
-	@Final
-	private DynamicTexture lightTexture;
+	@Shadow 
+	@Final 
+	private NativeImage lightPixels;
 	
-	@Inject(method = "<init>", at = @At("RETURN"))
-	public void markLightTexture(CallbackInfo ci) { ((ILightTextureMarker) this.lightTexture).markLightTexture(); }
+	
+	@Inject(method = "updateLightTexture(F)V", at = @At("RETURN"))
+	public void updateLightTexture(float partialTicks, CallbackInfo ci)
+	{
+		IMinecraftClientWrapper mc = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+		if (mc == null || mc.getWrappedClientLevel() == null)
+		{
+			return;
+		}
+		
+		IClientLevelWrapper clientLevel = mc.getWrappedClientLevel();
+		MinecraftRenderWrapper.INSTANCE.updateLightmap(this.lightPixels, clientLevel);
+	}
 	
 }

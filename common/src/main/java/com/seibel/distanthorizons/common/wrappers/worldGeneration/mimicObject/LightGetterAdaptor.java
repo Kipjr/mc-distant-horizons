@@ -23,14 +23,23 @@ import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IStarlightAccessor;
 
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.chunk.LightChunkGetter;
+
 #if MC_VER >= MC_1_17_1
 import net.minecraft.world.level.LevelHeightAccessor;
 #endif
-import net.minecraft.world.level.chunk.ChunkStatus;
-import net.minecraft.world.level.chunk.LightChunkGetter;
+
 #if MC_VER >= MC_1_20_1
 import net.minecraft.world.level.chunk.LightChunk;
 #endif
+
+#if MC_VER <= MC_1_20_4
+import net.minecraft.world.level.chunk.ChunkStatus;
+#else
+import net.minecraft.world.level.chunk.status.ChunkStatus;
+#endif
+
+
 
 public class LightGetterAdaptor implements LightChunkGetter
 {

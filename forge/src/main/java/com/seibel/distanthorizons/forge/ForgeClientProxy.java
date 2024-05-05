@@ -262,9 +262,7 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 		#elif MC_VER >= MC_1_18_2
 		if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_SOLID_BLOCKS)
 		#else
-		// FIXME: Is this the correct location for 1.16 & 1.17???
-		// I couldnt find anything for rendering after the level, so is rendering after overlays ok?
-		if (event.type.equals(TickEvent.RenderTickEvent.Type.WORLD))
+		if (event.type.equals(TickEvent.RenderTickEvent.Type.RENDER))
 		#endif
 		{
 			try

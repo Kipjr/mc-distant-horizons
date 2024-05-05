@@ -35,7 +35,6 @@ import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.levelgen.WorldGenSettings;
 #if MC_VER < MC_1_19_2
 import net.minecraft.world.level.levelgen.feature.ConfiguredStructureFeature;
@@ -55,6 +54,12 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
 
 #if MC_VER < MC_1_18_2
 import net.minecraft.world.level.levelgen.feature.StructureFeature;
+#endif
+
+#if MC_VER <= MC_1_20_4
+import net.minecraft.world.level.chunk.ChunkStatus;
+#else
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 #endif
 
 

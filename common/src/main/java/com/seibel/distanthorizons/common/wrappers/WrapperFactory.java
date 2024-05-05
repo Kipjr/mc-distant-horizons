@@ -118,7 +118,7 @@ public class WrapperFactory implements IWrapperFactory
 			}
 		}
 		
-		#if MC_VER <= MC_1_20_4
+		#if MC_VER <= MC_1_20_6
 		else if (objectArray.length == 2)
 		{
 			// correct number of parameters from the API
@@ -173,7 +173,7 @@ public class WrapperFactory implements IWrapperFactory
 	{
 		String[] expectedClassNames;
 		
-		#if MC_VER <= MC_1_20_4
+		#if MC_VER <= MC_1_20_6
 		expectedClassNames = new String[] 
 		{
 			ChunkAccess.class.getName(),
@@ -221,7 +221,7 @@ public class WrapperFactory implements IWrapperFactory
 		
 		Biome biome = (Biome) objectArray[0];
 		return BiomeWrapper.getBiomeWrapper(biome, coreLevelWrapper);
-		#elif MC_VER <= MC_1_20_4
+		#elif MC_VER <= MC_1_20_6
 		if (!(objectArray[0] instanceof Holder) || !(((Holder<?>) objectArray[0]).value() instanceof Biome))
 		{
 			throw new ClassCastException(createBiomeWrapperErrorMessage(objectArray));
@@ -244,7 +244,7 @@ public class WrapperFactory implements IWrapperFactory
 		
 		#if MC_VER < MC_1_18_2
 		expectedClassNames = new String[] { Biome.class.getName() };
-		#elif MC_VER <= MC_1_20_4
+		#elif MC_VER <= MC_1_20_6
 		expectedClassNames = new String[] { Holder.class.getName()+"<"+Biome.class.getName()+">" };
 		#else
 			// See preprocessor comment in createChunkWrapper() for full documentation
@@ -265,7 +265,7 @@ public class WrapperFactory implements IWrapperFactory
 		
 		
 		
-		#if MC_VER <= MC_1_20_4
+		#if MC_VER <= MC_1_20_6
 		if (objectArray.length != 1)
 		{
 			throw new ClassCastException(createBlockStateWrapperErrorMessage(objectArray));
@@ -292,7 +292,7 @@ public class WrapperFactory implements IWrapperFactory
 		
 		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 		expectedClassNames = new String[] { Biome.class.getName() };
-		#elif MC_VER <= MC_1_20_4
+		#elif MC_VER <= MC_1_20_6
 		expectedClassNames = new String[] { Holder.class.getName()+"<"+Biome.class.getName()+">" };
 		#else
 		// See preprocessor comment in createChunkWrapper() for full documentation

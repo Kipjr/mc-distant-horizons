@@ -48,7 +48,7 @@ def addMod(path, enabled) {
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:${minecraft_version}"
+    minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
     mappings loom.layered() {
         // Mojmap mappings
         officialMojangMappings()
@@ -80,7 +80,9 @@ dependencies {
     
 
     // Mod Menu
-    modImplementation("com.terraformersmc:modmenu:${rootProject.modmenu_version}")
+    if (rootProject.modmenu_version != "") {
+        modImplementation("com.terraformersmc:modmenu:${rootProject.modmenu_version}")
+    }
 
 
 

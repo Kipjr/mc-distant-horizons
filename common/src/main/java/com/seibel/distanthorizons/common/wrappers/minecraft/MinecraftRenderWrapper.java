@@ -25,6 +25,7 @@ import java.nio.FloatBuffer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
@@ -105,7 +106,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	 * In the case of immersive portals multiple levels may be active at once, causing conflicting lightmaps. <br> 
 	 * Requiring the use of multiple {@link LightMapWrapper}.
 	 */
-	public HashMap<IDimensionTypeWrapper, LightMapWrapper> lightmapByDimensionType = new HashMap<>();
+	public ConcurrentHashMap<IDimensionTypeWrapper, LightMapWrapper> lightmapByDimensionType = new ConcurrentHashMap<>();
 	
 	/** 
 	 * Holds the render buffer that should be used when displaying levels to the screen.
@@ -405,11 +406,8 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 		// so this will have to do for now
 		IDimensionTypeWrapper dimensionType = level.getDimensionType();
 		
-		if (!this.lightmapByDimensionType.containsKey(dimensionType))
-		{
-			this.lightmapByDimensionType.put(dimensionType, new LightMapWrapper());
-		}
-		this.lightmapByDimensionType.get(dimensionType).uploadLightmap(lightPixels);
+		LightMapWrapper wrapper = this.lightmapByDimensionType.compute(dimensionType, (dimType, oldWrapper) -> new LightMapWrapper());
+		wrapper.uploadLightmap(lightPixels);
 	}
 	
 }

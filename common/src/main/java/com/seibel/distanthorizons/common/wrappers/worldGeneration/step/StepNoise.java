@@ -28,15 +28,17 @@ import com.seibel.distanthorizons.common.wrappers.worldGeneration.ThreadedParame
 
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import net.minecraft.server.level.WorldGenRegion;
-#if MC_VER >= MC_1_17_1
-#endif
-#if MC_VER < MC_1_19_2
-#endif
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.ProtoChunk;
+
 #if MC_VER >= MC_1_18_2
 import net.minecraft.world.level.levelgen.blending.Blender;
+#endif
+
+#if MC_VER <= MC_1_20_4
+import net.minecraft.world.level.chunk.ChunkStatus;
+#else
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 #endif
 
 public final class StepNoise

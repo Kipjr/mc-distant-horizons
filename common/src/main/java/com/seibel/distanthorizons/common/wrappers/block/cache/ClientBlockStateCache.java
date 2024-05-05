@@ -54,7 +54,6 @@ import java.util.List;
  */
 public class ClientBlockStateCache
 {
-	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	private static final HashSet<BlockState> BLOCK_STATES_THAT_NEED_LEVEL = new HashSet<>();
@@ -66,15 +65,20 @@ public class ClientBlockStateCache
 	public static final RandomSource random = RandomSource.create();
 	#endif
 	
+	public final IClientLevelWrapper levelWrapper;
 	public final BlockState blockState;
 	public final LevelReader level;
 	public final BlockPos pos;
+	
+	
+	
 	public ClientBlockStateCache(BlockState blockState, IClientLevelWrapper samplingLevel, DhBlockPos samplingPos)
 	{
 		this.blockState = blockState;
-		level = (LevelReader) samplingLevel.getWrappedMcObject();
-		pos = McObjectConverter.Convert(samplingPos);
-		resolveColors();
+		this.levelWrapper = samplingLevel;
+		this.level = (LevelReader) samplingLevel.getWrappedMcObject();
+		this.pos = McObjectConverter.Convert(samplingPos);
+		this.resolveColors();
 		//LOGGER.info("ClientBlocKCache created for {}", blockState);
 	}
 	
@@ -363,7 +367,7 @@ public class ClientBlockStateCache
 				try
 				{
 					tintColor = Minecraft.getInstance().getBlockColors()
-							.getColor(this.blockState, new TintWithoutLevelOverrider(biome), McObjectConverter.Convert(pos), this.tintIndex);
+							.getColor(this.blockState, new TintWithoutLevelOverrider(biome, this.levelWrapper), McObjectConverter.Convert(pos), this.tintIndex);
 				}
 				catch (UnsupportedOperationException e)
 				{

@@ -32,8 +32,6 @@ import org.apache.logging.log4j.Logger;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 
-import net.minecraft.client.Minecraft;
-
 #if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 import net.minecraft.core.Registry;
 #elif MC_VER == MC_1_18_2 || MC_VER == MC_1_19_2
@@ -66,8 +64,10 @@ public class BiomeWrapper implements IBiomeWrapper
 	public static final ConcurrentMap<Holder<Biome>, BiomeWrapper> WRAPPER_BY_BIOME = new ConcurrentHashMap<>();
     #endif
 	
-	public static final String EMPTY_STRING = "EMPTY";
+	public static final String EMPTY_BIOME_STRING = "EMPTY";
 	public static final BiomeWrapper EMPTY_WRAPPER = new BiomeWrapper(null, null);
+	
+	public static final String PLAINS_RESOURCE_LOCATION_STRING = "minecraft:plains";
 	
 	/** keep track of broken biomes so we don't log every time */
 	private static final HashSet<String> brokenResourceLocationStrings = new HashSet<>();
@@ -131,7 +131,7 @@ public class BiomeWrapper implements IBiomeWrapper
 	private BiomeWrapper()
 	{
 		this.biome = null;
-		this.serialString = EMPTY_STRING;
+		this.serialString = EMPTY_BIOME_STRING;
 		this.hashCode = Objects.hash(this.serialString);
 	}
 	
@@ -146,7 +146,7 @@ public class BiomeWrapper implements IBiomeWrapper
 	{
 		if (this == EMPTY_WRAPPER)
 		{
-			return EMPTY_STRING;
+			return EMPTY_BIOME_STRING;
 		}
 		
         #if MC_VER < MC_1_18_2
@@ -193,10 +193,11 @@ public class BiomeWrapper implements IBiomeWrapper
 	
 	public String serialize(ILevelWrapper levelWrapper)
 	{
-		if (this.serialString != null)
+		if (this.biome == null)
 		{
-			return this.serialString;
+			return EMPTY_BIOME_STRING;
 		}
+		
 		
 		
 		// we can't generate a serial string if the level is null
@@ -205,10 +206,10 @@ public class BiomeWrapper implements IBiomeWrapper
 			if (!emptyLevelSerializeFailLogged)
 			{
 				emptyLevelSerializeFailLogged = true;
-				LOGGER.warn("Unable to serialize biome: ["+this.biome+"] because the passed in level wrapper is null. Future errors won't be logged.");
+				LOGGER.warn("Unable to serialize biome: [" + this.biome + "] because the passed in level wrapper is null. Future errors of this type won't be logged.");
 			}
 			
-			return EMPTY_STRING;
+			return EMPTY_BIOME_STRING;
 		}
 		
 		
@@ -250,12 +251,12 @@ public class BiomeWrapper implements IBiomeWrapper
 	
 	public static IBiomeWrapper deserialize(String resourceLocationString, ILevelWrapper levelWrapper) throws IOException
 	{
-		if (resourceLocationString.equals(EMPTY_STRING))
+		if (resourceLocationString.equals(EMPTY_BIOME_STRING))
 		{
 			if (!emptyStringWarningLogged)
 			{
 				emptyStringWarningLogged = true;
-				LOGGER.warn("[" + EMPTY_STRING + "] biome string deserialized. This may mean the level was null when a save was attempted, a file saving error, or a biome saving error. Future errors will not be logged.");
+				LOGGER.warn("[" + EMPTY_BIOME_STRING + "] biome string deserialized. This may mean the level was null when a save was attempted, a file saving error, or a biome saving error. Future errors will not be logged.");
 			}
 			return EMPTY_WRAPPER;
 		}
