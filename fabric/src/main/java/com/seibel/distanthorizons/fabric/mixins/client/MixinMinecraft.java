@@ -2,6 +2,8 @@ package com.seibel.distanthorizons.fabric.mixins.client;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiUpdateBranch;
 import com.seibel.distanthorizons.common.wrappers.gui.updater.UpdateModScreen;
+import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.installer.GitlabGetter;
@@ -9,9 +11,11 @@ import com.seibel.distanthorizons.core.jar.installer.ModrinthGetter;
 import com.seibel.distanthorizons.core.jar.updater.SelfUpdater;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.multiplayer.ClientLevel;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -23,8 +27,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * @author coolGi
  */
 @Mixin(Minecraft.class)
-public class MixinMinecraft
+public abstract class MixinMinecraft
 {
+	@Shadow
+	public abstract boolean isLocalServer();
+	
+	@Unique
+	private ClientLevel lastLevel;
+	
 	#if MC_VER < MC_1_20_2
 	#if MC_VER == MC_1_20_1
 	@Redirect(
@@ -87,6 +97,24 @@ public class MixinMinecraft
 		runnable.run();
 	}
 	#endif
+	
+	@Inject(at = @At("HEAD"), method = "updateLevelInEngines")
+	public void updateLevelInEngines(ClientLevel level, CallbackInfo ci)
+	{
+		// Only for multiplayer clients
+		if (!this.isLocalServer())
+		{
+			if (this.lastLevel != null && level != this.lastLevel)
+			{
+				ClientApi.INSTANCE.clientLevelUnloadEvent(ClientLevelWrapper.getWrapper(this.lastLevel));
+			}
+			if (level != null)
+			{
+				ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper(level));
+			}
+			this.lastLevel = level;
+		}
+	}
 	
 	@Inject(at = @At("HEAD"), method = "close()V")
 	public void close(CallbackInfo ci) { SelfUpdater.onClose(); }
