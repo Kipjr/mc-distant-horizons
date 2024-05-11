@@ -335,6 +335,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	}
 	
 	
+	// TODO would it be worth while to cache these objects in a ConcurrentHashMap<string, IBiomeWrapper>?
 	/** will only work if a level is currently loaded */
 	public static IBlockStateWrapper deserialize(String resourceStateString, ILevelWrapper levelWrapper) throws IOException
 	{
@@ -356,13 +357,21 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		}
 		
 		// parse the resource location
-		int resourceSeparatorIndex = resourceStateString.indexOf(RESOURCE_LOCATION_SEPARATOR);
-		if (resourceSeparatorIndex == -1)
+		int separatorIndex = resourceStateString.indexOf(RESOURCE_LOCATION_SEPARATOR);
+		if (separatorIndex == -1)
 		{
 			throw new IOException("Unable to parse Resource Location out of string: [" + resourceStateString + "].");
 		}
-		ResourceLocation resourceLocation = new ResourceLocation(resourceStateString.substring(0, resourceSeparatorIndex), resourceStateString.substring(resourceSeparatorIndex + 1));
 		
+		ResourceLocation resourceLocation;
+		try
+		{
+			resourceLocation = new ResourceLocation(resourceStateString.substring(0, separatorIndex), resourceStateString.substring(separatorIndex + 1));
+		}
+		catch (Exception e)
+		{
+			throw new IOException("No Resource Location found for the string: [" + resourceStateString + "] Error: ["+e.getMessage()+"].");
+		}
 		
 		
 		// attempt to get the BlockState from all possible BlockStates

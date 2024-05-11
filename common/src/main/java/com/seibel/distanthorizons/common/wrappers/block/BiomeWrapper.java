@@ -249,6 +249,7 @@ public class BiomeWrapper implements IBiomeWrapper
 		return this.serialString;
 	}
 	
+	// TODO would it be worth while to cache these objects in a ConcurrentHashMap<string, IBiomeWrapper>?
 	public static IBiomeWrapper deserialize(String resourceLocationString, ILevelWrapper levelWrapper) throws IOException
 	{
 		if (resourceLocationString.equals(EMPTY_BIOME_STRING))
@@ -274,7 +275,16 @@ public class BiomeWrapper implements IBiomeWrapper
 		{
 			throw new IOException("Unable to parse resource location string: [" + resourceLocationString + "].");
 		}
-		ResourceLocation resourceLocation = new ResourceLocation(resourceLocationString.substring(0, separatorIndex), resourceLocationString.substring(separatorIndex + 1));
+		
+		ResourceLocation resourceLocation;
+		try
+		{
+			resourceLocation = new ResourceLocation(resourceLocationString.substring(0, separatorIndex), resourceLocationString.substring(separatorIndex + 1));
+		}
+		catch (Exception e)
+		{
+			throw new IOException("No Resource Location found for the string: [" + resourceLocationString + "] Error: ["+e.getMessage()+"].");
+		}
 		
 		
 		try

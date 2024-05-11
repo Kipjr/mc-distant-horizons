@@ -32,6 +32,7 @@ import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.level.IDhServerLevel;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
@@ -83,10 +84,21 @@ public class WrapperFactory implements IWrapperFactory
 	
 	@Override
 	public IBiomeWrapper deserializeBiomeWrapper(String str, ILevelWrapper levelWrapper) throws IOException { return BiomeWrapper.deserialize(str, levelWrapper); }
+	@Override 
+	public IBiomeWrapper getPlainsBiomeWrapper(ILevelWrapper levelWrapper) // TODO is there a way we could get this without the levelWrapper? it isn't necessary but would clean up the code a bit
+	{
+		try
+		{
+			return BiomeWrapper.deserialize(BiomeWrapper.PLAINS_RESOURCE_LOCATION_STRING, levelWrapper);
+		}
+		catch (IOException e) 
+		{
+			throw new LodUtil.AssertFailureException("Unable to parse plains resource string ["+BiomeWrapper.PLAINS_RESOURCE_LOCATION_STRING+"], error:\n " + e.getMessage());
+		}
+	}
 	
 	@Override
 	public IBlockStateWrapper deserializeBlockStateWrapper(String str, ILevelWrapper levelWrapper) throws IOException { return BlockStateWrapper.deserialize(str, levelWrapper); }
-	
 	@Override
 	public IBlockStateWrapper getAirBlockStateWrapper() { return BlockStateWrapper.AIR; }
 	
