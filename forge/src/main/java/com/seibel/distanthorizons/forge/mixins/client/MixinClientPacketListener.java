@@ -13,15 +13,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ClientPacketListener.class)
 public class MixinClientPacketListener
 {
-	@Shadow
-	private ClientLevel level;
-	// TODO update fabric version as well
-	
 	@Inject(method = "handleLogin", at = @At("RETURN"))
 	void onHandleLoginEnd(CallbackInfo ci)
 	{
 		ClientApi.INSTANCE.onClientOnlyConnected();
-		ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper(this.level));
 	}
 	
 	#if MC_VER < MC_1_19_4

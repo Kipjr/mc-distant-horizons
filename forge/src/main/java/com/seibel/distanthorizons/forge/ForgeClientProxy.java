@@ -138,7 +138,7 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 	#if MC_VER < MC_1_19_2
 	public void clientLevelUnloadEvent(WorldEvent.Unload event)
 	#else
-	public void clientLevelUnloadEvent(LevelEvent.Load event)
+	public void clientLevelUnloadEvent(LevelEvent.Unload event)
 	#endif
 	{
 		LOGGER.info("level unload");
