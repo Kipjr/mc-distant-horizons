@@ -35,15 +35,16 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.*;
 #if MC_VER == MC_1_16_5
-import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
+import net.minecraftforge.fml.event.server.FMLServerAboutToStartEvent;
 #elif MC_VER == MC_1_17_1
-import net.minecraftforge.fmlserverevents.FMLServerStartingEvent;
+import net.minecraftforge.fmlserverevents.FMLServerAboutToStartEvent;
 #else
-import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.event.server.ServerAboutToStartEvent;
 #endif
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 #if MC_VER < MC_1_17_1
@@ -126,7 +127,7 @@ public class ForgeMain extends AbstractModInitializer
 	@Override
 	protected void subscribeServerStartingEvent(Consumer<MinecraftServer> eventHandler)
 	{
-		MinecraftForge.EVENT_BUS.addListener((#if MC_VER >= MC_1_18_2 ServerStartingEvent #else FMLServerStartingEvent #endif e) ->
+		MinecraftForge.EVENT_BUS.addListener(EventPriority.HIGH, (#if MC_VER >= MC_1_18_2 ServerAboutToStartEvent #else FMLServerAboutToStartEvent #endif e) ->
 		{
 			eventHandler.accept(e.getServer());
 		});

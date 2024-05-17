@@ -120,7 +120,7 @@ public class NeoforgeMain extends AbstractModInitializer
 	@Override
 	protected void subscribeServerStartingEvent(Consumer<MinecraftServer> eventHandler)
 	{
-		NeoForge.EVENT_BUS.addListener((ServerStartingEvent e) -> { eventHandler.accept(e.getServer()); });
+		NeoForge.EVENT_BUS.addListener(EventPriority.HIGH, (ServerStartingEvent e) -> { eventHandler.accept(e.getServer()); });
 	}
 	
 	@Override

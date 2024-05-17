@@ -24,9 +24,12 @@ for version in $(ls ./versionProperties/); do
     result+=$version
     result+="\e[0m"
     
-    echo "#"
+    version_length=${#version}
+    top_chars=$(printf '^%.0s' $(seq 1 $version_length))
+    bottom_chars=$(printf '=%.0s' $(seq 1 $version_length))
+    echo "# $top_chars"
     echo "# $version"
-    echo "#"
+    echo "# $bottom_chars"
     echo -e "\e[0m"
     
     completed_builds+=($result)
