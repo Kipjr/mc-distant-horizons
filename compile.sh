@@ -1,31 +1,46 @@
 #!/bin/sh
 
+MC_VER=$1
+BUILD_TASK=$2
+
+if [ -z "$BUILD_TASK" ]
+then
+    BUILD_TASK="build"
+fi
+
 publish_version()
 {
-    if [[ "$2" == "all" || "$1" == "$2" ]]
+    if [[ "$MC_VER" == "all" || "$1" == "$MC_VER" ]]
     then
-        docker run --name=dh-build-$1 --rm -v /${PWD}:/home/build -e MC_VER=$1 dh-eclipse-temurin
+        docker run --rm --name="dh-build-$1" \
+            -v "/$(PWD)://home/gradle/project" \
+            -w "//home/gradle/project" \
+            gradle:8.5-alpine \
+            gradle $BUILD_TASK -PmcVer="$1" --no-daemon \
+            --project-cache-dir ".gradle-$1/"
+
         cp ./fabric/build/libs/*$1.jar ./buildAllJars/fabric/
-        cp ./forge/build/libs/*$1.jar ./buildAllJars/forge/
-        cp ./Merged/*.jar ./buildAllJars/merged/
+        # cp ./forge/build/libs/*$1.jar ./buildAllJars/forge/
+        # cp ./Merged/*.jar ./buildAllJars/merged/
     fi
 }
 
 
-if [ -z "$1" ]
+if [ -z "$MC_VER" ]
 then
-    echo "Build target is undefined! [all] [1.20.1] [1.19.4] [1.19.2] [1.18.2] [1.17.1] [1.16.5]"
+    echo "Build target is undefined! [all] [1.20.4] [1.20.2] [1.20.1] [1.19.4] [1.19.2] [1.18.2] [1.17.1] [1.16.5]"
     exit 1
 fi
 
-docker build --tag=dh-eclipse-temurin -q .
-
 mkdir -p buildAllJars/fabric
-mkdir -p buildAllJars/forge
-mkdir -p buildAllJars/merged
-publish_version 1.20.1 $1
-publish_version 1.19.4 $1
-publish_version 1.19.2 $1
-publish_version 1.18.2 $1
-publish_version 1.17.1 $1
-publish_version 1.16.5 $1
+# mkdir -p buildAllJars/forge
+# mkdir -p buildAllJars/merged
+
+publish_version 1.20.4
+publish_version 1.20.2
+publish_version 1.20.1
+publish_version 1.19.4
+publish_version 1.19.2
+publish_version 1.18.2
+publish_version 1.17.1
+publish_version 1.16.5
