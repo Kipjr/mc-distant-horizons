@@ -16,7 +16,6 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 	public static final ResourceLocation PLUGIN_CHANNEL_RESOURCE = new ResourceLocation(ModInfo.RESOURCE_NAMESPACE, ModInfo.PLUGIN_CHANNEL_PATH);
 	public static final ResourceLocation WRAPPER_PACKET_RESOURCE = new ResourceLocation(ModInfo.RESOURCE_NAMESPACE, ModInfo.WRAPPER_PACKET_PATH);
 	
-	
 	@Override
 	public final void sendPluginPacketClient(Consumer<ByteBuf> encoder)
 	{
