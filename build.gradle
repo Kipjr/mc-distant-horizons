@@ -13,7 +13,7 @@ plugins {
     // Architectury is used here only as a replacement for forge's own loom
     id "dev.architectury.loom" version "1.6-SNAPSHOT" apply false
 
-    id 'xyz.wagyourtail.jvmdowngrader' version '0.4.1' apply true
+    id 'xyz.wagyourtail.jvmdowngrader' version '0.4.3' apply true
 }
 
 
