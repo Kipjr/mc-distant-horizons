@@ -67,8 +67,8 @@ loom {
 }
 
 remapJar {
-    inputFile = shadowJar.archiveFile
-    dependsOn shadowJar
+    inputFile = apiDowngrade.archiveFile
+    dependsOn apiDowngrade
 //    classifier null
 
     atAccessWideners.add("distanthorizons.accesswidener")

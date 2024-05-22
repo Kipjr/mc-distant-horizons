@@ -51,8 +51,8 @@ loom {
 }
 
 remapJar {
-    inputFile = shadowJar.archiveFile
-    dependsOn shadowJar
+    inputFile = apiDowngrade.archiveFile
+    dependsOn apiDowngrade
 }
 
 def addMod(path, enabled) {
