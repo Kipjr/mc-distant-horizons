@@ -313,16 +313,17 @@ subprojects { p ->
 
         mergeServiceFiles()
     }
-    jar.dependsOn(shadowJar)
 
-    // For downgrading our project to Java 8
+    // For downgrading the Java version of our project to match the minimum Java version required by the selected Minecraft version.
     task jarDowngrade(type: xyz.wagyourtail.jvmdg.gradle.task.DowngradeJar) {
         inputFile = tasks.shadowJar.archiveFile
-        archiveClassifier = "downgraded-8"
+        downgradeTo = JavaVersion.toVersion(rootProject.java_version as Integer)
+        archiveClassifier = "downgraded-${rootProject.java_version}"
     }
     task apiDowngrade(type: xyz.wagyourtail.jvmdg.gradle.task.ShadeAPI) {
         inputFile = jarDowngrade.archiveFile
-        archiveClassifier = "downgraded-8-shaded"
+        downgradeTo = JavaVersion.toVersion(rootProject.java_version as Integer)
+        archiveClassifier = "downgraded-${rootProject.java_version}-shaded-java-api"
     }
     // We're using a custom downgrade task so we disable the original downgrade tasks
     downgradeJar.enabled = false
