@@ -1,5 +1,6 @@
-package com.seibel.distanthorizons.common.wrappers.network;
+package com.seibel.distanthorizons.common;
 
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
@@ -16,39 +17,14 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 	public static final ResourceLocation PLUGIN_CHANNEL_RESOURCE = new ResourceLocation(ModInfo.RESOURCE_NAMESPACE, ModInfo.PLUGIN_CHANNEL_PATH);
 	public static final ResourceLocation WRAPPER_PACKET_RESOURCE = new ResourceLocation(ModInfo.RESOURCE_NAMESPACE, ModInfo.WRAPPER_PACKET_PATH);
 	
-	@Override
-	public final void sendPluginPacketClient(Consumer<ByteBuf> encoder)
-	{
-		FriendlyByteBuf buffer = this.createBuffer(encoder);
-		this.sendPluginPacketClient(buffer);
-	}
 	
 	@Override
-	public final void sendPluginPacketServer(IServerPlayerWrapper serverPlayer, Consumer<ByteBuf> encoder)
+	public final void sendPluginPacketServer(IServerPlayerWrapper serverPlayer, PluginChannelMessage message)
 	{
-		FriendlyByteBuf buffer = this.createBuffer(encoder);
-		this.sendPluginPacketServer((ServerPlayer) serverPlayer.getWrappedMcObject(), buffer);
+		this.sendPluginPacketServer((ServerPlayer) serverPlayer.getWrappedMcObject(), message);
 	}
 	
-	private FriendlyByteBuf createBuffer(Consumer<ByteBuf> encoder)
-	{
-		FriendlyByteBuf buffer = new FriendlyByteBuf(ByteBufAllocator.DEFAULT.buffer());
-		
-		if (this.shouldAddForgePacketId())
-		{
-			buffer.writeByte(0);
-		}
-		
-		encoder.accept(buffer);
-		return buffer;
-	}
-	
-	protected boolean shouldAddForgePacketId()
-	{
-		return false;
-	}
-	
-	protected abstract void sendPluginPacketClient(FriendlyByteBuf buffer);
-	protected abstract void sendPluginPacketServer(ServerPlayer serverPlayer, FriendlyByteBuf buffer);
+	@Override public abstract void sendPluginPacketClient(PluginChannelMessage message);
+	public abstract void sendPluginPacketServer(ServerPlayer serverPlayer, PluginChannelMessage message);
 	
 }

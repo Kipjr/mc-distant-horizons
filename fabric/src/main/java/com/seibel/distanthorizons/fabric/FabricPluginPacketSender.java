@@ -1,29 +1,24 @@
 package com.seibel.distanthorizons.fabric;
 
-import com.seibel.distanthorizons.common.wrappers.network.AbstractPluginPacketSender;
+import com.seibel.distanthorizons.common.AbstractPluginPacketSender;
+import com.seibel.distanthorizons.common.CommonPacketPayload;
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 
 public class FabricPluginPacketSender extends AbstractPluginPacketSender
 {
 	@Override
-	protected boolean shouldAddForgePacketId()
+	public void sendPluginPacketClient(PluginChannelMessage message)
 	{
-		return true;
+		ClientPlayNetworking.send(new CommonPacketPayload(message));
 	}
 	
 	@Override
-	protected void sendPluginPacketClient(FriendlyByteBuf buffer)
+	public void sendPluginPacketServer(ServerPlayer serverPlayer, PluginChannelMessage message)
 	{
-		ClientPlayNetworking.send(PLUGIN_CHANNEL_RESOURCE, buffer);
-	}
-	
-	@Override
-	protected void sendPluginPacketServer(ServerPlayer serverPlayer, FriendlyByteBuf buffer)
-	{
-		ServerPlayNetworking.send(serverPlayer, PLUGIN_CHANNEL_RESOURCE, buffer);
+		ServerPlayNetworking.send(serverPlayer, new CommonPacketPayload(message));
 	}
 	
 }

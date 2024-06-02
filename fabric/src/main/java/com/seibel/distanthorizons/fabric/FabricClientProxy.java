@@ -19,18 +19,15 @@
 
 package com.seibel.distanthorizons.fabric;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.seibel.distanthorizons.common.AbstractModInitializer;
+import com.seibel.distanthorizons.common.CommonPacketPayload;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
-import com.seibel.distanthorizons.common.wrappers.network.AbstractPluginPacketSender;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -39,7 +36,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAcce
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import com.seibel.distanthorizons.fabric.wrappers.modAccessor.SodiumAccessor;
-import io.netty.buffer.ByteBuf;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
@@ -48,7 +44,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
-import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
 
@@ -58,13 +54,10 @@ import java.nio.FloatBuffer;
 import java.util.HashSet;
 
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.phys.HitResult;
 import org.apache.logging.log4j.Logger;
-import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -231,16 +224,16 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		// networking event //
 		//==================//
 		
-		ClientPlayNetworking.registerGlobalReceiver(AbstractPluginPacketSender.PLUGIN_CHANNEL_RESOURCE,
-				(Minecraft client, ClientPacketListener handler, FriendlyByteBuf mcBuffer, PacketSender responseSender) ->
-				{
-					ByteBuf buffer = mcBuffer.asReadOnly();
-					
-					// (Neo)Forge packet ID (Unused, always expected to be 0)
-					buffer.readByte();
-					
-					ClientApi.INSTANCE.pluginMessageReceived(buffer);
-				});
+		PayloadTypeRegistry.playC2S().register(CommonPacketPayload.TYPE, new CommonPacketPayload.Codec());
+		PayloadTypeRegistry.playS2C().register(CommonPacketPayload.TYPE, new CommonPacketPayload.Codec());
+		ClientPlayNetworking.registerGlobalReceiver(CommonPacketPayload.TYPE, (payload, context) ->
+		{
+			if (payload.message == null)
+			{
+				return;
+			}
+			ClientApi.INSTANCE.pluginMessageReceived(payload.message);
+		});
 	}
 	
 	public void onKeyInput()

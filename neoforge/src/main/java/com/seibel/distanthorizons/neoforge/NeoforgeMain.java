@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.neoforge.wrappers.modAccessor.ModChecker;
 import com.seibel.distanthorizons.neoforge.wrappers.modAccessor.OptifineAccessor;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
@@ -41,14 +42,14 @@ import net.neoforged.fml.event.lifecycle.FMLDedicatedServerSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlerEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
 import java.util.function.Consumer;
 
 #if MC_VER < MC_1_20_6
 import net.neoforged.neoforge.client.ConfigScreenHandler;
 #else
-import net.neoforged.neoforge.client.gui.IConfigScreenFactory;	
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 #endif
 
 /**
@@ -77,11 +78,11 @@ public class NeoforgeMain extends AbstractModInitializer
 	//============//
 	// networking //
 	//============//
-	public void registerNetworkingClient(RegisterPayloadHandlerEvent event)
+	public void registerNetworkingClient(RegisterPayloadHandlersEvent event)
 	{
 		NeoforgePluginPacketSender.setPacketHandler(event, ClientApi.INSTANCE::pluginMessageReceived);
 	}
-	public void registerNetworkingServer(RegisterPayloadHandlerEvent event)
+	public void registerNetworkingServer(RegisterPayloadHandlersEvent event)
 	{
 		NeoforgePluginPacketSender.setPacketHandler(event, ServerApi.INSTANCE::pluginMessageReceived);
 	}
