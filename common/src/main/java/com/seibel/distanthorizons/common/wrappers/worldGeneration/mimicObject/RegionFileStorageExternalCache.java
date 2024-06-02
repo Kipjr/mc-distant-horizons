@@ -17,6 +17,10 @@ import java.nio.file.Path;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
+#if MC_VER >= MC_1_20_6
+import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
+#endif
+
 /** 
  * @deprecated should be replaced with net.minecraft.world.level.chunk.storage.IOWorker to
  *              prevent potential file corruption and issues with the C2ME mod.
@@ -180,8 +184,10 @@ public class RegionFileStorageExternalCache implements AutoCloseable
 		Path regionFilePath = storageFolderPath.resolve("r." + pos.getRegionX() + "." + pos.getRegionZ() + ".mca");
 		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 		rFile = new RegionFile(regionFilePath.toFile(), storageFolderPath.toFile(), false);
-		#else
+		#elif MC_VER <= MC_1_20_4
 		rFile = new RegionFile(regionFilePath, storageFolderPath, false);
+		#else
+		rFile = new RegionFile(new RegionStorageInfo("level", null, "level type"), regionFilePath, storageFolderPath, false);
 		#endif
 		
 		this.regionFileCache.add(new RegionFileCache(ChunkPos.asLong(pos.getRegionX(), pos.getRegionZ()), rFile));

@@ -38,13 +38,18 @@ import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLDedicatedServerSetupEvent;
-import net.neoforged.neoforge.client.ConfigScreenHandler;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlerEvent;
 
 import java.util.function.Consumer;
+
+#if MC_VER < MC_1_20_6
+import net.neoforged.neoforge.client.ConfigScreenHandler;
+#else
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;	
+#endif
 
 /**
  * Initialize and setup the Mod. <br>
@@ -101,8 +106,14 @@ public class NeoforgeMain extends AbstractModInitializer
 	{
 		this.tryCreateModCompatAccessor("optifine", IOptifineAccessor.class, OptifineAccessor::new);
 		
+		#if MC_VER < MC_1_20_6
 		ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
 				() -> new ConfigScreenHandler.ConfigScreenFactory((client, parent) -> GetConfigScreen.getScreen(parent)));
+		#else
+		ModLoadingContext.get().registerExtensionPoint(IConfigScreenFactory.class,
+				// TODO fix potential null pointer
+				() -> (client, parent) -> GetConfigScreen.getScreen(parent));
+		#endif
 	}
 	
 	@Override

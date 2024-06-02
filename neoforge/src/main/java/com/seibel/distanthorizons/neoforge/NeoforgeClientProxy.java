@@ -21,6 +21,7 @@ package com.seibel.distanthorizons.neoforge;
 
 import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.common.util.ProxyUtil;
+import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftRenderWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
@@ -32,6 +33,8 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import com.seibel.distanthorizons.coreapi.ModInfo;
+import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import net.minecraft.world.level.LevelAccessor;
 
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -50,9 +53,15 @@ import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 
 import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.event.InputEvent;
-import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import org.lwjgl.opengl.GL32;
+
+#if MC_VER < MC_1_20_6
+import net.neoforged.neoforge.event.TickEvent;
+#else
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+#endif
+
 
 /**
  * This handles all events sent to the client,
@@ -68,8 +77,10 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 
 //	private static SimpleChannel multiversePluginChannel;
 	
+	// Not the cleanest way of passing this to the LOD renderer, but it'll have to do for now
+	public static Mat4f currentModelViewMatrix = new Mat4f();
+	public static Mat4f currentProjectionMatrix = new Mat4f();
 	
-	private static LevelAccessor GetEventLevel(LevelEvent e) { return e.getLevel(); }
 	
 	
 	
@@ -85,6 +96,7 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	// tick events //
 	//=============//
 	
+	#if MC_VER < MC_1_20_6
 	@SubscribeEvent
 	public void clientTickEvent(TickEvent.ClientTickEvent event)
 	{
@@ -93,6 +105,13 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 			ClientApi.INSTANCE.clientTickEvent();
 		}
 	}
+	#else
+	@SubscribeEvent
+	public void clientTickEvent(ClientTickEvent.Pre event)
+	{
+		ClientApi.INSTANCE.clientTickEvent();
+	}
+	#endif
 	
 	
 	
@@ -218,6 +237,16 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	//===========//
 	
 	@SubscribeEvent
+	public void beforeLevelRenderEvent(RenderLevelStageEvent event)
+	{
+		if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_SKY)
+		{
+			currentModelViewMatrix = McObjectConverter.Convert(event.getModelViewMatrix());
+			currentProjectionMatrix = McObjectConverter.Convert(event.getProjectionMatrix());
+		}
+	}
+	
+	@SubscribeEvent
 	public void afterLevelRenderEvent(RenderLevelStageEvent event)
 	{
 		if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL)
@@ -235,6 +264,14 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 			}
 		}
 	}
+	
+	
+	
+	//================//
+	// helper methods //
+	//================//
+	
+	private static LevelAccessor GetEventLevel(LevelEvent e) { return e.getLevel(); }
 	
 	
 }

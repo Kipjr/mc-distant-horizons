@@ -38,7 +38,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LightTexture.class)
 public class MixinLightTexture
 {
-	@Shadow 
+	@Shadow //# if MC_VER >= MC_1_20_4 (remap = false) # endif
 	@Final 
 	private NativeImage lightPixels;
 	

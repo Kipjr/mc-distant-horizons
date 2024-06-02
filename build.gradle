@@ -2,10 +2,10 @@ plugins {
     id "java"
 
     // Plugin to put dependencies inside our final jar
-    id "com.github.johnrengelman.shadow" version '7.1.2' apply false
+    id "com.github.johnrengelman.shadow" version '8.1.1' apply false
 
     // Plugin to create merged jars
-    id "io.github.pacifistmc.forgix" version "1.2.6"
+    id "io.github.pacifistmc.forgix" version "1.2.9"
 
     // Manifold preprocessor
     id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
@@ -284,7 +284,7 @@ subprojects { p ->
                 relocate "com.seibel.distanthorizons.fabriclike", "loaderCommon.${p.name}.com.seibel.distanthorizons.fabriclike" // Move the loader files to a different location
             }
         }
-        def librariesLocation = "distanthorizons.libraries"
+        def librariesLocation = "DistantHorizons.libraries"
 
         // LWJGL
         // Only ever shadow the dependencies we use otherwise some stuff would break when running on an external client
@@ -328,6 +328,7 @@ subprojects { p ->
                                 "fabric.mod.json",
                                 "quilt.mod.json",
                                 "META-INF/mods.toml",
+                                "META-INF/neoforge.mods.toml",
 
                                 // The mixins for each of the loaders
                                 "DistantHorizons." + p.name + ".fabricLike.mixins.json"

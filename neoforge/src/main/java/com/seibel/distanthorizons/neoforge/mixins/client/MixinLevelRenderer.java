@@ -19,10 +19,12 @@
 
 package com.seibel.distanthorizons.neoforge.mixins.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 #if MC_VER < MC_1_19_4
 import com.mojang.math.Matrix4f;
 #else
+import com.seibel.distanthorizons.neoforge.NeoforgeClientProxy;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
@@ -67,30 +69,6 @@ public class MixinLevelRenderer
 			(remap = false)
 	#endif
 	private ClientLevel level;
-	@Unique
-	private static float previousPartialTicks = 0;
-	
-	// TODO: Is there any reason why this is here? Can it be deleted?
-	public MixinLevelRenderer()
-	{
-		throw new NullPointerException("Null cannot be cast to non-null type.");
-	}
-	
-	#if MC_VER < MC_1_17_1
-	@Inject(at = @At("RETURN"), method = "renderSky(Lcom/mojang/blaze3d/vertex/PoseStack;F)V")
-	private void renderSky(PoseStack matrixStackIn, float partialTicks, CallbackInfo callback)
-	#else
-	@Inject(method = "renderClouds", at = @At("HEAD"), cancellable = true)
-	public void renderClouds(PoseStack poseStack, Matrix4f projectionMatrix, float partialTicks, double cameraX, double cameraY, double cameraZ, CallbackInfo ci) 
-	#endif
-	{
-		// FIXME this is only called when clouds are enabled and vanilla render distance is far enough
-		//  not having the partial ticks doesn't appear to be critical currently, but might cause weird issues down the line
-		
-		// get the partial ticks since renderBlockLayer doesn't
-		// have access to them
-		previousPartialTicks = partialTicks;
-	}
 	
 	
 	#if MC_VER < MC_1_17_1
@@ -108,12 +86,17 @@ public class MixinLevelRenderer
 			method = "renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V",
 			cancellable = true)
 	private void renderChunkLayer(RenderType renderType, PoseStack modelViewMatrixStack, double cameraXBlockPos, double cameraYBlockPos, double cameraZBlockPos, Matrix4f projectionMatrix, CallbackInfo callback)
-    #else
+    #elif MC_VER < MC_1_20_6
     @Inject(at = @At("HEAD"),
             method = "Lnet/minecraft/client/renderer/LevelRenderer;renderSectionLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V",
             cancellable = true)
     private void renderChunkLayer(RenderType renderType, PoseStack modelViewMatrixStack, double camX, double camY, double camZ, Matrix4f projectionMatrix, CallbackInfo callback)
-    #endif
+	#else
+	@Inject(at = @At("HEAD"),
+			method = "Lnet/minecraft/client/renderer/LevelRenderer;renderSectionLayer(Lnet/minecraft/client/renderer/RenderType;DDDLorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V",
+			cancellable = true)
+	private void renderChunkLayer(RenderType renderType, double x, double y, double z, Matrix4f projectionMatrix, Matrix4f frustumMatrix, CallbackInfo callback)
+	#endif
 	{
 		// get MC's model view and projection matrices
 		#if MC_VER == MC_1_16_5
@@ -125,10 +108,15 @@ public class MixinLevelRenderer
 		
 		Mat4f mcModelViewMatrix = McObjectConverter.Convert(matrixStackIn.last().pose());
 		
-		#else
+		#elif MC_VER <= MC_1_20_4
 		// get the matrices directly from MC
 		Mat4f mcModelViewMatrix = McObjectConverter.Convert(modelViewMatrixStack.last().pose());
 		Mat4f mcProjectionMatrix = McObjectConverter.Convert(projectionMatrix);
+		#else
+		// get the matrices from neoForge's render event.
+		// We can't call the renderer there because we don't have access to the level that's being rendered
+		Mat4f mcModelViewMatrix = NeoforgeClientProxy.currentModelViewMatrix;
+		Mat4f mcProjectionMatrix = NeoforgeClientProxy.currentProjectionMatrix;
 		#endif
 		
 		
@@ -136,11 +124,11 @@ public class MixinLevelRenderer
 		// only render before solid blocks
 		if (renderType.equals(RenderType.solid()))
 		{
-			ClientApi.INSTANCE.renderLods(ClientLevelWrapper.getWrapper(level), mcModelViewMatrix, mcProjectionMatrix, Minecraft.getInstance().getFrameTime());
+			ClientApi.INSTANCE.renderLods(ClientLevelWrapper.getWrapper(this.level), mcModelViewMatrix, mcProjectionMatrix, Minecraft.getInstance().getFrameTime());
 		} 
 		else if (renderType.equals(RenderType.translucent())) 
 		{
-			ClientApi.INSTANCE.renderDeferredLods(ClientLevelWrapper.getWrapper(level), mcModelViewMatrix, mcProjectionMatrix, Minecraft.getInstance().getFrameTime());
+			ClientApi.INSTANCE.renderDeferredLods(ClientLevelWrapper.getWrapper(this.level), mcModelViewMatrix, mcProjectionMatrix, Minecraft.getInstance().getFrameTime());
 		}
 		
 		if (Config.Client.Advanced.Debugging.lodOnlyMode.get())
@@ -155,9 +143,12 @@ public class MixinLevelRenderer
 	#elif MC_VER < MC_1_20_1
 	@Inject(at = @At(value = "TAIL", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;runUpdates(IZZ)I"), method = "renderLevel")
 	public void callAfterRunUpdates(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci)
+	#elif MC_VER < MC_1_20_6
+	@Inject(at = @At(value = "TAIL", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;runLightUpdates()I"), method = "renderLevel")
+	private void callAfterRunUpdates(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci)
 	#else
 	@Inject(at = @At(value = "TAIL", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;runLightUpdates()I"), method = "renderLevel")
-	private void callAfterRunUpdates(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci) 
+	private void callAfterRunUpdates(CallbackInfo ci) 
 	#endif
 	{
 		ChunkWrapper.syncedUpdateClientLightStatus();

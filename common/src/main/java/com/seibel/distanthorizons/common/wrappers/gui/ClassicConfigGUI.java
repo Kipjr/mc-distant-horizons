@@ -98,6 +98,7 @@ public class ClassicConfigGUI
 		public static final int SpaceFromRightScreen = 10;
 		public static final int ButtonWidthSpacing = 5;
 		public static final int ResetButtonWidth = 40;
+		public static final int ResetButtonHeight = 20;
 		
 	}
 	
@@ -251,7 +252,7 @@ public class ClassicConfigGUI
 						this.width - 28, this.height - 28,
 						// Width and height of the button
 						20, 20,
-						// Offset
+						// texture UV Offset
 						0, 0,
 						// Some textuary stuff
 						0, new ResourceLocation(ModInfo.ID, "textures/gui/changelog.png"), 20, 20,
@@ -269,18 +270,25 @@ public class ClassicConfigGUI
 			}
 			
 			
-			addBtn(MakeBtn(Translatable("distanthorizons.general.cancel"), this.width / 2 - 154, this.height - 28, 150, 20, button -> {
-				ConfigBase.INSTANCE.configFileINSTANCE.loadFromFile();
-				Objects.requireNonNull(minecraft).setScreen(parent);
-			}));
+			addBtn(MakeBtn(Translatable("distanthorizons.general.cancel"), 
+					this.width / 2 - 154, this.height - 28, 
+					150, 20, 
+					button -> 
+					{
+						ConfigBase.INSTANCE.configFileINSTANCE.loadFromFile();
+						Objects.requireNonNull(minecraft).setScreen(parent);
+					}));
 			doneButton = addBtn(MakeBtn(Translatable("distanthorizons.general.done"), this.width / 2 + 4, this.height - 28, 150, 20, (button) -> {
 				ConfigBase.INSTANCE.configFileINSTANCE.saveToFile();
 				Objects.requireNonNull(minecraft).setScreen(parent);
 			}));
 			
 			this.list = new ConfigListWidget(this.minecraft, this.width * 2, this.height, 32, 32, 25);
+			
+			#if MC_VER < MC_1_20_6 // no background is rendered in MC 1.20.6+
 			if (this.minecraft != null && this.minecraft.level != null)
 				this.list.setRenderBackground(false);
+			#endif
 			
 			this.addWidget(this.list);
 			
@@ -311,6 +319,7 @@ public class ClassicConfigGUI
 			initEntry(info, this.translationPrefix);
 			Component name = Translatable(translationPrefix + info.getNameWCategory());
 			
+			
 			if (ConfigEntry.class.isAssignableFrom(info.getClass()))
 			{
 				Button.OnPress btnAction = button -> {
@@ -319,12 +328,12 @@ public class ClassicConfigGUI
 					this.reload = true;
 					Objects.requireNonNull(minecraft).setScreen(this);
 				};
-				int a = this.width - ConfigScreenConfigs.SpaceFromRightScreen - 150 - ConfigScreenConfigs.ButtonWidthSpacing - ConfigScreenConfigs.ResetButtonWidth;
-				int b = 0;
-				int c = ConfigScreenConfigs.ResetButtonWidth;
-				int d = 20;
+				int posX = this.width - ConfigScreenConfigs.SpaceFromRightScreen - 150 - ConfigScreenConfigs.ButtonWidthSpacing - ConfigScreenConfigs.ResetButtonWidth;
+				int posZ = 0;
 				
-				Button resetButton = MakeBtn(Translatable("distanthorizons.general.reset").withStyle(ChatFormatting.RED), a, b, c, d, btnAction);
+				Button resetButton = MakeBtn(Translatable("distanthorizons.general.reset").withStyle(ChatFormatting.RED), 
+						posX, posZ, ConfigScreenConfigs.ResetButtonWidth, ConfigScreenConfigs.ResetButtonHeight, 
+						btnAction);
 				
 				if (((EntryInfo) info.guiValue).widget instanceof Map.Entry)
 				{

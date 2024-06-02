@@ -64,6 +64,8 @@ public class BiomeWrapper implements IBiomeWrapper
 	public static final ConcurrentMap<Holder<Biome>, BiomeWrapper> WRAPPER_BY_BIOME = new ConcurrentHashMap<>();
     #endif
 	
+	public static final ConcurrentHashMap<String, BiomeWrapper> WRAPPER_BY_RESOURCE_LOCATION = new ConcurrentHashMap<>();
+	
 	public static final String EMPTY_BIOME_STRING = "EMPTY";
 	public static final BiomeWrapper EMPTY_WRAPPER = new BiomeWrapper(null, null);
 	
@@ -252,6 +254,9 @@ public class BiomeWrapper implements IBiomeWrapper
 	// TODO would it be worth while to cache these objects in a ConcurrentHashMap<string, IBiomeWrapper>?
 	public static IBiomeWrapper deserialize(String resourceLocationString, ILevelWrapper levelWrapper) throws IOException
 	{
+		// we need the final string for the concurrent hash map later
+		final String finalResourceStateString = resourceLocationString;
+		
 		if (resourceLocationString.equals(EMPTY_BIOME_STRING))
 		{
 			if (!emptyStringWarningLogged)
@@ -267,62 +272,78 @@ public class BiomeWrapper implements IBiomeWrapper
 			return EMPTY_WRAPPER;
 		}
 		
-		
-		
-		// parse the resource location
-		int separatorIndex = resourceLocationString.indexOf(":");
-		if (separatorIndex == -1)
+		if (WRAPPER_BY_RESOURCE_LOCATION.containsKey(finalResourceStateString))
 		{
-			throw new IOException("Unable to parse resource location string: [" + resourceLocationString + "].");
+			return WRAPPER_BY_RESOURCE_LOCATION.get(finalResourceStateString);
 		}
 		
-		ResourceLocation resourceLocation;
+		
+		
+		// if no wrapper is found, default to the empty wrapper
+		BiomeWrapper foundWrapper = EMPTY_WRAPPER;
 		try
 		{
-			resourceLocation = new ResourceLocation(resourceLocationString.substring(0, separatorIndex), resourceLocationString.substring(separatorIndex + 1));
-		}
-		catch (Exception e)
-		{
-			throw new IOException("No Resource Location found for the string: [" + resourceLocationString + "] Error: ["+e.getMessage()+"].");
-		}
-		
-		
-		try
-		{
-			Level level = (Level)levelWrapper.getWrappedMcObject();
-			net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
-			
-			boolean success;
-			#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
-			Biome biome = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).get(resourceLocation);
-			success = (biome != null);
-			#elif MC_VER == MC_1_18_2 || MC_VER == MC_1_19_2
-			Biome unwrappedBiome = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).get(resourceLocation);
-			success = (unwrappedBiome != null);
-			Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
-			#else
-			Biome unwrappedBiome = registryAccess.registryOrThrow(Registries.BIOME).get(resourceLocation);
-			success = (unwrappedBiome != null);
-			Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
-			#endif
-			
-			
-			
-			if (!success)
+			// parse the resource location
+			int separatorIndex = resourceLocationString.indexOf(":");
+			if (separatorIndex == -1)
 			{
-				if (!brokenResourceLocationStrings.contains(resourceLocationString))
-				{
-					brokenResourceLocationStrings.add(resourceLocationString);
-					LOGGER.warn("Unable to deserialize biome from string: [" + resourceLocationString + "]");
-				}
-				return EMPTY_WRAPPER;
+				throw new IOException("Unable to parse resource location string: [" + resourceLocationString + "].");
 			}
 			
-			return getBiomeWrapper(biome, levelWrapper);
+			ResourceLocation resourceLocation;
+			try
+			{
+				resourceLocation = new ResourceLocation(resourceLocationString.substring(0, separatorIndex), resourceLocationString.substring(separatorIndex + 1));
+			}
+			catch (Exception e)
+			{
+				throw new IOException("No Resource Location found for the string: [" + resourceLocationString + "] Error: [" + e.getMessage() + "].");
+			}
+			
+			
+			try
+			{
+				Level level = (Level) levelWrapper.getWrappedMcObject();
+				net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
+				
+				boolean success;
+				#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
+				Biome biome = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).get(resourceLocation);
+				success = (biome != null);
+				#elif MC_VER == MC_1_18_2 || MC_VER == MC_1_19_2
+				Biome unwrappedBiome = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).get(resourceLocation);
+				success = (unwrappedBiome != null);
+				Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
+				#else
+				Biome unwrappedBiome = registryAccess.registryOrThrow(Registries.BIOME).get(resourceLocation);
+				success = (unwrappedBiome != null);
+				Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
+				#endif
+				
+				
+				
+				if (!success)
+				{
+					if (!brokenResourceLocationStrings.contains(resourceLocationString))
+					{
+						brokenResourceLocationStrings.add(resourceLocationString);
+						LOGGER.warn("Unable to deserialize biome from string: [" + resourceLocationString + "]");
+					}
+					return EMPTY_WRAPPER;
+				}
+				
+				
+				foundWrapper = (BiomeWrapper) getBiomeWrapper(biome, levelWrapper);
+				return foundWrapper;
+			}
+			catch (Exception e)
+			{
+				throw new IOException("Failed to deserialize the string [" + finalResourceStateString + "] into a BiomeWrapper: " + e.getMessage(), e);
+			}
 		}
-		catch (Exception e)
+		finally
 		{
-			throw new IOException("Failed to deserialize the string [" + resourceLocationString + "] into a BiomeWrapper: " + e.getMessage(), e);
+			WRAPPER_BY_RESOURCE_LOCATION.putIfAbsent(finalResourceStateString, foundWrapper);
 		}
 	}
 	

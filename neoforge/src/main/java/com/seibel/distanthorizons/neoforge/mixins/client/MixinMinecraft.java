@@ -24,41 +24,44 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Minecraft.class)
 public class MixinMinecraft
 {
-	#if MC_VER < MC_1_20_2
-	#if MC_VER == MC_1_20_1
-	@Redirect(
-			method = "Lnet/minecraft/client/Minecraft;setInitialScreen(Lcom/mojang/realmsclient/client/RealmsClient;Lnet/minecraft/server/packs/resources/ReloadInstance;Lnet/minecraft/client/main/GameConfig$QuickPlayData;)V",
-			at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V")
-	)
-	public void onOpenScreen(Minecraft instance, Screen guiScreen)
-	{
-	#else
-	@Redirect(
-			method = "<init>(Lnet/minecraft/client/main/GameConfig;)V",
-			at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V")
-	)
-	public void onOpenScreen(Minecraft instance, Screen guiScreen)
-	{
-	#endif
-		if (!Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get()) // Don't do anything if the user doesn't want it
-		{
-			instance.setScreen(guiScreen); // Sets the screen back to the vanilla screen as if nothing ever happened
-			return;
-		}
-		
-		if (SelfUpdater.onStart())
-		{
-			instance.setScreen(new UpdateModScreen(
-					new TitleScreen(false), // We don't want to use the vanilla title screen as it would fade the buttons
-					(Config.Client.Advanced.AutoUpdater.updateBranch.get() == EUpdateBranch.STABLE ? ModrinthGetter.getLatestIDForVersion(SingletonInjector.INSTANCE.get(IVersionConstants.class).getMinecraftVersion()): GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha"))
-			));
-		}
-		else
-		{
-			instance.setScreen(guiScreen); // Sets the screen back to the vanilla screen as if nothing ever happened
-		}
-	}
-	#endif
+	// commented out due to a bug with Manifold and having nested preprocessors
+	// and since neoforge doesn't work for anything before MC 1.20.6 anyway it doesn't need to be included
+	
+	//#if MC_VER < MC_1_20_2
+	//#if MC_VER == MC_1_20_1
+	//@Redirect(
+	//		method = "Lnet/minecraft/client/Minecraft;setInitialScreen(Lcom/mojang/realmsclient/client/RealmsClient;Lnet/minecraft/server/packs/resources/ReloadInstance;Lnet/minecraft/client/main/GameConfig$QuickPlayData;)V",
+	//		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V")
+	//)
+	//public void onOpenScreen(Minecraft instance, Screen guiScreen)
+	//{
+	//#else
+	//@Redirect(
+	//		method = "<init>(Lnet/minecraft/client/main/GameConfig;)V",
+	//		at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V")
+	//)
+	//public void onOpenScreen(Minecraft instance, Screen guiScreen)
+	//{
+	//#endif
+	//	if (!Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get()) // Don't do anything if the user doesn't want it
+	//	{
+	//		instance.setScreen(guiScreen); // Sets the screen back to the vanilla screen as if nothing ever happened
+	//		return;
+	//	}
+	//	
+	//	if (SelfUpdater.onStart())
+	//	{
+	//		instance.setScreen(new UpdateModScreen(
+	//				new TitleScreen(false), // We don't want to use the vanilla title screen as it would fade the buttons
+	//				(Config.Client.Advanced.AutoUpdater.updateBranch.get() == EUpdateBranch.STABLE ? ModrinthGetter.getLatestIDForVersion(SingletonInjector.INSTANCE.get(IVersionConstants.class).getMinecraftVersion()): GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha"))
+	//		));
+	//	}
+	//	else
+	//	{
+	//		instance.setScreen(guiScreen); // Sets the screen back to the vanilla screen as if nothing ever happened
+	//	}
+	//}
+	//#endif
 	
 	#if MC_VER >= MC_1_20_2
 	@Redirect(

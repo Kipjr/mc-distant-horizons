@@ -11,7 +11,6 @@ import com.seibel.distanthorizons.core.jar.installer.ModrinthGetter;
 import com.seibel.distanthorizons.core.jar.updater.SelfUpdater;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import org.spongepowered.asm.mixin.Mixin;
@@ -36,6 +35,15 @@ public abstract class MixinMinecraft
 	@Unique
 	private ClientLevel lastLevel;
 	
+	/** 
+	 * Can be enabled for testing the auto updater UI. <br/>
+	 * will always show the auto updater if set to true. 
+	 */
+	@Unique
+	private static final boolean DEBUG_ALWAYS_SHOW_UPDATER = false;
+
+	
+	
 	#if MC_VER < MC_1_20_2
 	#if MC_VER == MC_1_20_1
 	@Redirect(
@@ -52,13 +60,13 @@ public abstract class MixinMinecraft
 	public void onOpenScreen(Minecraft instance, Screen guiScreen)
 	{
 	#endif
-		if (!Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get()) // Don't do anything if the user doesn't want it
+		if (!Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get() && !DEBUG_ALWAYS_SHOW_UPDATER) // Don't do anything if the user doesn't want it
 		{
 			instance.setScreen(guiScreen); // Sets the screen back to the vanilla screen as if nothing ever happened
 			return;
 		}
 		
-		if (SelfUpdater.onStart())
+		if (SelfUpdater.onStart() || DEBUG_ALWAYS_SHOW_UPDATER)
 		{
 			instance.setScreen(new UpdateModScreen(
 					new TitleScreen(false), // We don't want to use the vanilla title screen as it would fade the buttons
@@ -80,9 +88,13 @@ public abstract class MixinMinecraft
 	private void buildInitialScreens(Runnable runnable)
 	{
 		if (
-				Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get() // Don't do anything if the user doesn't want it
-				&& SelfUpdater.onStart()
-		)
+				DEBUG_ALWAYS_SHOW_UPDATER ||
+				(
+					// Don't do anything if the user doesn't want it
+					Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get()
+					&& SelfUpdater.onStart()
+				)
+			)
 		{
 			runnable = () -> {
 				Minecraft.getInstance().setScreen(new UpdateModScreen(

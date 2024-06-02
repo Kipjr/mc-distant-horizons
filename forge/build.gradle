@@ -4,7 +4,7 @@ plugins {
     id "architectury-plugin" version "3.4-SNAPSHOT"
 }
 
-sourceCompatibility = targetCompatibility = JavaVersion.VERSION_17
+sourceCompatibility = targetCompatibility = JavaVersion.VERSION_21
 
 architectury {
     platformSetupLoomIde()
@@ -78,6 +78,18 @@ dependencies {
 
     addMod("curse.maven:TerraFirmaCraft-302973:4616004", rootProject.enable_terrafirmacraft)
 
+    
+    if ( // Only run on MC 1.20.6 or later
+        // FIXME: Add an environment variable for the Major, Minor, and Patch version number of Minecraft
+        minecraft_version.split("\\.")[1].toInteger() >= 20 &&
+        (
+            minecraft_version.split("\\.").length > 1 && // Incase there isn't a minor version
+            minecraft_version.split("\\.")[2].toInteger() >= 6
+        )
+    ) {
+        // (potential) hack fix, force jopt-simple to be exactly 5.0.4 because Mojang ships that version, but some transitive dependencies request 6.0+ 
+        implementation('net.sf.jopt-simple:jopt-simple:5.0.4') //{ version { strictly '5.0.4' } }
+    }
 }
 
 task deleteResources(type: Delete) {

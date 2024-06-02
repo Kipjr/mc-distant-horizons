@@ -76,6 +76,11 @@ import net.minecraft.world.level.levelgen.feature.ConfiguredStructureFeature;
 import net.minecraft.world.level.material.Fluids;
 #endif
 
+#if MC_VER == MC_1_20_6
+import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.chunk.status.ChunkType;
+#endif
+
 import net.minecraft.world.level.material.Fluid;
 
 
@@ -164,7 +169,8 @@ public class ChunkLoader
 				#endif
 				
 				blockStateContainer = tagSection.contains("block_states", 10)
-						? BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tagSection.getCompound("block_states")).promotePartial(string -> logErrors(chunkPos, sectionYPos, string)).getOrThrow(false, LOGGER::error)
+						? BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tagSection.getCompound("block_states")).promotePartial(string -> logErrors(chunkPos, sectionYPos, string))
+							#if MC_VER < MC_1_20_6 .getOrThrow(false, LOGGER::error) #else .getOrThrow((message) -> (RuntimeException) LOGGER.errorAndThrow(message, null)) #endif
 						: new PalettedContainer<BlockState>(Block.BLOCK_STATE_REGISTRY, Blocks.AIR.defaultBlockState(), PalettedContainer.Strategy.SECTION_STATES);
 
 				#if MC_VER < MC_1_18_2
@@ -172,10 +178,13 @@ public class ChunkLoader
 						? biomeCodec.parse(NbtOps.INSTANCE, tagSection.getCompound("biomes")).promotePartial(string -> logErrors(chunkPos, sectionYPos, string)).getOrThrow(false, LOGGER::error)
 						: new PalettedContainer<Biome>(biomes, biomes.getOrThrow(Biomes.PLAINS), PalettedContainer.Strategy.SECTION_BIOMES);
 				#else
+				
 				biomeContainer = tagSection.contains("biomes", 10)
-						? biomeCodec.parse(NbtOps.INSTANCE, tagSection.getCompound("biomes")).promotePartial(string -> logErrors(chunkPos, i, (String) string)).getOrThrow(false, LOGGER::error)
+						? biomeCodec.parse(NbtOps.INSTANCE, tagSection.getCompound("biomes")).promotePartial(string -> logErrors(chunkPos, i, (String) string))
+							#if MC_VER < MC_1_20_6 .getOrThrow(false, LOGGER::error) #else .getOrThrow((message) -> (RuntimeException) LOGGER.errorAndThrow(message, null)) #endif
 						: new PalettedContainer<Holder<Biome>>(biomes.asHolderIdMap(), biomes.getHolderOrThrow(Biomes.PLAINS), PalettedContainer.Strategy.SECTION_BIOMES);
 				#endif
+				
 				#if MC_VER < MC_1_20_1
 				chunkSections[sectionId] = new LevelChunkSection(sectionYPos, blockStateContainer, biomeContainer);
 				#else
@@ -213,14 +222,15 @@ public class ChunkLoader
 		}
 	}
 	
-	public static ChunkStatus.ChunkType readChunkType(CompoundTag tagLevel)
+	public static #if MC_VER < MC_1_20_6 ChunkStatus.ChunkType #else ChunkType #endif readChunkType(CompoundTag tagLevel)
 	{
 		ChunkStatus chunkStatus = ChunkStatus.byName(tagLevel.getString("Status"));
 		if (chunkStatus != null)
 		{
 			return chunkStatus.getChunkType();
 		}
-		return ChunkStatus.ChunkType.PROTOCHUNK;
+		
+		return #if MC_VER < MC_1_20_6 ChunkStatus.ChunkType.PROTOCHUNK; #else ChunkType.PROTOCHUNK; #endif
 	}
 	
 	public static LevelChunk read(WorldGenLevel level, ChunkPos chunkPos, CompoundTag chunkData)
@@ -262,19 +272,27 @@ public class ChunkLoader
 			}
 		}
 		
-		ChunkStatus.ChunkType chunkType = readChunkType(tagLevel);
-		#if MC_VER < MC_1_18_2
-		if (chunkType != ChunkStatus.ChunkType.LEVELCHUNK)
-			return null;
+		#if MC_VER < MC_1_20_6
+		ChunkStatus.ChunkType chunkType;
 		#else
-		BlendingData blendingData = readBlendingData(tagLevel);
-		#if MC_VER < MC_1_19_2
-		if (chunkType == ChunkStatus.ChunkType.PROTOCHUNK && (blendingData == null || !blendingData.oldNoise()))
-			return null;
-		#else
-		if (chunkType == ChunkStatus.ChunkType.PROTOCHUNK && blendingData == null)
-			return null;
+		ChunkType chunkType;
 		#endif
+		chunkType = readChunkType(tagLevel);
+		
+		#if MC_VER < MC_1_18_2
+			if (chunkType != ChunkStatus.ChunkType.LEVELCHUNK)
+				return null;
+		#else
+			
+			BlendingData blendingData = readBlendingData(tagLevel);
+			#if MC_VER < MC_1_19_2
+			if (chunkType == ChunkStatus.ChunkType.PROTOCHUNK && (blendingData == null || !blendingData.oldNoise()))
+				return null;
+			#else
+			if (chunkType == #if MC_VER < MC_1_20_6 ChunkStatus.ChunkType.PROTOCHUNK #else ChunkType.PROTOCHUNK #endif && blendingData == null)
+				return null;
+			#endif
+		
 		#endif
 		
 		long inhabitedTime = tagLevel.getLong("InhabitedTime");

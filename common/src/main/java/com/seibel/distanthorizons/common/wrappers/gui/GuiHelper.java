@@ -15,12 +15,12 @@ public class GuiHelper
 	/**
 	 * Helper static methods for versional compat
 	 */
-	public static Button MakeBtn(Component base, int a, int b, int c, int d, Button.OnPress action)
+	public static Button MakeBtn(Component base, int posX, int posZ, int width, int height, Button.OnPress action)
 	{
         #if MC_VER < MC_1_19_4
-		return new Button(a, b, c, d, base, action);
+		return new Button(posX, posZ, width, height, base, action);
         #else
-		return Button.builder(base, action).bounds(a, b, c, d).build();
+		return Button.builder(base, action).bounds(posX, posZ, width, height).build();
         #endif
 	}
 	

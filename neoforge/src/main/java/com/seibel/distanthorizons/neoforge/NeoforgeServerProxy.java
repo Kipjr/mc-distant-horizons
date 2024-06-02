@@ -25,10 +25,16 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
-
 import org.apache.logging.log4j.Logger;
 
 import java.util.function.Supplier;
+
+#if MC_VER < MC_1_20_6
+import net.neoforged.neoforge.event.TickEvent;
+#else
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+#endif
+
 
 public class NeoforgeServerProxy implements AbstractModInitializer.IEventProxy
 {
@@ -63,7 +69,7 @@ public class NeoforgeServerProxy implements AbstractModInitializer.IEventProxy
 	// events //
 	//========//
 	
-	// ServerTickEvent (at end)
+	#if MC_VER < MC_1_20_6
 	@SubscribeEvent
 	public void serverTickEvent(TickEvent.ServerTickEvent event)
 	{
@@ -72,6 +78,13 @@ public class NeoforgeServerProxy implements AbstractModInitializer.IEventProxy
 			this.serverApi.serverTickEvent();
 		}
 	}
+	#else
+	@SubscribeEvent
+	public void serverTickEvent(ServerTickEvent.Post event)
+	{
+		this.serverApi.serverTickEvent();
+	}
+	#endif
 	
 	// ServerWorldLoadEvent
 	@SubscribeEvent

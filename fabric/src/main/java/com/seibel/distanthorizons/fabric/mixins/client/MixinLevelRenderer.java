@@ -84,11 +84,16 @@ public class MixinLevelRenderer
             method = "renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V",
             cancellable = true)
     private void renderChunkLayer(RenderType renderType, PoseStack modelViewMatrixStack, double cameraXBlockPos, double cameraYBlockPos, double cameraZBlockPos, Matrix4f projectionMatrix, CallbackInfo callback)
-    #else
+    #elif MC_VER < MC_1_20_6
 	@Inject(at = @At("HEAD"),
 			method = "Lnet/minecraft/client/renderer/LevelRenderer;renderSectionLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V",
 			cancellable = true)
 	private void renderChunkLayer(RenderType renderType, PoseStack modelViewMatrixStack, double camX, double camY, double camZ, Matrix4f projectionMatrix, CallbackInfo callback)
+	#else
+	@Inject(at = @At("HEAD"),
+			method = "Lnet/minecraft/client/renderer/LevelRenderer;renderSectionLayer(Lnet/minecraft/client/renderer/RenderType;DDDLorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V",
+			cancellable = true)
+	private void renderChunkLayer(RenderType renderType, double x, double y, double z, Matrix4f projectionMatrix, Matrix4f frustumMatrix, CallbackInfo callback)
     #endif
     {
 		#if MC_VER == MC_1_16_5
@@ -100,10 +105,15 @@ public class MixinLevelRenderer
 	    
 	    Mat4f mcModelViewMatrix = McObjectConverter.Convert(matrixStackIn.last().pose());
 		
-		#else
+		#elif MC_VER <= MC_1_20_4
 		// get the matrices directly from MC
 		Mat4f mcModelViewMatrix = McObjectConverter.Convert(modelViewMatrixStack.last().pose());
 		Mat4f mcProjectionMatrix = McObjectConverter.Convert(projectionMatrix);
+		#else
+	    // get the matrices directly from MC
+	    Mat4f mcModelViewMatrix = McObjectConverter.Convert(projectionMatrix);
+	    Mat4f mcProjectionMatrix = new Mat4f();
+	    mcProjectionMatrix.setIdentity();
 		#endif
 	    
 	    if (renderType.equals(RenderType.translucent())) {
@@ -126,9 +136,12 @@ public class MixinLevelRenderer
 	#elif MC_VER < MC_1_20_1
 	@Inject(at = @At(value = "TAIL", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;runUpdates(IZZ)I"), method = "renderLevel")
 	public void callAfterRunUpdates(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci)
+	#elif MC_VER < MC_1_20_6
+	@Inject(at = @At(value = "TAIL", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;runLightUpdates()I"), method = "renderLevel")
+	private void callAfterRunUpdates(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci)
 	#else
 	@Inject(at = @At(value = "TAIL", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;runLightUpdates()I"), method = "renderLevel")
-	private void callAfterRunUpdates(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci) 
+	private void callAfterRunUpdates(CallbackInfo ci) 
 	#endif
 	{
 		ChunkWrapper.syncedUpdateClientLightStatus();

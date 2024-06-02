@@ -64,6 +64,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
     public static final ConcurrentHashMap<BlockState, BlockStateWrapper> WRAPPER_BY_BLOCK_STATE = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<String, BlockStateWrapper> WRAPPER_BY_RESOURCE_LOCATION = new ConcurrentHashMap<>();
 	
 	public static final String AIR_STRING = "AIR";
 	public static final BlockStateWrapper AIR = new BlockStateWrapper(null, null);
@@ -335,113 +336,136 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	}
 	
 	
-	// TODO would it be worth while to cache these objects in a ConcurrentHashMap<string, IBiomeWrapper>?
 	/** will only work if a level is currently loaded */
 	public static IBlockStateWrapper deserialize(String resourceStateString, ILevelWrapper levelWrapper) throws IOException
 	{
-		if (resourceStateString.equals(AIR_STRING) || resourceStateString.equals("")) // the empty string shouldn't normally happen, but just in case
+		// we need the final string for the concurrent hash map later
+		final String finalResourceStateString = resourceStateString;
+		
+		if (finalResourceStateString.equals(AIR_STRING) || finalResourceStateString.equals("")) // the empty string shouldn't normally happen, but just in case
 		{
 			return AIR;
 		}
 		
-		
-		
-		// try to parse out the BlockState
-		String blockStatePropertiesString = null; // will be null if no properties were included
-		int stateSeparatorIndex = resourceStateString.indexOf(STATE_STRING_SEPARATOR);
-		if (stateSeparatorIndex != -1)
+		// attempt to use the existing wrapper
+		if (WRAPPER_BY_RESOURCE_LOCATION.containsKey(finalResourceStateString))
 		{
-			// blockstate properties found
-			blockStatePropertiesString = resourceStateString.substring(stateSeparatorIndex + STATE_STRING_SEPARATOR.length());
-			resourceStateString = resourceStateString.substring(0, stateSeparatorIndex);
+			return WRAPPER_BY_RESOURCE_LOCATION.get(finalResourceStateString);
 		}
 		
-		// parse the resource location
-		int separatorIndex = resourceStateString.indexOf(RESOURCE_LOCATION_SEPARATOR);
-		if (separatorIndex == -1)
-		{
-			throw new IOException("Unable to parse Resource Location out of string: [" + resourceStateString + "].");
-		}
 		
-		ResourceLocation resourceLocation;
+		
+		// if no wrapper is found, default to air
+		BlockStateWrapper foundWrapper = AIR;
 		try
 		{
-			resourceLocation = new ResourceLocation(resourceStateString.substring(0, separatorIndex), resourceStateString.substring(separatorIndex + 1));
-		}
-		catch (Exception e)
-		{
-			throw new IOException("No Resource Location found for the string: [" + resourceStateString + "] Error: ["+e.getMessage()+"].");
-		}
-		
-		
-		// attempt to get the BlockState from all possible BlockStates
-		try
-		{
+			// try to parse out the BlockState
+			String blockStatePropertiesString = null; // will be null if no properties were included
+			int stateSeparatorIndex = resourceStateString.indexOf(STATE_STRING_SEPARATOR);
+			if (stateSeparatorIndex != -1)
+			{
+				// blockstate properties found
+				blockStatePropertiesString = resourceStateString.substring(stateSeparatorIndex + STATE_STRING_SEPARATOR.length());
+				resourceStateString = resourceStateString.substring(0, stateSeparatorIndex);
+			}
 			
-			#if MC_VER > MC_1_17_1
+			// parse the resource location
+			int separatorIndex = resourceStateString.indexOf(RESOURCE_LOCATION_SEPARATOR);
+			if (separatorIndex == -1)
+			{
+				throw new IOException("Unable to parse Resource Location out of string: [" + resourceStateString + "].");
+			}
+			
+			ResourceLocation resourceLocation;
+			try
+			{
+				resourceLocation = new ResourceLocation(resourceStateString.substring(0, separatorIndex), resourceStateString.substring(separatorIndex + 1));
+			}
+			catch (Exception e)
+			{
+				throw new IOException("No Resource Location found for the string: [" + resourceStateString + "] Error: [" + e.getMessage() + "].");
+			}
+			
+			
+			
+			// attempt to get the BlockState from all possible BlockStates
+			try
+			{
+				
+				#if MC_VER > MC_1_17_1
 			Level level = (Level)Objects.requireNonNull(levelWrapper.getWrappedMcObject());
-			#endif
-			
-			Block block;
-			#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
-			block = Registry.BLOCK.get(resourceLocation);
-			#elif MC_VER == MC_1_18_2 || MC_VER == MC_1_19_2
-			net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
-			block = registryAccess.registryOrThrow(Registry.BLOCK_REGISTRY).get(resourceLocation);
-			#else
-			net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
-			block = registryAccess.registryOrThrow(Registries.BLOCK).get(resourceLocation);
-			#endif
-			
-			
-			if (block == null)
-			{
-				// shouldn't normally happen, but here to make the compiler happy
-				if (!BrokenResourceLocations.contains(resourceLocation))
+				#endif
+				
+				Block block;
+				#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
+				block = Registry.BLOCK.get(resourceLocation);
+				#elif MC_VER == MC_1_18_2 || MC_VER == MC_1_19_2
+				net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
+				block = registryAccess.registryOrThrow(Registry.BLOCK_REGISTRY).get(resourceLocation);
+				#else
+				net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
+				block = registryAccess.registryOrThrow(Registries.BLOCK).get(resourceLocation);
+				#endif
+				
+				
+				if (block == null)
 				{
-					BrokenResourceLocations.add(resourceLocation);
-					LOGGER.warn("Unable to find BlockState with the resourceLocation [" + resourceLocation + "] and properties: [" + blockStatePropertiesString + "]. Air will be used instead, some data may be lost.");
-				}
-				return AIR;
-			}
-			
-			
-			// attempt to find the blockstate from all possibilities
-			BlockState foundState = null;
-			if (blockStatePropertiesString != null)
-			{
-				List<BlockState> possibleStateList = block.getStateDefinition().getPossibleStates();
-				for (BlockState possibleState : possibleStateList)
-				{
-					String possibleStatePropertiesString = serializeBlockStateProperties(possibleState);
-					if (possibleStatePropertiesString.equals(blockStatePropertiesString))
-					{
-						foundState = possibleState;
-						break;
-					}
-				}
-			}
-			
-			// use the default if no state was found or given
-			if (foundState == null)
-			{
-				if (blockStatePropertiesString != null)
-				{
-					// we should have found a blockstate, but didn't
+					// shouldn't normally happen, but here to make the compiler happy
 					if (!BrokenResourceLocations.contains(resourceLocation))
 					{
 						BrokenResourceLocations.add(resourceLocation);
-						LOGGER.warn("Unable to find BlockState for Block [" + resourceLocation + "] with properties: [" + blockStatePropertiesString + "]. Using the default block state.");
+						LOGGER.warn("Unable to find BlockState with the resourceLocation [" + resourceLocation + "] and properties: [" + blockStatePropertiesString + "]. Air will be used instead, some data may be lost.");
+					}
+					
+					return AIR;
+				}
+				
+				
+				// attempt to find the blockstate from all possibilities
+				BlockState foundState = null;
+				if (blockStatePropertiesString != null)
+				{
+					List<BlockState> possibleStateList = block.getStateDefinition().getPossibleStates();
+					for (BlockState possibleState : possibleStateList)
+					{
+						String possibleStatePropertiesString = serializeBlockStateProperties(possibleState);
+						if (possibleStatePropertiesString.equals(blockStatePropertiesString))
+						{
+							foundState = possibleState;
+							break;
+						}
 					}
 				}
 				
-				foundState = block.defaultBlockState();
+				// use the default if no state was found or given
+				if (foundState == null)
+				{
+					if (blockStatePropertiesString != null)
+					{
+						// we should have found a blockstate, but didn't
+						if (!BrokenResourceLocations.contains(resourceLocation))
+						{
+							BrokenResourceLocations.add(resourceLocation);
+							LOGGER.warn("Unable to find BlockState for Block [" + resourceLocation + "] with properties: [" + blockStatePropertiesString + "]. Using the default block state.");
+						}
+					}
+					
+					foundState = block.defaultBlockState();
+				}
+				
+				foundWrapper = new BlockStateWrapper(foundState, levelWrapper);
+				return foundWrapper;
 			}
-			return new BlockStateWrapper(foundState, levelWrapper);
+			catch (Exception e)
+			{
+				throw new IOException("Failed to deserialize the string [" + finalResourceStateString + "] into a BlockStateWrapper: " + e.getMessage(), e);
+			}
 		}
-		catch (Exception e)
+		finally
 		{
-			throw new IOException("Failed to deserialize the string [" + resourceStateString + "] into a BlockStateWrapper: " + e.getMessage(), e);
+			// put if absent in case two threads deserialize at the same time
+			// unfortunately we can't put everything in a computeIfAbsent() since we also throw exceptions
+			WRAPPER_BY_RESOURCE_LOCATION.putIfAbsent(finalResourceStateString, foundWrapper);
 		}
 	}
 	

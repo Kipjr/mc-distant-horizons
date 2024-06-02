@@ -60,8 +60,12 @@ public class MinecraftScreen
 			screen.init(); // Init our own config screen
 			
 			this.list = new ConfigListWidget(this.minecraft, this.width, this.height, 0, 0, 25); // Select the area to tint
+			
+			#if MC_VER < MC_1_20_6 // no background is rendered in MC 1.20.6+
 			if (this.minecraft != null && this.minecraft.level != null) // Check if in game
 				this.list.setRenderBackground(false); // Disable from rendering
+			#endif
+			
 			this.addWidget(this.list); // Add the tint to the things to be rendered
 		}
 		

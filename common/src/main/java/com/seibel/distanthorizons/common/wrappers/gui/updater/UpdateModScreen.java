@@ -147,17 +147,15 @@ public class UpdateModScreen extends DhScreen
 		this.renderBackground(matrices, mouseX, mouseY, delta); // Render background
 		#endif
 		
+		// TODO: add the tooltips for the buttons
+		super.render(matrices, mouseX, mouseY, delta); // Render the buttons
+		// TODO: Add tooltips
 		
 		// Render the text's
 		DhDrawCenteredString(matrices, this.font, Translatable(ModInfo.ID + ".updater.text1"), this.width / 2, this.height / 2 - 35, 0xFFFFFF);
 		DhDrawCenteredString(matrices, this.font, 
 				Translatable(ModInfo.ID + ".updater.text2", currentVer, nextVer), 
 				this.width / 2, this.height / 2 - 20, 0x52FD52);
-		
-		// TODO: add the tooltips for the buttons
-		super.render(matrices, mouseX, mouseY, delta); // Render the buttons
-		
-		// TODO: Add tooltips
 	}
 	
 	@Override
