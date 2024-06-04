@@ -1,7 +1,8 @@
 package com.seibel.distanthorizons.forge;
 
+import com.seibel.distanthorizons.common.AbstractPluginPacketSender;
 import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
-import com.seibel.distanthorizons.common.wrappers.network.AbstractPluginPacketSender;
+import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.FriendlyByteBuf;
@@ -46,42 +47,48 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 			);
 			#endif
 	
-	public static void setPacketHandler(Consumer<ByteBuf> consumer)
+	public static void setPacketHandler(Consumer<PluginChannelMessage> consumer)
 	{
 		setPacketHandler((player, buffer) -> consumer.accept(buffer));
 	}
-	public static void setPacketHandler(BiConsumer<IServerPlayerWrapper, ByteBuf> consumer)
+	public static void setPacketHandler(BiConsumer<IServerPlayerWrapper, PluginChannelMessage> consumer)
 	{
 		#if MC_VER >= MC_1_20_2
-		PLUGIN_CHANNEL.messageBuilder(FriendlyByteBuf.class, 0)
-				.encoder((buffer, mcBuffer) -> mcBuffer.writeBytes(buffer))
-				.decoder(FriendlyByteBuf::new)
-				.consumerNetworkThread((buffer, context) ->
+		PLUGIN_CHANNEL.messageBuilder(PluginChannelMessage.class, 0)
+				.encoder((message, out) -> AbstractPluginPacketSender.encodeMessage(out, message))
+				.decoder(AbstractPluginPacketSender::decodeMessage)
+				.consumerNetworkThread((message, context) ->
 				{
-					if (context.getSender() != null)
+					if (message != null)
 					{
-						consumer.accept(ServerPlayerWrapper.getWrapper(context.getSender()), buffer);
-					}
-					else
-					{
-						consumer.accept(null, buffer);
+						if (context.getSender() != null)
+						{
+							consumer.accept(ServerPlayerWrapper.getWrapper(context.getSender()), message);
+						}
+						else
+						{
+							consumer.accept(null, message);
+						}
 					}
 					context.setPacketHandled(true);
 				})
 				.add();
 		#else // < 1.20.2
-		PLUGIN_CHANNEL.registerMessage(0, FriendlyByteBuf.class,
-				(buffer, mcBuffer) -> mcBuffer.writeBytes(buffer),
-				FriendlyByteBuf::new,
-				(buffer, context) ->
+		PLUGIN_CHANNEL.registerMessage(0, PluginChannelMessage.class,
+				(message, out) -> AbstractPluginPacketSender.encodeMessage(out, message),
+				AbstractPluginPacketSender::decodeMessage,
+				(message, context) ->
 				{
-					if (context.get().getSender() != null)
+					if (message != null)
 					{
-						consumer.accept(ServerPlayerWrapper.getWrapper(context.get().getSender()), buffer);
-					}
-					else
-					{
-						consumer.accept(null, buffer);
+						if (context.get().getSender() != null)
+						{
+							consumer.accept(ServerPlayerWrapper.getWrapper(context.get().getSender()), message);
+						}
+						else
+						{
+							consumer.accept(null, message);
+						}
 					}
 					context.get().setPacketHandled(true);
 				}
@@ -90,7 +97,7 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 	}
 	
 	@Override
-	protected void sendPluginPacketClient(FriendlyByteBuf buffer)
+	public void sendPluginPacketClient(PluginChannelMessage buffer)
 	{
 		#if MC_VER >= MC_1_20_2
 		PLUGIN_CHANNEL.send(buffer, PacketDistributor.SERVER.noArg());
@@ -100,7 +107,7 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 	}
 	
 	@Override
-	protected void sendPluginPacketServer(ServerPlayer serverPlayer, FriendlyByteBuf buffer)
+	public void sendPluginPacketServer(ServerPlayer serverPlayer, PluginChannelMessage buffer)
 	{
 		#if MC_VER >= MC_1_20_2
 		PLUGIN_CHANNEL.send(buffer, PacketDistributor.PLAYER.with(serverPlayer));

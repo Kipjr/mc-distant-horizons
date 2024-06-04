@@ -1,16 +1,17 @@
 package com.seibel.distanthorizons.common;
 
+import com.seibel.distanthorizons.core.network.messages.PluginMessageRegistry;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
+import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.function.Consumer;
+import java.util.Objects;
 
 public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 {
@@ -26,5 +27,27 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 	
 	@Override public abstract void sendPluginPacketClient(PluginChannelMessage message);
 	public abstract void sendPluginPacketServer(ServerPlayer serverPlayer, PluginChannelMessage message);
+	
+	@Nullable
+	public static PluginChannelMessage decodeMessage(FriendlyByteBuf in)
+	{
+		if (in.readShort() != ModInfo.PROTOCOL_VERSION)
+		{
+			return null;
+		}
+		
+		PluginChannelMessage message = PluginMessageRegistry.INSTANCE.createMessage(in.readUnsignedShort());
+		return INetworkObject.decodeToInstance(message, in);
+	}
+	
+	public static void encodeMessage(FriendlyByteBuf out, PluginChannelMessage message)
+	{
+		Objects.requireNonNull(message);
+		
+		out.writeShort(ModInfo.PROTOCOL_VERSION);
+		
+		out.writeShort(PluginMessageRegistry.INSTANCE.getMessageId(message));
+		message.encode(out);
+	}
 	
 }

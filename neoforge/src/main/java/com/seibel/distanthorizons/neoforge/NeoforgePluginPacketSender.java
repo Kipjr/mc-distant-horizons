@@ -33,7 +33,7 @@ public class NeoforgePluginPacketSender extends AbstractPluginPacketSender
 					.map(player -> player instanceof ServerPlayer ? (ServerPlayer) player : null)
 					.map(ServerPlayerWrapper::getWrapper)
 					.orElse(null);
-			packetConsumer.accept(serverPlayer, payload.message);
+			packetConsumer.accept(serverPlayer, payload.message());
 		});
 	}
 	

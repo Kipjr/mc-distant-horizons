@@ -1,5 +1,7 @@
 package com.seibel.distanthorizons.common;
 
+#if MC_VER >= MC_1_20_6
+
 import com.seibel.distanthorizons.core.network.messages.PluginMessageRegistry;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
@@ -12,7 +14,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-public class CommonPacketPayload implements CustomPacketPayload
+public record CommonPacketPayload(
+		@Nullable PluginChannelMessage message
+) implements CustomPacketPayload
 {
 	public static final Type<CommonPacketPayload> TYPE = new Type<>(AbstractPluginPacketSender.WRAPPER_PACKET_RESOURCE);
 	
@@ -23,15 +27,6 @@ public class CommonPacketPayload implements CustomPacketPayload
 		return TYPE;
 	}
 	
-	@Nullable
-	public PluginChannelMessage message;
-	
-	
-	public CommonPacketPayload(@Nullable PluginChannelMessage message)
-	{
-		this.message = message;
-	}
-	
 	
 	public static class Codec implements StreamCodec<FriendlyByteBuf, CommonPacketPayload>
 	{
@@ -39,26 +34,17 @@ public class CommonPacketPayload implements CustomPacketPayload
 		@Override
 		public CommonPacketPayload decode(@NotNull FriendlyByteBuf in)
 		{
-			if (in.readShort() != ModInfo.PROTOCOL_VERSION)
-			{
-				return new CommonPacketPayload(null);
-			}
-			
-			PluginChannelMessage message = PluginMessageRegistry.INSTANCE.createMessage(in.readUnsignedShort());
-			return new CommonPacketPayload(INetworkObject.decodeToInstance(message, in));
+			return new CommonPacketPayload(AbstractPluginPacketSender.decodeMessage(in));
 		}
 		
 		@Override
 		public void encode(@NotNull FriendlyByteBuf out, CommonPacketPayload payload)
 		{
-			Objects.requireNonNull(payload.message);
-			
-			out.writeShort(ModInfo.PROTOCOL_VERSION);
-			
-			out.writeShort(PluginMessageRegistry.INSTANCE.getMessageId(payload.message));
-			payload.message.encode(out);
+			AbstractPluginPacketSender.encodeMessage(out, payload.message());
 		}
 		
 	}
 	
 }
+
+#endif
