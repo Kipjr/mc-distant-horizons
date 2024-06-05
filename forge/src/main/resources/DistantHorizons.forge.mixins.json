@@ -15,8 +15,7 @@
         "client.MixinLevelRenderer",
         "client.MixinLightTexture",
         "client.MixinOptionsScreen",
-      "client.MixinTextureUtil",
-      "client.MixinMinecraft"
+      "client.MixinTextureUtil"
     ],
     "server": []
 }
