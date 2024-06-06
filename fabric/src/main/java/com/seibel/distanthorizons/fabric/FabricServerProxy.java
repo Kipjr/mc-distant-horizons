@@ -179,7 +179,7 @@ public class FabricServerProxy implements AbstractModInitializer.IEventProxy
 				PluginChannelMessage message = AbstractPluginPacketSender.decodeMessage(buffer);
 				if (message != null)
 				{
-					ClientApi.INSTANCE.pluginMessageReceived(message);
+					ServerApi.INSTANCE.pluginMessageReceived(ServerPlayerWrapper.getWrapper(serverPlayer), message);
 				}
 			});
 			#endif
