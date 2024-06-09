@@ -4,8 +4,6 @@ import com.seibel.distanthorizons.common.AbstractPluginPacketSender;
 import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 
 #if MC_VER >= MC_1_20_2
@@ -49,45 +47,45 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 	
 	public static void setPacketHandler(Consumer<PluginChannelMessage> consumer)
 	{
-		setPacketHandler((player, buffer) -> consumer.accept(buffer));
+		setPacketHandler((player, message) -> consumer.accept(message));
 	}
 	public static void setPacketHandler(BiConsumer<IServerPlayerWrapper, PluginChannelMessage> consumer)
 	{
 		#if MC_VER >= MC_1_20_2
-		PLUGIN_CHANNEL.messageBuilder(PluginChannelMessage.class, 0)
-				.encoder((message, out) -> AbstractPluginPacketSender.encodeMessage(out, message))
-				.decoder(AbstractPluginPacketSender::decodeMessage)
-				.consumerNetworkThread((message, context) ->
+		PLUGIN_CHANNEL.messageBuilder(MessageWrapper.class, 0)
+				.encoder((wrapper, out) -> AbstractPluginPacketSender.encodeMessage(out, wrapper.message))
+				.decoder(in -> new MessageWrapper(AbstractPluginPacketSender.decodeMessage(in)))
+				.consumerNetworkThread((wrapper, context) ->
 				{
-					if (message != null)
+					if (wrapper.message != null)
 					{
 						if (context.getSender() != null)
 						{
-							consumer.accept(ServerPlayerWrapper.getWrapper(context.getSender()), message);
+							consumer.accept(ServerPlayerWrapper.getWrapper(context.getSender()), wrapper.message);
 						}
 						else
 						{
-							consumer.accept(null, message);
+							consumer.accept(null, wrapper.message);
 						}
 					}
 					context.setPacketHandled(true);
 				})
 				.add();
 		#else // < 1.20.2
-		PLUGIN_CHANNEL.registerMessage(0, PluginChannelMessage.class,
-				(message, out) -> AbstractPluginPacketSender.encodeMessage(out, message),
-				AbstractPluginPacketSender::decodeMessage,
-				(message, context) ->
+		PLUGIN_CHANNEL.registerMessage(0, MessageWrapper.class,
+				(wrapper, out) -> AbstractPluginPacketSender.encodeMessage(out, wrapper.message),
+				in -> new MessageWrapper(AbstractPluginPacketSender.decodeMessage(in)),
+				(wrapper, context) ->
 				{
-					if (message != null)
+					if (wrapper.message != null)
 					{
 						if (context.get().getSender() != null)
 						{
-							consumer.accept(ServerPlayerWrapper.getWrapper(context.get().getSender()), message);
+							consumer.accept(ServerPlayerWrapper.getWrapper(context.get().getSender()), wrapper.message);
 						}
 						else
 						{
-							consumer.accept(null, message);
+							consumer.accept(null, wrapper.message);
 						}
 					}
 					context.get().setPacketHandled(true);
@@ -97,23 +95,36 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 	}
 	
 	@Override
-	public void sendPluginPacketClient(PluginChannelMessage buffer)
+	public void sendPluginPacketClient(PluginChannelMessage message)
 	{
 		#if MC_VER >= MC_1_20_2
-		PLUGIN_CHANNEL.send(buffer, PacketDistributor.SERVER.noArg());
+		PLUGIN_CHANNEL.send(new MessageWrapper(message), PacketDistributor.SERVER.noArg());
 		#else // < 1.20.2
-		PLUGIN_CHANNEL.send(PacketDistributor.SERVER.noArg(), buffer);
+		PLUGIN_CHANNEL.send(PacketDistributor.SERVER.noArg(), new MessageWrapper(message));
 		#endif
 	}
 	
 	@Override
-	public void sendPluginPacketServer(ServerPlayer serverPlayer, PluginChannelMessage buffer)
+	public void sendPluginPacketServer(ServerPlayer serverPlayer, PluginChannelMessage message)
 	{
 		#if MC_VER >= MC_1_20_2
-		PLUGIN_CHANNEL.send(buffer, PacketDistributor.PLAYER.with(serverPlayer));
+		PLUGIN_CHANNEL.send(new MessageWrapper(message), PacketDistributor.PLAYER.with(serverPlayer));
 		#else // < 1.20.2
-		PLUGIN_CHANNEL.send(PacketDistributor.PLAYER.with(() -> serverPlayer), buffer);
+		PLUGIN_CHANNEL.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new MessageWrapper(message));
 		#endif
+	}
+	
+	// Forge doesn't support using abstract classes
+	@SuppressWarnings("ClassCanBeRecord")
+	public static class MessageWrapper
+	{
+		public final PluginChannelMessage message;
+		
+		public MessageWrapper(PluginChannelMessage message)
+		{
+			this.message = message;
+		}
+		
 	}
 	
 }
