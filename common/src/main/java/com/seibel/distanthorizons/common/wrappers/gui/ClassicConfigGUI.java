@@ -245,7 +245,7 @@ public class ClassicConfigGUI
 			}
 			
 			// Changelog button
-			if (Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get() && Config.Client.Advanced.AutoUpdater.updateBranch.get() == EDhApiUpdateBranch.STABLE)
+			if (Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get() && !ModInfo.IS_DEV_BUILD) // we only have changelogs for stable builds
 			{
 				this.addBtn(new TexturedButtonWidget(
 						// Where the button is on the screen

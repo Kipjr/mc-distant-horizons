@@ -41,16 +41,18 @@ public class UpdateModScreen extends DhScreen
 		super(Translatable(ModInfo.ID + ".updater.title"));
 		this.parent = parent;
 		this.newVersionID = newVersionID;
-
-        switch (Config.Client.Advanced.AutoUpdater.updateBranch.get()) {
-	        case STABLE:
-                currentVer = ModInfo.VERSION;
-                nextVer = ModrinthGetter.releaseNames.get(this.newVersionID);
-				break;
-	        case NIGHTLY:
-                currentVer = ModJarInfo.Git_Commit.substring(0,7);
-                nextVer = this.newVersionID.substring(0,7);
-				break;
+		
+		
+		EDhApiUpdateBranch updateBranch = EDhApiUpdateBranch.convertAutoToStableOrNightly(Config.Client.Advanced.AutoUpdater.updateBranch.get());
+		if (updateBranch == EDhApiUpdateBranch.STABLE)
+        {
+	        this.currentVer = ModInfo.VERSION;
+	        this.nextVer = ModrinthGetter.releaseNames.get(this.newVersionID);
+        }
+	    else
+        {
+	        this.currentVer = ModJarInfo.Git_Commit.substring(0,7);
+	        this.nextVer = this.newVersionID.substring(0,7);
         }
 	}
 	
@@ -88,7 +90,7 @@ public class UpdateModScreen extends DhScreen
 			e.printStackTrace();
 		}
 		
-		if (Config.Client.Advanced.AutoUpdater.updateBranch.get() == EDhApiUpdateBranch.STABLE)
+		if (!ModInfo.IS_DEV_BUILD)
 		{
 			this.addBtn(new TexturedButtonWidget(
 					// Where the button is on the screen

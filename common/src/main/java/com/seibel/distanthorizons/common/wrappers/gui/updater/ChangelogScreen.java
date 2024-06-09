@@ -168,10 +168,9 @@ public class ChangelogScreen extends DhScreen
 		#endif
 		
 		
-		this.changelogArea.render(matrices, mouseX, mouseY, delta); // Render the changelog
-		
+		// render order matters, otherwise on 1.20.6+ the blurred background will render on top of the text
 		super.render(matrices, mouseX, mouseY, delta); // Render the buttons
-		
+		this.changelogArea.render(matrices, mouseX, mouseY, delta); // Render the changelog
 		DhDrawCenteredString(matrices, font, title, width / 2, 15, 0xFFFFFF); // Render title
 	}
 	
