@@ -2,17 +2,12 @@ package com.seibel.distanthorizons.common;
 
 #if MC_VER >= MC_1_20_6
 
-import com.seibel.distanthorizons.core.network.messages.PluginMessageRegistry;
 import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
-import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
-import com.seibel.distanthorizons.coreapi.ModInfo;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
 
 public record CommonPacketPayload(
 		@Nullable PluginChannelMessage message
