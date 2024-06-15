@@ -30,9 +30,9 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper
 	}
 	
 	@Override
-	public UUID getUUID()
+	public String getName()
 	{
-		return this.serverPlayer.getUUID();
+		return this.serverPlayer.getName().getString();
 	}
 	
 	@Override
