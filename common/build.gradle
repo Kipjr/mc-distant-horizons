@@ -1,3 +1,10 @@
+buildscript {
+    configurations.configureEach {
+        resolutionStrategy {
+            force 'org.spongepowered:vanillagradle:0.2.1-20240507.024226-82'
+        }
+    }
+}
 
 plugins {
     id "org.spongepowered.gradle.vanilla" version "0.2.1-SNAPSHOT"
@@ -27,4 +34,3 @@ publishing {
         // Add repositories to publish to here.
     }
 }
-
