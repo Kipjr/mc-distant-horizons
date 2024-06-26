@@ -54,7 +54,7 @@ def writeBuildGradlePredefine(List<String> mcVers, int mcIndex)
 // Transfers the values set in settings.gradle to the rest of the project
 project.gradle.ext.getProperties().each { prop ->
     rootProject.ext.set(prop.key, prop.value)
-//    println "Added prop [key:" + prop.key + ", value:" + prop.value + "]"
+    //println "Added prop [key:" + prop.key + ", value:" + prop.value + "]"
 }
 // Sets up manifold stuff
 writeBuildGradlePredefine(rootProject.mcVers, rootProject.mcIndex)
@@ -106,11 +106,12 @@ subprojects { p ->
         apply plugin: "systems.manifold.manifold-gradle-plugin"
 
     // Apply forge's loom
-    if (
-            (findProject(":forge") && p == project(":forge")) ||
-                    (findProject(":neoforge") && p == project(":neoforge"))
-    )
+    if ((findProject(":forge") && p == project(":forge")) ||
+        (findProject(":neoforge") && p == project(":neoforge"))
+        )
+    {
         apply plugin: "dev.architectury.loom"
+    }
 
 
     // Set the manifold version (may not be required tough)
@@ -430,9 +431,11 @@ subprojects { p ->
     jar {
         from "LICENSE.txt"
         manifest {
-            attributes 'Implementation-Title': rootProject.mod_name,
-                    'Implementation-Version': rootProject.mod_version,
-                    'Main-Class': 'com.seibel.distanthorizons.core.jar.JarMain' // When changing the main of the jar change this line
+            attributes( 
+                'Implementation-Title': rootProject.mod_name,
+                'Implementation-Version': rootProject.mod_version,
+                'Main-Class': 'com.seibel.distanthorizons.core.jar.JarMain' // When changing the main of the jar change this line
+            )
         }
     }
 
@@ -521,15 +524,17 @@ allprojects { p ->
             }
         }
 
-        // Required for ModMenu
-        maven { url "https://maven.terraformersmc.com/" }
-
-        // Required for Mixins & VanillaGradle
+        // VanillaGradle and Mixins in common
         maven { url "https://repo.spongepowered.org/maven/" }
 
-        // Required for Canvas (mod)
+        // Canvas mod
         maven { url "https://maven.vram.io/" }
+        // ModMenu mod
+        maven { url "https://maven.terraformersmc.com/" }
 
+        // neoforge
+        maven { url "https://maven.neoforged.net/releases/" }
+        
         // These 3 are for importing mods that arnt on CursedForge, Modrinth, GitHub, GitLab or anywhere opensource
         flatDir {
             dirs "${rootDir}/mods/fabric"

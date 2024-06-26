@@ -346,7 +346,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 			}
 			else if (event.hasTimeout(Config.Client.Advanced.WorldGenerator.worldGenerationTimeoutLengthInSeconds.get(), TimeUnit.SECONDS))
 			{
-				EVENT_LOGGER.error("Batching World Generator: " + event + " timed out and terminated!");
+				EVENT_LOGGER.error("Batching World Generator: " + event + " timed out and terminated! Please lower your CPU load.");
 				EVENT_LOGGER.info("Dump PrefEvent: " + event.timer);
 				try
 				{
