@@ -59,14 +59,14 @@ public final class StepFeatures
 		for (ChunkWrapper chunkWrapper : chunkWrappers)
 		{
 			ChunkAccess chunk = chunkWrapper.getChunk();
-			if (chunk.getStatus().isOrAfter(STATUS))
+			if (!chunkWrapper.getStatus().isOrAfter(STATUS)
+				&& chunk instanceof ProtoChunk)
 			{
-				continue;
-			}
-			
-			if (chunk instanceof ProtoChunk)
-			{
+				#if MC_VER < MC_1_21
 				((ProtoChunk) chunk).setStatus(STATUS);
+				#else
+				((ProtoChunk) chunk).setPersistedStatus(STATUS);
+				#endif
 			}
 			
 			

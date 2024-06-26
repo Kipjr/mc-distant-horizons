@@ -98,7 +98,6 @@ public class MixinLevelRenderer
 	private void renderChunkLayer(RenderType renderType, double x, double y, double z, Matrix4f projectionMatrix, Matrix4f frustumMatrix, CallbackInfo callback)
 	#endif
 	{
-		// get MC's model view and projection matrices
 		#if MC_VER == MC_1_16_5
 		// get the matrices from the OpenGL fixed pipeline
 		float[] mcProjMatrixRaw = new float[16];
@@ -120,15 +119,21 @@ public class MixinLevelRenderer
 		#endif
 		
 		
+		float frameTime;
+		#if MC_VER < MC_1_21
+		frameTime = Minecraft.getInstance().getFrameTime();
+		#else
+		frameTime = Minecraft.getInstance().getTimer().getRealtimeDeltaTicks();
+		#endif
 		
 		// only render before solid blocks
 		if (renderType.equals(RenderType.solid()))
 		{
-			ClientApi.INSTANCE.renderLods(ClientLevelWrapper.getWrapper(this.level), mcModelViewMatrix, mcProjectionMatrix, Minecraft.getInstance().getFrameTime());
+			ClientApi.INSTANCE.renderLods(ClientLevelWrapper.getWrapper(this.level), mcModelViewMatrix, mcProjectionMatrix, frameTime);
 		} 
 		else if (renderType.equals(RenderType.translucent())) 
 		{
-			ClientApi.INSTANCE.renderDeferredLods(ClientLevelWrapper.getWrapper(this.level), mcModelViewMatrix, mcProjectionMatrix, Minecraft.getInstance().getFrameTime());
+			ClientApi.INSTANCE.renderDeferredLods(ClientLevelWrapper.getWrapper(this.level), mcModelViewMatrix, mcProjectionMatrix, frameTime);
 		}
 		
 		if (Config.Client.Advanced.Debugging.lodOnlyMode.get())
@@ -153,5 +158,6 @@ public class MixinLevelRenderer
 	{
 		ChunkWrapper.syncedUpdateClientLightStatus();
 	}
+	
 	
 }

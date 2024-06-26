@@ -75,7 +75,13 @@ public class UpdateModScreen extends DhScreen
 					// Offset
 					0, 0,
 					// Some textuary stuff
-					0, new ResourceLocation(ModInfo.ID, "logo.png"), 130, 65,
+					0, 
+					#if MC_VER < MC_1_21 
+					new ResourceLocation(ModInfo.ID, "logo.png"),
+					#else
+					ResourceLocation.fromNamespaceAndPath(ModInfo.ID, "logo.png"),
+					#endif
+					130, 65,
 					// Create the button and tell it where to go
 					// For now it goes to the client option by default
 					(buttonWidget) -> System.out.println("Nice, you found an easter egg :)"), // TODO: Add a proper easter egg to pressing the logo (maybe with confetti)
@@ -100,7 +106,13 @@ public class UpdateModScreen extends DhScreen
 					// Offset
 					0, 0,
 					// Some textuary stuff
-					0, new ResourceLocation(ModInfo.ID, "textures/gui/changelog.png"), 20, 20,
+					0, 
+					#if MC_VER < MC_1_21 
+					new ResourceLocation(ModInfo.ID, "textures/gui/changelog.png"),
+					#else
+					ResourceLocation.fromNamespaceAndPath(ModInfo.ID, "textures/gui/changelog.png"),
+					#endif
+					20, 20,
 					// Create the button and tell it where to go
 					(buttonWidget) -> Objects.requireNonNull(minecraft).setScreen(new ChangelogScreen(this, this.newVersionID)), // TODO: Add a proper easter egg to pressing the logo (maybe with confetti)
 					// Add a title to the button

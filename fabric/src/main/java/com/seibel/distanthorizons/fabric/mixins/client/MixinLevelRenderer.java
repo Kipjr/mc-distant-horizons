@@ -120,7 +120,12 @@ public class MixinLevelRenderer
 		    ClientApi.INSTANCE.renderDeferredLods(ClientLevelWrapper.getWrapper(this.level),
 				    mcModelViewMatrix,
 				    mcProjectionMatrix,
-				    Minecraft.getInstance().getFrameTime());
+					#if MC_VER < MC_1_21
+					Minecraft.getInstance().getFrameTime()
+					#else
+				    Minecraft.getInstance().getTimer().getRealtimeDeltaTicks()
+					#endif
+				    );
 	    }
 		
 		// FIXME completely disables rendering when sodium is installed

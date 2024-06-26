@@ -255,7 +255,13 @@ public class ClassicConfigGUI
 						// texture UV Offset
 						0, 0,
 						// Some textuary stuff
-						0, new ResourceLocation(ModInfo.ID, "textures/gui/changelog.png"), 20, 20,
+						0, 
+						#if MC_VER < MC_1_21 
+						new ResourceLocation(ModInfo.ID, "textures/gui/changelog.png"),
+						#else
+						ResourceLocation.fromNamespaceAndPath(ModInfo.ID, "textures/gui/changelog.png"),
+						#endif
+						20, 20,
 						// Create the button and tell it where to go
 						(buttonWidget) -> {
 							ChangelogScreen changelogScreen = new ChangelogScreen(this);

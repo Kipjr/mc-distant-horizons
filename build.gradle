@@ -218,9 +218,6 @@ subprojects { p ->
 
         // Netty
         implementation("io.netty:netty-buffer:${rootProject.netty_version}")
-        implementation("io.netty:netty-codec:${rootProject.netty_version}")
-        implementation("io.netty:netty-transport:${rootProject.netty_version}")
-        implementation("io.netty:netty-handler:${rootProject.netty_version}")
 
         // Remember, for lwjgl dependencies that arent included in Minecraft, you need to also need to add it to the ShadowJar thing
         forgeShadowMe("org.lwjgl:lwjgl-jawt:${rootProject.lwjgl_version}") {

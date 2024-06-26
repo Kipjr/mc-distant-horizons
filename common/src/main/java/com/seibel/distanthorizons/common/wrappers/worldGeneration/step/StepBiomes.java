@@ -56,29 +56,39 @@ public final class StepBiomes
 			List<ChunkWrapper> chunkWrappers)
 	{
 		
-		ArrayList<ChunkAccess> chunksToDo = new ArrayList<ChunkAccess>();
+		ArrayList<ChunkAccess> chunksToDo = new ArrayList<>();
 		
 		for (ChunkWrapper chunkWrapper : chunkWrappers)
 		{
 			ChunkAccess chunk = chunkWrapper.getChunk();
-			if (chunk.getStatus().isOrAfter(STATUS)) continue;
-			((ProtoChunk) chunk).setStatus(STATUS);
-			chunksToDo.add(chunk);
+			if (!chunkWrapper.getStatus().isOrAfter(STATUS))
+			{
+				#if MC_VER < MC_1_21
+				((ProtoChunk) chunk).setStatus(STATUS);
+				#else
+				((ProtoChunk) chunk).setPersistedStatus(STATUS);
+				#endif
+				
+				chunksToDo.add(chunk);
+			}
 		}
 		
 		for (ChunkAccess chunk : chunksToDo)
 		{
 			// System.out.println("StepBiomes: "+chunk.getPos());
 			#if MC_VER < MC_1_18_2
-			environment.params.generator.createBiomes(environment.params.biomes, chunk);
+			this.environment.params.generator.createBiomes(this.environment.params.biomes, chunk);
 			#elif MC_VER < MC_1_19_2
-			chunk = environment.joinSync(environment.params.generator.createBiomes(environment.params.biomes, Runnable::run, Blender.of(worldGenRegion),
+			chunk = this.environment.joinSync(this.environment.params.generator.createBiomes(this.environment.params.biomes, Runnable::run, Blender.of(worldGenRegion),
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
 			#elif MC_VER < MC_1_19_4
-			chunk = environment.joinSync(environment.params.generator.createBiomes(environment.params.biomes, Runnable::run, environment.params.randomState, Blender.of(worldGenRegion),
+			chunk = this.environment.joinSync(this.environment.params.generator.createBiomes(this.environment.params.biomes, Runnable::run, this.environment.params.randomState, Blender.of(worldGenRegion),
+					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
+			#elif MC_VER < MC_1_21
+			chunk = this.environment.joinSync(this.environment.params.generator.createBiomes(Runnable::run, this.environment.params.randomState, Blender.of(worldGenRegion),
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
 			#else
-			chunk = environment.joinSync(environment.params.generator.createBiomes(Runnable::run, environment.params.randomState, Blender.of(worldGenRegion),
+			chunk = this.environment.joinSync(this.environment.params.generator.createBiomes(this.environment.params.randomState, Blender.of(worldGenRegion),
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
 			#endif
 		}

@@ -59,9 +59,15 @@ public final class StepStructureReference
 		for (ChunkWrapper chunkWrapper : chunkWrappers)
 		{
 			ChunkAccess chunk = chunkWrapper.getChunk();
-			if (chunk.getStatus().isOrAfter(STATUS)) continue;
-			((ProtoChunk) chunk).setStatus(STATUS);
-			chunksToDo.add(chunk);
+			if (!chunkWrapper.getStatus().isOrAfter(STATUS))
+			{
+				#if MC_VER < MC_1_21
+				((ProtoChunk) chunk).setStatus(STATUS);
+				#else
+				((ProtoChunk) chunk).setPersistedStatus(STATUS);
+				#endif
+				chunksToDo.add(chunk);
+			}
 		}
 		
 		for (ChunkAccess chunk : chunksToDo)

@@ -12,10 +12,7 @@ public class MinecraftDedicatedServerWrapper implements IMinecraftSharedWrapper
 	private MinecraftDedicatedServerWrapper() { }
 	public DedicatedServer dedicatedServer = null;
 	@Override
-	public boolean isDedicatedServer()
-	{
-		return true;
-	}
+	public boolean isDedicatedServer() { return true; }
 	@Override
 	public File getInstallationDirectory()
 	{
@@ -23,7 +20,12 @@ public class MinecraftDedicatedServerWrapper implements IMinecraftSharedWrapper
 		{
 			throw new IllegalStateException("Trying to get Installation Direction before Dedicated server complete initialization!");
 		}
+		
+		#if MC_VER < MC_1_21
 		return this.dedicatedServer.getServerDirectory();
+		#else
+		return this.dedicatedServer.getServerDirectory().toFile();
+		#endif
 	}
 	
 }

@@ -136,7 +136,7 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 		ClientApi.INSTANCE.clientLevelLoadEvent(clientLevelWrapper);
 	}
 	@SubscribeEvent
-	public void clientLevelUnloadEvent(LevelEvent.Load event)
+	public void clientLevelUnloadEvent(LevelEvent.Unload event)
 	{
 		LOGGER.info("level unload");
 		

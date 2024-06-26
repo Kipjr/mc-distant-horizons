@@ -213,7 +213,12 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 			this.clientApi.renderLods(ClientLevelWrapper.getWrapper(renderContext.world()),
 					modelViewMatrix,
 					projectionMatrix,
-					renderContext.tickDelta());
+					#if MC_VER < MC_1_21
+					renderContext.tickDelta()
+					#else
+					renderContext.tickCounter().getGameTimeDeltaTicks()
+					#endif
+					);
 		});
 
 		// Debug keyboard event

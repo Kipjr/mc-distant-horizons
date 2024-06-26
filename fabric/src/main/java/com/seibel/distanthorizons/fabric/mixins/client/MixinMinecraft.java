@@ -126,19 +126,15 @@ public abstract class MixinMinecraft
 	@Inject(at = @At("HEAD"), method = "updateLevelInEngines")
 	public void updateLevelInEngines(ClientLevel level, CallbackInfo ci)
 	{
-		// Only for multiplayer clients
-		if (!this.isLocalServer())
+		if (this.lastLevel != null && level != this.lastLevel)
 		{
-			if (this.lastLevel != null && level != this.lastLevel)
-			{
-				ClientApi.INSTANCE.clientLevelUnloadEvent(ClientLevelWrapper.getWrapper(this.lastLevel));
-			}
-			if (level != null)
-			{
-				ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper(level));
-			}
-			this.lastLevel = level;
+			ClientApi.INSTANCE.clientLevelUnloadEvent(ClientLevelWrapper.getWrapper(this.lastLevel));
 		}
+		if (level != null)
+		{
+			ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper(level));
+		}
+		this.lastLevel = level;
 	}
 	
 	@Inject(at = @At("HEAD"), method = "close()V")

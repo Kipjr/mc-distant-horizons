@@ -23,16 +23,13 @@ import com.seibel.distanthorizons.common.wrappers.gui.GetConfigScreen;
 import com.seibel.distanthorizons.common.wrappers.gui.TexturedButtonWidget;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.config.Config;
-import net.minecraft.client.gui.screens.OptionsScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 #if MC_VER < MC_1_19_2
 import net.minecraft.network.chat.TranslatableComponent;
 #endif
 import net.minecraft.resources.ResourceLocation;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -41,10 +38,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-#if MC_VER == MC_1_20_6
+#if MC_VER >= MC_1_20_6
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Shadow;
 #endif
+
+#if MC_VER < MC_1_21
+import net.minecraft.client.gui.screens.OptionsScreen;
+#else
+import net.minecraft.client.gui.screens.options.OptionsScreen;
+#endif
+
 
 /**
  * Adds a button to the menu to goto the config
@@ -57,13 +63,18 @@ public class MixinOptionsScreen extends Screen
 {
 	/** Texture used for the config opening button */
 	@Unique
-	private static final ResourceLocation ICON_TEXTURE = new ResourceLocation(ModInfo.ID, "textures/gui/button.png");
+	private static final ResourceLocation ICON_TEXTURE =
+		#if MC_VER < MC_1_21
+		new ResourceLocation(ModInfo.ID, "textures/gui/button.png");
+		#else
+		ResourceLocation.fromNamespaceAndPath(ModInfo.ID, "textures/gui/button.png");
+		#endif 
 	
 	
 	@Unique
 	private TexturedButtonWidget optionsButton = null;
 	
-	#if MC_VER == MC_1_20_6
+	#if MC_VER >= MC_1_20_6
 	@Shadow
 	@Final
 	protected HeaderAndFooterLayout layout;

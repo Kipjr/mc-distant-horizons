@@ -58,13 +58,21 @@ public final class StepNoise
 			List<ChunkWrapper> chunkWrappers)
 	{
 		
-		ArrayList<ChunkAccess> chunksToDo = new ArrayList<ChunkAccess>();
+		ArrayList<ChunkAccess> chunksToDo = new ArrayList<>();
 		
 		for (ChunkWrapper chunkWrapper : chunkWrappers)
 		{
 			ChunkAccess chunk = chunkWrapper.getChunk();
-			if (chunk.getStatus().isOrAfter(STATUS)) continue;
+			if (chunkWrapper.getStatus().isOrAfter(STATUS))
+			{
+				continue;
+			}
+			
+			#if MC_VER < MC_1_21
 			((ProtoChunk) chunk).setStatus(STATUS);
+			#else
+			((ProtoChunk) chunk).setPersistedStatus(STATUS);
+			#endif
 			chunksToDo.add(chunk);
 		}
 		
@@ -72,15 +80,18 @@ public final class StepNoise
 		{
 			// System.out.println("StepNoise: "+chunk.getPos());
 			#if MC_VER < MC_1_17_1
-			environment.params.generator.fillFromNoise(worldGenRegion, tParams.structFeat, chunk);
+			this.environment.params.generator.fillFromNoise(worldGenRegion, tParams.structFeat, chunk);
 			#elif MC_VER < MC_1_18_2
-			chunk = environment.joinSync(environment.params.generator.fillFromNoise(Runnable::run,
+			chunk = this.environment.joinSync(this.environment.params.generator.fillFromNoise(Runnable::run,
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
 			#elif MC_VER < MC_1_19_2
-			chunk = environment.joinSync(environment.params.generator.fillFromNoise(Runnable::run, Blender.of(worldGenRegion),
+			chunk = this.environment.joinSync(this.environment.params.generator.fillFromNoise(Runnable::run, Blender.of(worldGenRegion),
+					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
+			#elif MC_VER < MC_1_21
+			chunk = this.environment.joinSync(this.environment.params.generator.fillFromNoise(Runnable::run, Blender.of(worldGenRegion), this.environment.params.randomState,
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
 			#else
-			chunk = environment.joinSync(environment.params.generator.fillFromNoise(Runnable::run, Blender.of(worldGenRegion), environment.params.randomState,
+			chunk = this.environment.joinSync(this.environment.params.generator.fillFromNoise(Blender.of(worldGenRegion), this.environment.params.randomState,
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
 			#endif
 			UncheckedInterruptedException.throwIfInterrupted();
