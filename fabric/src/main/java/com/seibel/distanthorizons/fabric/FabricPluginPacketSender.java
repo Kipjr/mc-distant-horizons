@@ -1,7 +1,7 @@
 package com.seibel.distanthorizons.fabric;
 
 import com.seibel.distanthorizons.common.AbstractPluginPacketSender;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -15,7 +15,7 @@ import com.seibel.distanthorizons.common.CommonPacketPayload;
 public class FabricPluginPacketSender extends AbstractPluginPacketSender
 {
 	@Override
-	public void sendPluginPacketClient(PluginChannelMessage message)
+	public void sendPluginPacketClient(NetworkMessage message)
 	{
 		#if MC_VER >= MC_1_20_6
 		ClientPlayNetworking.send(new CommonPacketPayload(message));
@@ -27,7 +27,7 @@ public class FabricPluginPacketSender extends AbstractPluginPacketSender
 	}
 	
 	@Override
-	public void sendPluginPacketServer(ServerPlayer serverPlayer, PluginChannelMessage message)
+	public void sendPluginPacketServer(ServerPlayer serverPlayer, NetworkMessage message)
 	{
 		#if MC_VER >= MC_1_20_6
 		ServerPlayNetworking.send(serverPlayer, new CommonPacketPayload(message));

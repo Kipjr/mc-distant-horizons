@@ -3,7 +3,7 @@ package com.seibel.distanthorizons.neoforge;
 import com.seibel.distanthorizons.common.CommonPacketPayload;
 import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
 import com.seibel.distanthorizons.common.AbstractPluginPacketSender;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -16,13 +16,13 @@ import java.util.function.Consumer;
 
 public class NeoforgePluginPacketSender extends AbstractPluginPacketSender
 {
-	private static BiConsumer<IServerPlayerWrapper, PluginChannelMessage> packetConsumer;
+	private static BiConsumer<IServerPlayerWrapper, NetworkMessage> packetConsumer;
 	
-	public static void setPacketHandler(RegisterPayloadHandlersEvent event, Consumer<PluginChannelMessage> consumer)
+	public static void setPacketHandler(RegisterPayloadHandlersEvent event, Consumer<NetworkMessage> consumer)
 	{
 		setPacketHandler(event, (player, buffer) -> consumer.accept(buffer));
 	}
-	public static void setPacketHandler(RegisterPayloadHandlersEvent event, BiConsumer<IServerPlayerWrapper, PluginChannelMessage> consumer)
+	public static void setPacketHandler(RegisterPayloadHandlersEvent event, BiConsumer<IServerPlayerWrapper, NetworkMessage> consumer)
 	{
 		packetConsumer = consumer;
 		
@@ -42,13 +42,13 @@ public class NeoforgePluginPacketSender extends AbstractPluginPacketSender
 	}
 	
 	@Override
-	public void sendPluginPacketClient(PluginChannelMessage message)
+	public void sendPluginPacketClient(NetworkMessage message)
 	{
 		PacketDistributor.sendToServer(new CommonPacketPayload(message));
 	}
 	
 	@Override
-	public void sendPluginPacketServer(ServerPlayer serverPlayer, PluginChannelMessage message)
+	public void sendPluginPacketServer(ServerPlayer serverPlayer, NetworkMessage message)
 	{
 		PacketDistributor.sendToPlayer(serverPlayer, new CommonPacketPayload(message));
 	}

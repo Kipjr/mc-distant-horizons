@@ -2,7 +2,7 @@ package com.seibel.distanthorizons.common;
 
 #if MC_VER >= MC_1_20_6
 
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public record CommonPacketPayload(
-		@Nullable PluginChannelMessage message
+		@Nullable NetworkMessage message
 ) implements CustomPacketPayload
 {
 	public static final Type<CommonPacketPayload> TYPE = new Type<>(AbstractPluginPacketSender.WRAPPER_PACKET_RESOURCE);

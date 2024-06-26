@@ -2,7 +2,7 @@ package com.seibel.distanthorizons.forge;
 
 import com.seibel.distanthorizons.common.AbstractPluginPacketSender;
 import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -45,11 +45,11 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 			);
 			#endif
 	
-	public static void setPacketHandler(Consumer<PluginChannelMessage> consumer)
+	public static void setPacketHandler(Consumer<NetworkMessage> consumer)
 	{
 		setPacketHandler((player, message) -> consumer.accept(message));
 	}
-	public static void setPacketHandler(BiConsumer<IServerPlayerWrapper, PluginChannelMessage> consumer)
+	public static void setPacketHandler(BiConsumer<IServerPlayerWrapper, NetworkMessage> consumer)
 	{
 		#if MC_VER >= MC_1_20_2
 		PLUGIN_CHANNEL.messageBuilder(MessageWrapper.class, 0)
@@ -95,7 +95,7 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 	}
 	
 	@Override
-	public void sendPluginPacketClient(PluginChannelMessage message)
+	public void sendPluginPacketClient(NetworkMessage message)
 	{
 		#if MC_VER >= MC_1_20_2
 		PLUGIN_CHANNEL.send(new MessageWrapper(message), PacketDistributor.SERVER.noArg());
@@ -105,7 +105,7 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 	}
 	
 	@Override
-	public void sendPluginPacketServer(ServerPlayer serverPlayer, PluginChannelMessage message)
+	public void sendPluginPacketServer(ServerPlayer serverPlayer, NetworkMessage message)
 	{
 		#if MC_VER >= MC_1_20_2
 		PLUGIN_CHANNEL.send(new MessageWrapper(message), PacketDistributor.PLAYER.with(serverPlayer));
@@ -115,12 +115,12 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 	}
 	
 	// Forge doesn't support using abstract classes
-	@SuppressWarnings("ClassCanBeRecord")
+	@SuppressWarnings({"ClassCanBeRecord", "RedundantSuppression"})
 	public static class MessageWrapper
 	{
-		public final PluginChannelMessage message;
+		public final NetworkMessage message;
 		
-		public MessageWrapper(PluginChannelMessage message)
+		public MessageWrapper(NetworkMessage message)
 		{
 			this.message = message;
 		}

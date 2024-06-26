@@ -2,9 +2,9 @@ package com.seibel.distanthorizons.common;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
-import com.seibel.distanthorizons.core.network.messages.PluginMessageRegistry;
-import com.seibel.distanthorizons.core.network.plugin.PluginChannelMessage;
-import com.seibel.distanthorizons.core.network.protocol.INetworkObject;
+import com.seibel.distanthorizons.core.network.messages.MessageRegistry;
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
+import com.seibel.distanthorizons.core.network.INetworkObject;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
@@ -31,16 +31,16 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 	
 	
 	@Override
-	public final void sendPluginPacketServer(IServerPlayerWrapper serverPlayer, PluginChannelMessage message)
+	public final void sendPluginPacketServer(IServerPlayerWrapper serverPlayer, NetworkMessage message)
 	{
 		this.sendPluginPacketServer((ServerPlayer) serverPlayer.getWrappedMcObject(), message);
 	}
 	
-	@Override public abstract void sendPluginPacketClient(PluginChannelMessage message);
-	public abstract void sendPluginPacketServer(ServerPlayer serverPlayer, PluginChannelMessage message);
+	@Override public abstract void sendPluginPacketClient(NetworkMessage message);
+	public abstract void sendPluginPacketServer(ServerPlayer serverPlayer, NetworkMessage message);
 	
 	@Nullable
-	public static PluginChannelMessage decodeMessage(FriendlyByteBuf in)
+	public static NetworkMessage decodeMessage(FriendlyByteBuf in)
 	{
 		try
 		{
@@ -49,7 +49,7 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 				return null;
 			}
 			
-			PluginChannelMessage message = PluginMessageRegistry.INSTANCE.createMessage(in.readUnsignedShort());
+			NetworkMessage message = MessageRegistry.INSTANCE.createMessage(in.readUnsignedShort());
 			return INetworkObject.decodeToInstance(message, in);
 		}
 		catch (Exception e)
@@ -59,13 +59,13 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 		}
 	}
 	
-	public static void encodeMessage(FriendlyByteBuf out, PluginChannelMessage message)
+	public static void encodeMessage(FriendlyByteBuf out, NetworkMessage message)
 	{
 		Objects.requireNonNull(message);
 		
 		out.writeShort(ModInfo.PROTOCOL_VERSION);
 		
-		out.writeShort(PluginMessageRegistry.INSTANCE.getMessageId(message));
+		out.writeShort(MessageRegistry.INSTANCE.getMessageId(message));
 		message.encode(out);
 	}
 	
