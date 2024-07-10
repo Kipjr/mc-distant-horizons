@@ -1,81 +1,112 @@
 package com.seibel.distanthorizons.common.wrappers.misc;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.MapMaker;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import com.seibel.distanthorizons.coreapi.util.math.Vec3d;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerPlayerConnection;
 import net.minecraft.world.phys.Vec3;
 
 import java.net.SocketAddress;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 
+/**
+ * This wrapper transparently ensures that underlying {@link ServerPlayer} is always valid,
+ * unless the player has disconnected.
+ */
 public class ServerPlayerWrapper implements IServerPlayerWrapper
 {
-	private static final ConcurrentMap<ServerPlayer, ServerPlayerWrapper>
-			serverPlayerWrapperMap = new MapMaker().weakKeys().makeMap();
-
-	private final ServerPlayer serverPlayer;
-
+	private static final ConcurrentMap<ServerPlayerConnection, ServerPlayerWrapper> serverPlayerWrapperMap = new MapMaker().weakKeys().weakValues().makeMap();
+	
+	private final ServerPlayerConnection connection;
+	private ServerPlayer serverPlayer()
+	{
+		return this.connection.getPlayer();
+	}
+	
 	public static ServerPlayerWrapper getWrapper(ServerPlayer serverPlayer)
 	{
-		return serverPlayerWrapperMap.computeIfAbsent(serverPlayer, ServerPlayerWrapper::new);
+		return serverPlayerWrapperMap.computeIfAbsent(serverPlayer.connection, ignored -> new ServerPlayerWrapper(serverPlayer));
 	}
-
+	
 	private ServerPlayerWrapper(ServerPlayer serverPlayer)
 	{
-		this.serverPlayer = serverPlayer;
+		this.connection = serverPlayer.connection;
 	}
+	
 	
 	@Override
 	public String getName()
 	{
-		return this.serverPlayer.getName().getString();
+		return this.serverPlayer().getName().getString();
 	}
 	
 	@Override
 	public IServerLevelWrapper getLevel()
 	{
 		#if MC_VER < MC_1_20_1
-		return ServerLevelWrapper.getWrapper(this.serverPlayer.getLevel());
+		return ServerLevelWrapper.getWrapper(this.serverPlayer().getLevel());
 		#else
-		return ServerLevelWrapper.getWrapper(this.serverPlayer.serverLevel());
+		return ServerLevelWrapper.getWrapper(this.serverPlayer().serverLevel());
 		#endif
-    }
+	}
 	
 	@Override
 	public Vec3d getPosition()
 	{
-		Vec3 position = this.serverPlayer.position();
-        return new Vec3d(position.x, position.y, position.z);
-    }
+		Vec3 position = this.serverPlayer().position();
+		return new Vec3d(position.x, position.y, position.z);
+	}
 	
 	@Override
 	public int getViewDistance()
 	{
-		return this.serverPlayer.server.getPlayerList().getViewDistance();
+		return this.serverPlayer().server.getPlayerList().getViewDistance();
 	}
 	
 	@Override
 	public SocketAddress getRemoteAddress()
 	{
 		#if MC_VER >= MC_1_19_4
-		return this.serverPlayer.connection.getRemoteAddress();
+		return this.serverPlayer().connection.getRemoteAddress();
 		#else // < 1.19.4
-		return this.serverPlayer.connection.connection.getRemoteAddress();
+		return this.serverPlayer().connection.connection.getRemoteAddress();
 		#endif
 	}
 	
 	@Override
 	public Object getWrappedMcObject()
 	{
-		return this.serverPlayer;
-    }
-
-    @Override
-    public String toString() {
-	    return "Wrapped{" + this.serverPlayer.toString() + "}";
-    }
+		return this.serverPlayer();
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "Wrapped{" + this.serverPlayer() + "}";
+	}
+	
+	@Override
+	public boolean equals(Object o)
+	{
+		if (this == o)
+		{
+			return true;
+		}
+		if (!(o instanceof ServerPlayerWrapper that))
+		{
+			return false;
+		}
+		return Objects.equal(this.connection, that.connection);
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		return Objects.hashCode(this.connection);
+	}
+	
 }
