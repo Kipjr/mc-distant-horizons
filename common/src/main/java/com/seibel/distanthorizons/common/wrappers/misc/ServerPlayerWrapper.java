@@ -29,12 +29,12 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper
 	
 	public static ServerPlayerWrapper getWrapper(ServerPlayer serverPlayer)
 	{
-		return serverPlayerWrapperMap.computeIfAbsent(serverPlayer.connection, ignored -> new ServerPlayerWrapper(serverPlayer));
+		return serverPlayerWrapperMap.computeIfAbsent(serverPlayer.connection, ignored -> new ServerPlayerWrapper(serverPlayer.connection));
 	}
 	
-	private ServerPlayerWrapper(ServerPlayer serverPlayer)
+	private ServerPlayerWrapper(ServerPlayerConnection connection)
 	{
-		this.connection = serverPlayer.connection;
+		this.connection = connection;
 	}
 	
 	
