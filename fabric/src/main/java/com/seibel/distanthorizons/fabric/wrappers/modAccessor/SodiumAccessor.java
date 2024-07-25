@@ -69,11 +69,9 @@ public class SodiumAccessor implements ISodiumAccessor
 
 		#if MC_VER >= MC_1_20_1
 		// TODO: This is just a tmp solution, use a proper solution later
-		return MC_RENDER.getMaximumRenderedChunks().stream().filter((DhChunkPos chunk) -> {
-			return (renderer.isBoxVisible(
-					chunk.getMinBlockX() + 1, height.getMinBuildHeight() + 1, chunk.getMinBlockZ() + 1,
-					chunk.getMinBlockX() + 15, height.getMaxBuildHeight() - 1, chunk.getMinBlockZ() + 15));
-		}).collect(Collectors.toCollection(HashSet::new));
+		return MC_RENDER.getMaximumRenderedChunks().stream().filter((DhChunkPos chunk) -> (renderer.isBoxVisible(
+				chunk.getMinBlockX() + 1, height.getMinBuildHeight() + 1, chunk.getMinBlockZ() + 1,
+				chunk.getMinBlockX() + 15, height.getMaxBuildHeight() - 1, chunk.getMinBlockZ() + 15))).collect(Collectors.toCollection(HashSet::new));
 		#elif MC_VER >= MC_1_18_2
 		// 0b11 = Lighted chunk & loaded chunk
 		return renderer.getChunkTracker().getChunks(0b00).filter(

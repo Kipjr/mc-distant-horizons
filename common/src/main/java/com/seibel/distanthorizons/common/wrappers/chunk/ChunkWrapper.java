@@ -83,7 +83,7 @@ public class ChunkWrapper implements IChunkWrapper
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	/** can be used for interactions with the underlying chunk where creating new BlockPos objects could cause issues for the garbage collector. */
-	private static final ThreadLocal<BlockPos.MutableBlockPos> MUTABLE_BLOCK_POS_REF = ThreadLocal.withInitial(() -> new BlockPos.MutableBlockPos());
+	private static final ThreadLocal<BlockPos.MutableBlockPos> MUTABLE_BLOCK_POS_REF = ThreadLocal.withInitial(BlockPos.MutableBlockPos::new);
 	
 	
 	private final ChunkAccess chunk;
@@ -345,9 +345,8 @@ public class ChunkWrapper implements IChunkWrapper
 		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 		return false; // MC's lighting engine doesn't work consistently enough to trust for 1.16 or 1.17
 		#else
-		if (this.chunk instanceof LevelChunk)
+		if (this.chunk instanceof LevelChunk levelChunk)
 		{
-			LevelChunk levelChunk = (LevelChunk) this.chunk;
 			if (levelChunk.getLevel() instanceof ClientLevel)
 			{
 				// connected to a server
@@ -474,9 +473,7 @@ public class ChunkWrapper implements IChunkWrapper
 			});
 			#else
 			this.chunk.findBlockLightSources((blockPos, blockState) ->
-			{
-				this.blockLightPosList.add(new DhBlockPos(blockPos.getX(), blockPos.getY(), blockPos.getZ()));
-			});
+					this.blockLightPosList.add(new DhBlockPos(blockPos.getX(), blockPos.getY(), blockPos.getZ())));
 			#endif
 		}
 		
@@ -507,9 +504,8 @@ public class ChunkWrapper implements IChunkWrapper
 	/** Should be called after client light updates are triggered. */
 	private void updateIsClientLightingCorrect()
 	{
-		if (this.chunk instanceof LevelChunk && ((LevelChunk) this.chunk).getLevel() instanceof ClientLevel)
+		if (this.chunk instanceof LevelChunk levelChunk && ((LevelChunk) this.chunk).getLevel() instanceof ClientLevel)
 		{
-			LevelChunk levelChunk = (LevelChunk) this.chunk;
 			ClientChunkCache clientChunkCache = ((ClientLevel) levelChunk.getLevel()).getChunkSource();
 			this.isMcClientLightingCorrect = clientChunkCache.getChunkForLighting(this.chunk.getPos().x, this.chunk.getPos().z) != null &&
 					#if MC_VER <= MC_1_17_1

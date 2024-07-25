@@ -129,12 +129,11 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 		LOGGER.info("level load");
 		
 		LevelAccessor level = event.getLevel();
-		if (!(level instanceof ClientLevel))
+		if (!(level instanceof ClientLevel clientLevel))
 		{
 			return;
 		}
 		
-		ClientLevel clientLevel = (ClientLevel) level;
 		IClientLevelWrapper clientLevelWrapper = ClientLevelWrapper.getWrapper(clientLevel);
 		// TODO this causes a crash due to level being set to null somewhere
 		ClientApi.INSTANCE.clientLevelLoadEvent(clientLevelWrapper);
@@ -145,12 +144,11 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 		LOGGER.info("level unload");
 		
 		LevelAccessor level = event.getLevel();
-		if (!(level instanceof ClientLevel))
+		if (!(level instanceof ClientLevel clientLevel))
 		{
 			return;
 		}
 		
-		ClientLevel clientLevel = (ClientLevel) level;
 		IClientLevelWrapper clientLevelWrapper = ClientLevelWrapper.getWrapper(clientLevel);
 		ClientApi.INSTANCE.clientLevelUnloadEvent(clientLevelWrapper);
 	}

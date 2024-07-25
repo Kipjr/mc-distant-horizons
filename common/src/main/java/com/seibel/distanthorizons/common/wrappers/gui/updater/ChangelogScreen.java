@@ -134,9 +134,7 @@ public class ChangelogScreen extends DhScreen
 		
 		
 		this.addBtn( // Close
-				MakeBtn(Translatable(ModInfo.ID + ".general.back"), 5, this.height - 25, 100, 20, (btn) -> {
-					this.onClose();
-				})
+				MakeBtn(Translatable(ModInfo.ID + ".general.back"), 5, this.height - 25, 100, 20, (btn) -> this.onClose())
 		);
 		
 		

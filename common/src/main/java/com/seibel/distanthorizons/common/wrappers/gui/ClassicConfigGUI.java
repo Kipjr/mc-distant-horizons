@@ -145,9 +145,9 @@ public class ClassicConfigGUI
 					case 0:
 						((EntryInfo) info.guiValue).error = null; break;
 					case -1:
-						((EntryInfo) info.guiValue).error = new AbstractMap.SimpleEntry<>(editBox, TextOrTranslatable("§cMinimum length is " + ((ConfigEntry) info).getMin())); break;
+						((EntryInfo) info.guiValue).error = new AbstractMap.SimpleEntry<>(editBox, TextOrTranslatable("§cMinimum length is " + ((ConfigEntry<?>) info).getMin())); break;
 					case 1:
-						((EntryInfo) info.guiValue).error = new AbstractMap.SimpleEntry<>(editBox, TextOrTranslatable("§cMaximum length is " + ((ConfigEntry) info).getMax())); break;
+						((EntryInfo) info.guiValue).error = new AbstractMap.SimpleEntry<>(editBox, TextOrTranslatable("§cMaximum length is " + ((ConfigEntry<?>) info).getMax())); break;
 					case 2:
 						((EntryInfo) info.guiValue).error = new AbstractMap.SimpleEntry<>(editBox, TextOrTranslatable("§cValue is invalid")); break;
 				}
@@ -235,7 +235,7 @@ public class ClassicConfigGUI
 			ConfigBase.INSTANCE.configFileINSTANCE.saveToFile();
 			Objects.requireNonNull(this.minecraft).setScreen(this.parent);
 			
-			CONFIG_CORE_INTERFACE.onScreenChangeListenerList.forEach((listener) -> listener.run());
+			CONFIG_CORE_INTERFACE.onScreenChangeListenerList.forEach(Runnable::run);
 		}
 		
 		@Override
@@ -319,7 +319,7 @@ public class ClassicConfigGUI
 			
 			
 			
-			CONFIG_CORE_INTERFACE.onScreenChangeListenerList.forEach((listener) -> listener.run());
+			CONFIG_CORE_INTERFACE.onScreenChangeListenerList.forEach(Runnable::run);
 			
 		}
 		
@@ -332,7 +332,7 @@ public class ClassicConfigGUI
 			if (ConfigEntry.class.isAssignableFrom(info.getClass()))
 			{
 				Button.OnPress btnAction = button -> {
-					((ConfigEntry) info).uiSetWithoutSaving(((ConfigEntry) info).getDefaultValue());
+					((ConfigEntry) info).uiSetWithoutSaving(((ConfigEntry<?>) info).getDefaultValue());
 					((EntryInfo) info.guiValue).index = 0;
 					this.reload = true;
 					Objects.requireNonNull(minecraft).setScreen(this);
@@ -376,9 +376,7 @@ public class ClassicConfigGUI
 			}
 			if (ConfigUIButton.class.isAssignableFrom(info.getClass()))
 			{
-				Button widget = MakeBtn(name, this.width / 2 - 100, this.height - 28, 100 * 2, 20, (button -> {
-					((ConfigUIButton) info).runAction();
-				}));
+				Button widget = MakeBtn(name, this.width / 2 - 100, this.height - 28, 100 * 2, 20, (button -> ((ConfigUIButton) info).runAction()));
 				this.list.addButton(widget, null, null, null);
 				return;
 			}

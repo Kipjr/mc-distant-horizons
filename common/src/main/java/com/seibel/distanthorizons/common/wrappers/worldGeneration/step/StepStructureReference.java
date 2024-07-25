@@ -54,7 +54,7 @@ public final class StepStructureReference
 			List<ChunkWrapper> chunkWrappers)
 	{
 		
-		ArrayList<ChunkAccess> chunksToDo = new ArrayList<ChunkAccess>();
+		ArrayList<ChunkAccess> chunksToDo = new ArrayList<>();
 		
 		for (ChunkWrapper chunkWrapper : chunkWrappers)
 		{

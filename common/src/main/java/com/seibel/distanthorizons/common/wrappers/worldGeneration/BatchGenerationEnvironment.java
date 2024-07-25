@@ -147,7 +147,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 				if (index == -1) continue;
 				times.get(index).add(e.timeNs);
 			}
-			times.get(0).add(event.getTotalTimeNs());
+			times.getFirst().add(event.getTotalTimeNs());
 		}
 		
 		public String toString()
@@ -653,9 +653,8 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 			chunksToGenerate.forEach((chunkWrapper) ->
 			{
 				ChunkAccess chunk = chunkWrapper.getChunk();
-				if (chunk instanceof ProtoChunk)
+				if (chunk instanceof ProtoChunk protoChunk)
 				{
-					ProtoChunk protoChunk = ((ProtoChunk) chunk);
 					
 					protoChunk.setLightEngine(region.getLightEngine());
 				}

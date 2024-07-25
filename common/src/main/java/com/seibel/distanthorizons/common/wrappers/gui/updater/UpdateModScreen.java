@@ -135,9 +135,7 @@ public class UpdateModScreen extends DhScreen
 				})
 		);
 		this.addBtn( // Later (not now)
-				MakeBtn(Translatable(ModInfo.ID + ".updater.later"), this.width / 2 + 2, this.height / 2 + 70, 100, 20, (btn) -> {
-					this.onClose();
-				})
+				MakeBtn(Translatable(ModInfo.ID + ".updater.later"), this.width / 2 + 2, this.height / 2 + 70, 100, 20, (btn) -> this.onClose())
 		);
 		this.addBtn( // Never
 				MakeBtn(Translatable(ModInfo.ID + ".updater.never"), this.width / 2 - 102, this.height / 2 + 70, 100, 20, (btn) -> {

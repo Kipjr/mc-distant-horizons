@@ -32,7 +32,7 @@ public class ModMenuIntegration implements ModMenuApi
 	@Override
 	public ConfigScreenFactory<?> getModConfigScreenFactory()
 	{
-		return parent -> GetConfigScreen.getScreen(parent);
+		return GetConfigScreen::getScreen;
 	}
 	
 }

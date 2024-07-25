@@ -103,7 +103,7 @@ public abstract class AbstractModInitializer
 		LOGGER.info(ModInfo.READABLE_NAME + " Initialized");
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterDhInitEvent.class, null);
 		
-		this.subscribeRegisterCommandsEvent(dispatcher -> { this.commandDispatcher = dispatcher; });
+		this.subscribeRegisterCommandsEvent(dispatcher -> this.commandDispatcher = dispatcher);
 		
 		this.subscribeServerStartingEvent(server -> 
 		{

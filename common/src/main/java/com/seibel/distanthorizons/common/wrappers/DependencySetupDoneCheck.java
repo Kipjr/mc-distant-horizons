@@ -26,6 +26,6 @@ public class DependencySetupDoneCheck
 	// TODO move to DependencySetup
 	public static boolean isDone = false;
 	// TODO why is this here and what is its purpose?
-	public static Supplier<Boolean> getIsCurrentThreadDistantGeneratorThread = (() -> { return false; });
+	public static Supplier<Boolean> getIsCurrentThreadDistantGeneratorThread = (() -> false);
 	
 }

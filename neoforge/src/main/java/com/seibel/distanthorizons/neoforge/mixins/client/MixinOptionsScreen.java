@@ -104,14 +104,14 @@ public class MixinOptionsScreen extends Screen
 			
 			// add the button to the correct location in the UI
 			// TODO is there a better way to do this instead of using access transformers to inject into the exact UI elements?
-			LinearLayout layout = (LinearLayout) this.layout.headerFrame.children.get(0).child;
+			LinearLayout layout = (LinearLayout) this.layout.headerFrame.children.getFirst().child;
 			
 			// determine how wide the other option buttons are so we can put our botton to the left of them all
 			AtomicInteger width = new AtomicInteger(0);
-			layout.visitChildren(x -> { width.addAndGet(x.getWidth()); });
+			layout.visitChildren(x -> width.addAndGet(x.getWidth()));
 			width.addAndGet(-10); // padding between the DH button and the FOV slider
 			
-			layout.wrapped.addChild(this.getOptionsButton(), 1, 2, (settings) -> { settings.paddingLeft(width.get() * -1); });
+			layout.wrapped.addChild(this.getOptionsButton(), 1, 2, (settings) -> settings.paddingLeft(width.get() * -1));
 			layout.arrangeElements();
 			
 		    #endif

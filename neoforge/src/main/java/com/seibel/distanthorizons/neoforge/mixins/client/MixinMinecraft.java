@@ -86,7 +86,7 @@ public class MixinMinecraft
 				}
 				else
 				{
-					versionId = GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha");
+					versionId = GitlabGetter.INSTANCE.projectPipelines.getFirst().get("sha");
 				}
 				
 				Minecraft.getInstance().setScreen(new UpdateModScreen(

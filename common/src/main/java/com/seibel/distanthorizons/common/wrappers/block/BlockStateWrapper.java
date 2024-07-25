@@ -34,6 +34,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.Property;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.*;
@@ -461,7 +462,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		// we need the final string for the concurrent hash map later
 		final String finalResourceStateString = resourceStateString;
 		
-		if (finalResourceStateString.equals(AIR_STRING) || finalResourceStateString.equals("")) // the empty string shouldn't normally happen, but just in case
+		if (finalResourceStateString.equals(AIR_STRING) || finalResourceStateString.isEmpty()) // the empty string shouldn't normally happen, but just in case
 		{
 			return AIR;
 		}
@@ -602,7 +603,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		
 		// alphabetically sort the list so they are always in the same order
 		List<net.minecraft.world.level.block.state.properties.Property<?>> sortedBlockPropteryList = new ArrayList<>(blockPropertyCollection);
-		sortedBlockPropteryList.sort((a, b) -> a.getName().compareTo(b.getName()));
+		sortedBlockPropteryList.sort(Comparator.comparing(Property::getName));
 		
 		
 		StringBuilder stringBuilder = new StringBuilder();

@@ -37,7 +37,7 @@ public class ModChecker implements IModChecker
 	@Override
 	public File modLocation(String modid)
 	{
-		return new File(FabricLoader.getInstance().getModContainer(modid).get().getOrigin().getPaths().get(0).toUri());
+		return new File(FabricLoader.getInstance().getModContainer(modid).get().getOrigin().getPaths().getFirst().toUri());
 	}
 	
 }

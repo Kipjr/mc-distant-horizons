@@ -231,11 +231,9 @@ public class WorldGenStructFeatManager extends #if MC_VER < MC_1_19_2 StructureF
 		Map<Structure, LongSet> map = chunk.getAllReferences();
 		
 		ImmutableList.Builder<StructureStart> builder = ImmutableList.builder();
-		Iterator<Map.Entry<Structure, LongSet>> var5 = map.entrySet().iterator();
 		
-		while (var5.hasNext())
+		for (Map.Entry<Structure, LongSet> entry : map.entrySet())
 		{
-			Map.Entry<Structure, LongSet> entry = var5.next();
 			Structure configuredStructureFeature = entry.getKey();
 			if (predicate.test(configuredStructureFeature))
 			{

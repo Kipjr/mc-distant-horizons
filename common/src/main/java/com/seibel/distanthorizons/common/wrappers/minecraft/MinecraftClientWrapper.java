@@ -127,20 +127,12 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 				}
 			
 			case ENABLED:
-				switch (lodDirection)
-				{
-					case DOWN:
-						return 0.5F;
-					default:
-					case UP:
-						return 1.0F;
-					case NORTH:
-					case SOUTH:
-						return 0.8F;
-					case WEST:
-					case EAST:
-						return 0.6F;
-				}
+                return switch (lodDirection) {
+                    case DOWN -> 0.5F;
+                    default -> 1.0F;
+                    case NORTH, SOUTH -> 0.8F;
+                    case WEST, EAST -> 0.6F;
+                };
 			
 			case DISABLED:
 				return 1.0F;
@@ -250,7 +242,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Override
 	public ArrayList<ILevelWrapper> getAllServerWorlds()
 	{
-		ArrayList<ILevelWrapper> worlds = new ArrayList<ILevelWrapper>();
+		ArrayList<ILevelWrapper> worlds = new ArrayList<>();
 		
 		Iterable<ServerLevel> serverWorlds = MINECRAFT.getSingleplayerServer().getAllLevels();
 		for (ServerLevel world : serverWorlds)

@@ -266,7 +266,7 @@ public class BiomeWrapper implements IBiomeWrapper
 			}
 			return EMPTY_WRAPPER;
 		}
-		else if (resourceLocationString.trim().isEmpty() || resourceLocationString.equals(""))
+		else if (resourceLocationString.trim().isEmpty() || resourceLocationString.isEmpty())
 		{
 			LOGGER.warn("Null biome string deserialized.");
 			return EMPTY_WRAPPER;

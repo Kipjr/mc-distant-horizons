@@ -312,12 +312,12 @@ public class ClientBlockStateCache
 			}
 			if (quads != null && !quads.isEmpty())
 			{
-				needPostTinting = quads.get(0).isTinted();
-				needShade = quads.get(0).isShade();
-				tintIndex = quads.get(0).getTintIndex();
+				needPostTinting = quads.getFirst().isTinted();
+				needShade = quads.getFirst().isShade();
+				tintIndex = quads.getFirst().getTintIndex();
 				baseColor = calculateColorFromTexture(
                         #if MC_VER < MC_1_17_1 quads.get(0).sprite,
-						#else quads.get(0).getSprite(), #endif
+						#else quads.getFirst().getSprite(), #endif
 						ColorMode.getColorMode(blockState.getBlock()));
 			}
 			else

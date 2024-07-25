@@ -161,19 +161,17 @@ public class WrapperFactory implements IWrapperFactory
 			// correct number of parameters from the API
 			
 			// chunk
-			if (!(objectArray[0] instanceof ChunkAccess))
+			if (!(objectArray[0] instanceof ChunkAccess chunk))
 			{
 				throw new ClassCastException(createChunkWrapperErrorMessage(objectArray));
 			}
-			ChunkAccess chunk = (ChunkAccess) objectArray[0];
 			
 			// level / light source
-			if (!(objectArray[1] instanceof Level))
+			if (!(objectArray[1] instanceof Level level))
 			{
 				throw new ClassCastException(createChunkWrapperErrorMessage(objectArray));
 			}
 			// the level is needed for the DH level wrapper...
-			Level level = (Level) objectArray[1];
 			// ...the LevelReader is needed for chunk lighting
 			LevelReader lightSource = level;
 			
@@ -245,11 +243,10 @@ public class WrapperFactory implements IWrapperFactory
 	public IDhApiBiomeWrapper getBiomeWrapper(Object[] objectArray, IDhApiLevelWrapper levelWrapper) 
 	{
 		// confirm the API level wrapper is also a Core wrapper 
-		if (!(levelWrapper instanceof ILevelWrapper))
+		if (!(levelWrapper instanceof ILevelWrapper coreLevelWrapper))
 		{
 			throw new ClassCastException("Invalid ["+IDhApiLevelWrapper.class.getSimpleName()+"] value given. Level wrapper object must be one given by the DH API (it can't be a custom implementation), specifically of type ["+ILevelWrapper.class.getName()+"].");
 		}
-		ILevelWrapper coreLevelWrapper = (ILevelWrapper) levelWrapper;
 		
 		
 		
@@ -304,11 +301,10 @@ public class WrapperFactory implements IWrapperFactory
 	public IDhApiBlockStateWrapper getBlockStateWrapper(Object[] objectArray, IDhApiLevelWrapper levelWrapper)
 	{
 		// confirm the API level wrapper is also a Core wrapper 
-		if (!(levelWrapper instanceof ILevelWrapper))
+		if (!(levelWrapper instanceof ILevelWrapper coreLevelWrapper))
 		{
 			throw new ClassCastException("Invalid ["+IDhApiLevelWrapper.class.getSimpleName()+"] value given. Level wrapper object must be one given by the DH API (it can't be a custom implementation), specifically of type ["+ILevelWrapper.class.getName()+"].");
 		}
-		ILevelWrapper coreLevelWrapper = (ILevelWrapper) levelWrapper;
 		
 		
 		
@@ -317,12 +313,11 @@ public class WrapperFactory implements IWrapperFactory
 		{
 			throw new ClassCastException(createBlockStateWrapperErrorMessage(objectArray));
 		}
-		if (!(objectArray[0] instanceof BlockState))
+		if (!(objectArray[0] instanceof BlockState blockState))
 		{
 			throw new ClassCastException(createBlockStateWrapperErrorMessage(objectArray));
 		}
 		
-		BlockState blockState = (BlockState) objectArray[0];
 		return BlockStateWrapper.fromBlockState(blockState, coreLevelWrapper);
 		#else
 		// See preprocessor comment in createChunkWrapper() for full documentation (not a typo, check createChunkWrapper()'s else statement for full documentation)

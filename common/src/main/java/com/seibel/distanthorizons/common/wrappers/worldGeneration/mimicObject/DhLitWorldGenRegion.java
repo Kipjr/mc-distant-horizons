@@ -84,7 +84,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 	
 	private final ChunkPos firstPos;
 	private final List<ChunkAccess> cache;
-	private final Long2ObjectOpenHashMap<ChunkAccess> chunkMap = new Long2ObjectOpenHashMap<ChunkAccess>();
+	private final Long2ObjectOpenHashMap<ChunkAccess> chunkMap = new Long2ObjectOpenHashMap<>();
 	
 	/** 
 	 * Present to reduce the chance that we accidentally break underlying MC code that isn't thread safe, 
@@ -142,7 +142,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 				centerChunk);
 		
 		#endif
-		this.firstPos = chunkList.get(0).getPos();
+		this.firstPos = chunkList.getFirst().getPos();
 		this.generator = generator;
 		this.lightEngine = lightEngine;
 		this.writeRadius = writeRadius;

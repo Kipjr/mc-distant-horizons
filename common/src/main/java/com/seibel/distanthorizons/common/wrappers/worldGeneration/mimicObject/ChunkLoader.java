@@ -294,7 +294,7 @@ public class ChunkLoader
 						#else
 						.getOrThrow((message) -> (RuntimeException) LOGGER.errorAndThrow(message, null)) 
 						#endif
-						: new PalettedContainer<BlockState>(Block.BLOCK_STATE_REGISTRY, Blocks.AIR.defaultBlockState(), PalettedContainer.Strategy.SECTION_STATES);
+						: new PalettedContainer<>(Block.BLOCK_STATE_REGISTRY, Blocks.AIR.defaultBlockState(), PalettedContainer.Strategy.SECTION_STATES);
 
 				#if MC_VER < MC_1_18_2
 				biomeContainer = tagSection.contains("biomes", 10)
@@ -309,7 +309,7 @@ public class ChunkLoader
 						#else
 						.getOrThrow((message) -> (RuntimeException) LOGGER.errorAndThrow(message, null))
 						#endif
-						: new PalettedContainer<Holder<Biome>>(biomes.asHolderIdMap(), biomes.getHolderOrThrow(Biomes.PLAINS), PalettedContainer.Strategy.SECTION_BIOMES);
+						: new PalettedContainer<>(biomes.asHolderIdMap(), biomes.getHolderOrThrow(Biomes.PLAINS), PalettedContainer.Strategy.SECTION_BIOMES);
 				#endif
 				
 				#if MC_VER < MC_1_20_1
@@ -434,7 +434,7 @@ public class ChunkLoader
 		for (int sectionIndex = 0; sectionIndex < chunkSectionListTag.size(); sectionIndex++)
 		{
 			Tag chunkSectionTag = chunkSectionListTag.get(sectionIndex);
-			if (!(chunkSectionTag instanceof CompoundTag))
+			if (!(chunkSectionTag instanceof CompoundTag chunkSectionCompoundTag))
 			{
 				if (!lightingSectionErrorLogged)
 				{
@@ -443,10 +443,9 @@ public class ChunkLoader
 				}
 				return null;
 			}
-			CompoundTag chunkSectionCompoundTag = (CompoundTag) chunkSectionTag;
-			
-			
-			// if null all lights = 0
+
+
+            // if null all lights = 0
 			byte[] blockLightNibbleArray = chunkSectionCompoundTag.getByteArray("BlockLight");
 			byte[] skyLightNibbleArray = chunkSectionCompoundTag.getByteArray("SkyLight");
 			
