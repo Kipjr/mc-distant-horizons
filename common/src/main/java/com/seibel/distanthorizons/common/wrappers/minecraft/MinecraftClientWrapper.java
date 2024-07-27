@@ -31,6 +31,7 @@ import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
+import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -44,6 +45,7 @@ import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import net.minecraft.CrashReport;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.core.BlockPos;
@@ -60,16 +62,15 @@ import org.jetbrains.annotations.Nullable;
  * A singleton that wraps the Minecraft object.
  *
  * @author James Seibel
- * @version 3-5-2022
  */
-//@Environment(EnvType.CLIENT)
 public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecraftSharedWrapper
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
+	private static final Minecraft MINECRAFT = Minecraft.getInstance();
 	
 	public static final MinecraftClientWrapper INSTANCE = new MinecraftClientWrapper();
 	
-	public final Minecraft mc = Minecraft.getInstance();
+	
 	
 	/**
 	 * The lightmap for the current:
@@ -100,10 +101,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	 * This doesn't affect OpenGL objects in any way.
 	 */
 	@Override
-	public void clearFrameObjectCache()
-	{
-		this.lightMap = null;
-	}
+	public void clearFrameObjectCache() { this.lightMap = null; }
 	
 	
 	
@@ -119,10 +117,10 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 		{
 			default:
 			case AUTO:
-				if (this.mc.level != null)
+				if (MINECRAFT.level != null)
 				{
 					Direction mcDir = McObjectConverter.Convert(lodDirection);
-					return this.mc.level.getShade(mcDir, true);
+					return MINECRAFT.level.getShade(mcDir, true);
 				}
 				else
 				{
@@ -151,42 +149,58 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	}
 	
 	@Override
-	public boolean hasSinglePlayerServer() { return this.mc.hasSingleplayerServer(); }
+	public boolean hasSinglePlayerServer() { return MINECRAFT.hasSingleplayerServer(); }
 	@Override
-	public boolean clientConnectedToDedicatedServer() { return this.mc.getCurrentServer() != null && !this.hasSinglePlayerServer(); }
+	public boolean clientConnectedToDedicatedServer() { return MINECRAFT.getCurrentServer() != null && !this.hasSinglePlayerServer(); }
+	@Override
+	public boolean connectedToReplay() { return !MINECRAFT.hasSingleplayerServer() && MINECRAFT.getCurrentServer() == null; }
 	
 	@Override
-	public String getCurrentServerName() { return this.mc.getCurrentServer().name; }
+	public String getCurrentServerName() 
+	{
+		if (this.connectedToReplay())
+		{
+			return ClientOnlySaveStructure.REPLAY_SERVER_FOLDER_NAME;
+		}
+		else
+		{
+			ServerData server = MINECRAFT.getCurrentServer();
+			return (server != null) ? server.name : "NULL";
+		}
+	}
 	
 	@Override
-	public String getCurrentServerIp() { return this.mc.getCurrentServer().ip; }
+	public String getCurrentServerIp() 
+	{
+		if (this.connectedToReplay())
+		{
+			return "";
+		}
+		else
+		{
+			ServerData server = MINECRAFT.getCurrentServer();
+			return (server != null) ? server.ip : "NA";
+		}
+	}
 	
 	@Override
 	public String getCurrentServerVersion()
 	{
-		return this.mc.getCurrentServer().version.getString();
+		ServerData server = MINECRAFT.getCurrentServer();
+		return (server != null) ? server.version.getString() : "UNKOWN";
 	}
 	
 	//=============//
 	// Simple gets //
 	//=============//
 	
-	public LocalPlayer getPlayer()
-	{
-		return this.mc.player;
-	}
+	public LocalPlayer getPlayer() { return MINECRAFT.player; }
 	
 	@Override
-	public boolean playerExists()
-	{
-		return this.mc.player != null;
-	}
+	public boolean playerExists() { return MINECRAFT.player != null; }
 	
 	@Override
-	public UUID getPlayerUUID()
-	{
-		return this.getPlayer().getUUID();
-	}
+	public UUID getPlayerUUID() { return this.getPlayer().getUUID(); }
 	
 	@Override
 	public DhBlockPos getPlayerBlockPos()
@@ -199,16 +213,11 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	public DhChunkPos getPlayerChunkPos()
 	{
         #if MC_VER < MC_1_17_1
-        ChunkPos playerPos = new ChunkPos(getPlayer().blockPosition());
+        ChunkPos playerPos = new ChunkPos(this.getPlayer().blockPosition());
         #else
 		ChunkPos playerPos = this.getPlayer().chunkPosition();
         #endif
 		return new DhChunkPos(playerPos.x, playerPos.z);
-	}
-	
-	public ModelManager getModelManager()
-	{
-		return this.mc.getModelManager();
 	}
 	
 	@Nullable
@@ -222,7 +231,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Nullable
 	public IClientLevelWrapper getWrappedClientLevel(boolean bypassMultiverse)
 	{
-		ClientLevel level = this.mc.level;
+		ClientLevel level = MINECRAFT.level;
 		if (level == null)
 		{
 			return null;
@@ -231,25 +240,18 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 		return ClientLevelWrapper.getWrapper(level, bypassMultiverse);
 	}
 	
-	/** Please move over to getInstallationDirectory() */
-	@Deprecated
-	@Override
-	public File getGameDirectory()
-	{
-		return this.getInstallationDirectory();
-	}
-	
 	@Override
 	public IProfilerWrapper getProfiler()
 	{
 		if (this.profilerWrapper == null)
 		{
-			this.profilerWrapper = new ProfilerWrapper(this.mc.getProfiler());
+			this.profilerWrapper = new ProfilerWrapper(MINECRAFT.getProfiler());
 		}
-		else if (this.mc.getProfiler() != this.profilerWrapper.profiler)
+		else if (MINECRAFT.getProfiler() != this.profilerWrapper.profiler)
 		{
-			this.profilerWrapper.profiler = this.mc.getProfiler();
+			this.profilerWrapper.profiler = MINECRAFT.getProfiler();
 		}
+		
 		return this.profilerWrapper;
 	}
 	
@@ -259,7 +261,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	{
 		ArrayList<ILevelWrapper> worlds = new ArrayList<ILevelWrapper>();
 		
-		Iterable<ServerLevel> serverWorlds = this.mc.getSingleplayerServer().getAllLevels();
+		Iterable<ServerLevel> serverWorlds = MINECRAFT.getSingleplayerServer().getAllLevels();
 		for (ServerLevel world : serverWorlds)
 		{
 			worlds.add(ServerLevelWrapper.getWrapper(world));
@@ -273,15 +275,12 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Override
 	public void sendChatMessage(String string)
 	{
-		LocalPlayer p = this.getPlayer();
-		if (p == null)
-		{
-			return;
-		}
+		LocalPlayer player = this.getPlayer();
+		if (player == null) return;
         #if MC_VER < MC_1_19_2
-		p.sendMessage(new TextComponent(string), getPlayer().getUUID());
+		player.sendMessage(new TextComponent(string), getPlayer().getUUID());
         #else
-		p.sendSystemMessage(net.minecraft.network.chat.Component.translatable(string));
+		player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(string));
         #endif
 	}
 	
@@ -306,24 +305,15 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	}
 	
 	@Override
-	public Object getOptionsObject()
-	{
-		return this.mc.options;
-	}
+	public Object getOptionsObject() { return MINECRAFT.options; }
 	
 	@Override
-	public boolean isDedicatedServer()
-	{
-		return false;
-	}
+	public boolean isDedicatedServer() { return false; }
 	
 	@Override
-	public File getInstallationDirectory()
-	{
-		return this.mc.gameDirectory;
-	}
+	public File getInstallationDirectory() { return MINECRAFT.gameDirectory; }
 	
 	@Override
-	public void executeOnRenderThread(Runnable runnable) { this.mc.execute(runnable); }
+	public void executeOnRenderThread(Runnable runnable) { MINECRAFT.execute(runnable); }
 	
 }

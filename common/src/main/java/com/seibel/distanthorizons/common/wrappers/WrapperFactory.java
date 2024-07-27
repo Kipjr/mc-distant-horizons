@@ -55,9 +55,6 @@ import java.util.HashSet;
 
 /**
  * This handles creating abstract wrapper objects.
- *
- * @author James Seibel
- * @version 2022-12-5
  */
 public class WrapperFactory implements IWrapperFactory
 {
@@ -83,6 +80,27 @@ public class WrapperFactory implements IWrapperFactory
 	}
 	
 	@Override
+	public IDhApiBiomeWrapper getBiomeWrapper(String resourceLocationString, IDhApiLevelWrapper levelWrapper) throws IOException, ClassCastException
+	{
+		if (!(levelWrapper instanceof ILevelWrapper))
+		{
+			throw new ClassCastException("levelWrapper must be returned by DH and of type ["+ILevelWrapper.class.getName()+"].");
+		}
+		
+		return BiomeWrapper.deserialize(resourceLocationString, (ILevelWrapper)levelWrapper); 
+	}
+	@Override
+	public IDhApiBlockStateWrapper getDefaultBlockStateWrapper(String resourceLocationString, IDhApiLevelWrapper levelWrapper) throws IOException, ClassCastException
+	{
+		if (!(levelWrapper instanceof ILevelWrapper))
+		{
+			throw new ClassCastException("Invalid ["+IDhApiLevelWrapper.class.getSimpleName()+"] value given. Level wrapper object must be one given by the DH API (it can't be a custom implementation), specifically of type ["+ILevelWrapper.class.getName()+"].");
+		}
+		
+		return BlockStateWrapper.deserialize(resourceLocationString, (ILevelWrapper)levelWrapper); 
+	}
+	
+	@Override
 	public IBiomeWrapper deserializeBiomeWrapper(String str, ILevelWrapper levelWrapper) throws IOException { return BiomeWrapper.deserialize(str, levelWrapper); }
 	@Override 
 	public IBiomeWrapper getPlainsBiomeWrapper(ILevelWrapper levelWrapper) // TODO is there a way we could get this without the levelWrapper? it isn't necessary but would clean up the code a bit
@@ -104,6 +122,13 @@ public class WrapperFactory implements IWrapperFactory
 	
 	@Override
 	public HashSet<IBlockStateWrapper> getRendererIgnoredBlocks(ILevelWrapper levelWrapper) { return BlockStateWrapper.getRendererIgnoredBlocks(levelWrapper); }
+	@Override
+	public HashSet<IBlockStateWrapper> getRendererIgnoredCaveBlocks(ILevelWrapper levelWrapper) { return BlockStateWrapper.getRendererIgnoredCaveBlocks(levelWrapper); }
+	
+	@Override
+	public void resetRendererIgnoredCaveBlocks() { BlockStateWrapper.clearRendererIgnoredCaveBlocks(); }
+	@Override
+	public void resetRendererIgnoredBlocksSet() { BlockStateWrapper.clearRendererIgnoredBlocks(); }
 	
 	
 	/**
@@ -212,7 +237,7 @@ public class WrapperFactory implements IWrapperFactory
 		// confirm the API level wrapper is also a Core wrapper 
 		if (!(levelWrapper instanceof ILevelWrapper))
 		{
-			throw new ClassCastException("Unable to cast... only DH provided IDhApiLevelWrapper's can be used."); // TODO
+			throw new ClassCastException("Invalid ["+IDhApiLevelWrapper.class.getSimpleName()+"] value given. Level wrapper object must be one given by the DH API (it can't be a custom implementation), specifically of type ["+ILevelWrapper.class.getName()+"].");
 		}
 		ILevelWrapper coreLevelWrapper = (ILevelWrapper) levelWrapper;
 		
@@ -271,7 +296,7 @@ public class WrapperFactory implements IWrapperFactory
 		// confirm the API level wrapper is also a Core wrapper 
 		if (!(levelWrapper instanceof ILevelWrapper))
 		{
-			throw new ClassCastException("Unable to cast... only DH provided IDhApiLevelWrapper's can be used."); // TODO
+			throw new ClassCastException("Invalid ["+IDhApiLevelWrapper.class.getSimpleName()+"] value given. Level wrapper object must be one given by the DH API (it can't be a custom implementation), specifically of type ["+ILevelWrapper.class.getName()+"].");
 		}
 		ILevelWrapper coreLevelWrapper = (ILevelWrapper) levelWrapper;
 		

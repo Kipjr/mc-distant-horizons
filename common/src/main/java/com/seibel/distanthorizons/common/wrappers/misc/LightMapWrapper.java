@@ -36,14 +36,6 @@ public class LightMapWrapper implements ILightMapWrapper
 	
 	public LightMapWrapper() { }
 	
-	private void createLightmap(NativeImage image)
-	{
-		this.textureId = GL32.glGenTextures();
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.textureId);
-		GL32.glTexImage2D(GL32.GL_TEXTURE_2D, 0, image.format().glFormat(), image.getWidth(), image.getHeight(),
-				0, image.format().glFormat(), GL32.GL_UNSIGNED_BYTE, (ByteBuffer) null);
-	}
-	
 	
 	
 	//=========//
@@ -53,14 +45,25 @@ public class LightMapWrapper implements ILightMapWrapper
 	public void uploadLightmap(NativeImage image)
 	{
 		int currentBind = GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D);
-		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.textureId);
 		if (this.textureId == 0)
 		{
 			this.createLightmap(image);
 		}
+		else
+		{
+			GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.textureId);
+		}
 		image.upload(0, 0, 0, false);
 		GL32.glBindTexture(GL32.GL_TEXTURE_2D, currentBind);
 	}
+	private void createLightmap(NativeImage image)
+	{
+		this.textureId = GL32.glGenTextures();
+		GL32.glBindTexture(GL32.GL_TEXTURE_2D, this.textureId);
+		GL32.glTexImage2D(GL32.GL_TEXTURE_2D, 0, image.format().glFormat(), image.getWidth(), image.getHeight(),
+				0, image.format().glFormat(), GL32.GL_UNSIGNED_BYTE, (ByteBuffer) null);
+	}
+	
 	
 	@Override
 	public void bind()

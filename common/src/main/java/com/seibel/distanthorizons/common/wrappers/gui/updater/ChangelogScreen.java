@@ -101,11 +101,17 @@ public class ChangelogScreen extends DhScreen
 		this.changelog.add("");
 		this.changelog.add("");
 		
+		String changelog = ModrinthGetter.changeLogs.get(versionID);
+		if (changelog == null)
+		{
+			// in case something goes wrong this will prevent null pointers
+			changelog = "";
+		}
+		
 		// Get the release changelog and split it by the new lines
 		String[] unwrappedChangelog = // Arrays.asList could be used if a list object is desired here vs List.of which is only available for Java 9+
-				new MarkdownFormatter.MinecraftFormat().convertTo( // This formats markdown to minecraft's "§" characters
-						ModrinthGetter.changeLogs.get(versionID)
-				).split("\\n");
+				// This formats markdown to minecraft's "§" charactersnew MarkdownFormatter.MinecraftFormat().convertTo(
+				new MarkdownFormatter.MinecraftFormat().convertTo(changelog).split("\\n");
 		// Makes the words wrap around to not go off the screen
 		for (String str : unwrappedChangelog)
 		{

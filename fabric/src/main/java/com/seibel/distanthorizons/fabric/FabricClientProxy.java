@@ -31,11 +31,11 @@ import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
+import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
+import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.fabric.wrappers.modAccessor.SodiumAccessor;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -57,6 +57,7 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import java.nio.FloatBuffer;
 #endif
 import java.util.HashSet;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.InteractionResult;
@@ -125,6 +126,7 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		});
 		
 		// (kinda) block break event
+		// Since fabric doesn't have a client-side break-block API event, this is the next best thing
 		AttackBlockCallback.EVENT.register((player, level, interactionHand, blockPos, direction) ->
 		{
 			// if we have access to the server, use the chunk save event instead 
@@ -132,18 +134,27 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 			{
 				if (SharedApi.isChunkAtBlockPosAlreadyUpdating(blockPos.getX(), blockPos.getZ()))
 				{
-					// Since fabric doesn't have a client-side break-block API event, this is the next best thing
-					ChunkAccess chunk = level.getChunk(blockPos);
-					if (chunk != null)
+					// executor to prevent locking up the render/event thread
+					// if the getChunk() takes longer than expected 
+					// (which can be caused by certain mods) 
+					ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+					if (executor != null)
 					{
-						//LOGGER.trace("attack block at blockPos: " + blockPos);
-						
-						IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
-						SharedApi.INSTANCE.chunkBlockChangedEvent(
-								new ChunkWrapper(chunk, level, wrappedLevel),
-								wrappedLevel
-						);
-					}	
+						executor.execute(() ->
+						{
+							ChunkAccess chunk = level.getChunk(blockPos);
+							if (chunk != null)
+							{
+								//LOGGER.trace("attack block at blockPos: " + blockPos);
+								
+								IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
+								SharedApi.INSTANCE.chunkBlockChangedEvent(
+										new ChunkWrapper(chunk, level, wrappedLevel),
+										wrappedLevel
+								);
+							}
+						});
+					}
 				}
 			}
 			
@@ -152,27 +163,37 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		});
 		
 		// (kinda) block place event
+		// Since fabric doesn't have a client-side place-block API event, this is the next best thing
 		UseBlockCallback.EVENT.register((player, level, hand, hitResult) -> 
 		{
 			// if we have access to the server, use the chunk save event instead 
 			if (MC.clientConnectedToDedicatedServer())
 			{
-				if (SharedApi.isChunkAtBlockPosAlreadyUpdating(hitResult.getBlockPos().getX(), hitResult.getBlockPos().getZ()))
+				if (hitResult.getType() == HitResult.Type.BLOCK
+						&& !hitResult.isInside())
 				{
-					// Since fabric doesn't have a client-side place-block API event, this is the next best thing
-					if (hitResult.getType() == HitResult.Type.BLOCK
-							&& !hitResult.isInside())
+					if (SharedApi.isChunkAtBlockPosAlreadyUpdating(hitResult.getBlockPos().getX(), hitResult.getBlockPos().getZ()))
 					{
-						ChunkAccess chunk = level.getChunk(hitResult.getBlockPos());
-						if (chunk != null)
+						// executor to prevent locking up the render/event thread
+						// if the getChunk() takes longer than expected 
+						// (which can be caused by certain mods) 
+						ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+						if (executor != null)
 						{
-							//LOGGER.trace("use block at blockPos: " + hitResult.getBlockPos());
-							
-							IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
-							SharedApi.INSTANCE.chunkBlockChangedEvent(
-									new ChunkWrapper(chunk, level, wrappedLevel),
-									wrappedLevel
-							);
+							executor.execute(() ->
+							{
+								ChunkAccess chunk = level.getChunk(hitResult.getBlockPos());
+								if (chunk != null)
+								{
+									//LOGGER.trace("use block at blockPos: " + hitResult.getBlockPos());
+									
+									IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper((ClientLevel) level);
+									SharedApi.INSTANCE.chunkBlockChangedEvent(
+											new ChunkWrapper(chunk, level, wrappedLevel),
+											wrappedLevel
+									);
+								}
+							});
 						}
 					}
 				}
