@@ -346,11 +346,8 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 			}
 			else if (event.hasTimeout(Config.Client.Advanced.WorldGenerator.worldGenerationTimeoutLengthInSeconds.get(), TimeUnit.SECONDS))
 			{
-				EVENT_LOGGER.warn(
-						"Batching World Generator: [" + event + "] timed out and terminated after ["+Config.Client.Advanced.WorldGenerator.worldGenerationTimeoutLengthInSeconds.get()+"] seconds. " +
-								"\nYour computer might be overloaded or your world gen mods might be causing world gen to take longer than expected. " +
-								"\nEither increase DH's world gen timeout or reduce your computer's CPU load.");
-				EVENT_LOGGER.debug("Dump PrefEvent: " + event.timer);
+				EVENT_LOGGER.error("Batching World Generator: " + event + " timed out and terminated! Please lower your CPU load.");
+				EVENT_LOGGER.info("Dump PrefEvent: " + event.timer);
 				try
 				{
 					if (!event.terminate())
@@ -419,15 +416,12 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 					CompoundTag chunkData = this.getChunkNbtData(chunkPos);
 					newChunk = this.loadOrMakeChunk(chunkPos, chunkData);
 					
-					if (Config.Client.Advanced.LodBuilding.pullLightingForPregeneratedChunks.get())
+					// get chunk lighting
+					ChunkLoader.CombinedChunkLightStorage combinedLights = ChunkLoader.readLight(newChunk, chunkData);
+					if (combinedLights != null)
 					{
-						// attempt to get chunk lighting
-						ChunkLoader.CombinedChunkLightStorage combinedLights = ChunkLoader.readLight(newChunk, chunkData);
-						if (combinedLights != null)
-						{
-							chunkSkyLightingByDhPos.put(dhChunkPos, combinedLights.skyLightStorage);
-							chunkBlockLightingByDhPos.put(dhChunkPos, combinedLights.blockLightStorage);
-						}
+						chunkSkyLightingByDhPos.put(dhChunkPos, combinedLights.skyLightStorage);
+						chunkBlockLightingByDhPos.put(dhChunkPos, combinedLights.blockLightStorage);
 					}
 				}
 				catch (RuntimeException loadChunkError)
@@ -477,13 +471,17 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 					ChunkWrapper chunkWrapper = new ChunkWrapper(chunk, region, this.serverlevel.getLevelWrapper());
 					chunkWrapperList.set(x, z, chunkWrapper);
 					
-					// try setting the wrapper's lighting
+					// try getting the chunk lighting
 					if (chunkBlockLightingByDhPos.containsKey(chunkWrapper.getChunkPos()))
 					{
 						chunkWrapper.setBlockLightStorage(chunkBlockLightingByDhPos.get(chunkWrapper.getChunkPos()));
 						chunkWrapper.setSkyLightStorage(chunkSkyLightingByDhPos.get(chunkWrapper.getChunkPos()));
 						chunkWrapper.setUseDhLighting(true);
 						chunkWrapper.setIsDhLightCorrect(true);
+					}
+					else
+					{
+						int k = 0;
 					}
 				}
 			});

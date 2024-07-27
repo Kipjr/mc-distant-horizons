@@ -27,7 +27,6 @@ import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
@@ -61,8 +60,6 @@ import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.lwjgl.opengl.GL32;
-
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * This handles all events sent to the client,
@@ -183,15 +180,8 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 		LevelAccessor level = event.getLevel();
 		#endif
 		
-		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
-		if (executor != null)
-		{
-			executor.execute(() ->
-			{
-				ChunkAccess chunk = level.getChunk(event.getPos());
-				this.onBlockChangeEvent(level, chunk);
-			});
-		}
+		ChunkAccess chunk = level.getChunk(event.getPos());
+		this.onBlockChangeEvent(level, chunk);
 	}
 	@SubscribeEvent
 	public void leftClickBlockEvent(PlayerInteractEvent.LeftClickBlock event)
@@ -209,15 +199,8 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 		LevelAccessor level = event.getLevel();
 		#endif
 		
-		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
-		if (executor != null)
-		{
-			executor.execute(() ->
-			{
-				ChunkAccess chunk = level.getChunk(event.getPos());
-				this.onBlockChangeEvent(level, chunk);
-			});
-		}
+		ChunkAccess chunk = level.getChunk(event.getPos());
+		this.onBlockChangeEvent(level, chunk);
 	}
 	private void onBlockChangeEvent(LevelAccessor level, ChunkAccess chunk)
 	{

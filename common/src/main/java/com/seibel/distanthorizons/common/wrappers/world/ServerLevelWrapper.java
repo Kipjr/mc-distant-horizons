@@ -23,18 +23,19 @@ import java.io.File;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiLevelType;
-import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.block.BiomeWrapper;
 import com.seibel.distanthorizons.common.wrappers.block.BlockStateWrapper;
+import com.seibel.distanthorizons.common.wrappers.block.cache.ServerBlockDetailMap;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
-import com.seibel.distanthorizons.core.level.IDhLevel;
+import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftClientWrapper;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import net.minecraft.server.level.ServerLevel;
@@ -48,6 +49,7 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 #endif
 
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @version 2022-9-16
@@ -57,9 +59,8 @@ public class ServerLevelWrapper implements IServerLevelWrapper
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final ConcurrentHashMap<ServerLevel, ServerLevelWrapper> LEVEL_WRAPPER_BY_SERVER_LEVEL = new ConcurrentHashMap<>();
 	
-	private final ServerLevel level;
-	@Deprecated // TODO circular references are bad
-	private IDhLevel parentDhLevel;
+	final ServerLevel level;
+	ServerBlockDetailMap blockMap = new ServerBlockDetailMap(this);
 	
 	
 	
@@ -79,6 +80,19 @@ public class ServerLevelWrapper implements IServerLevelWrapper
 	//=========//
 	// methods //
 	//=========//
+	
+	@Nullable
+	@Override
+	public IClientLevelWrapper tryGetClientLevelWrapper()
+	{
+		MinecraftClientWrapper client = MinecraftClientWrapper.INSTANCE;
+		if (client.mc.level == null)
+		{
+			return null;
+		}
+		
+		return ClientLevelWrapper.getWrapper(client.mc.level);
+	}
 	
 	@Override
 	public File getSaveFolder()
@@ -119,7 +133,7 @@ public class ServerLevelWrapper implements IServerLevelWrapper
 	}
 	
 	@Override
-	public int getMaxHeight()
+	public int getHeight()
 	{
 		return this.level.getHeight();
 	}
@@ -133,7 +147,6 @@ public class ServerLevelWrapper implements IServerLevelWrapper
 		return this.level.getMinBuildHeight();
         #endif
 	}
-	
 	@Override
 	public IChunkWrapper tryGetChunk(DhChunkPos pos)
 	{
@@ -170,33 +183,18 @@ public class ServerLevelWrapper implements IServerLevelWrapper
 	}
 	
 	@Override
-	public ServerLevel getWrappedMcObject() { return this.level; }
+	public ServerLevel getWrappedMcObject()
+	{
+		return this.level;
+	}
 	
 	@Override
 	public void onUnload() { LEVEL_WRAPPER_BY_SERVER_LEVEL.remove(this.level); }
 	
-	
 	@Override
-	public void setParentLevel(IDhLevel parentLevel) { this.parentDhLevel = parentLevel; }
-	
-	@Override
-	public IDhApiCustomRenderRegister getRenderRegister()
+	public String toString()
 	{
-		if (this.parentDhLevel == null)
-		{
-			return null;
-		}
-		
-		return this.parentDhLevel.getGenericRenderer();
+		return "Wrapped{" + this.level.toString() + "@" + this.getDimensionName() + "}";
 	}
-	
-	
-	
-	//================//
-	// base overrides //
-	//================//
-	
-	@Override
-	public String toString() { return "Wrapped{" + this.level.toString() + "@" + this.getDimensionName() + "}"; }
 	
 }

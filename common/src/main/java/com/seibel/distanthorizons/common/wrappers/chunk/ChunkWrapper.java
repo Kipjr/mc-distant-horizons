@@ -227,9 +227,6 @@ public class ChunkWrapper implements IChunkWrapper
 		LevelChunkSection[] sections = this.chunk.getSections();
 		for (int index = sections.length-1; index >= 0; index--)
 		{
-			// update at each position to fix using the max height if the chunk is empty
-			this.maxNonEmptyHeight = this.getChunkSectionMinHeight(index) + 16;
-			
 			if (sections[index] == null)
 			{
 				continue;
@@ -237,7 +234,7 @@ public class ChunkWrapper implements IChunkWrapper
 			
 			if (!isChunkSectionEmpty(sections[index]))
 			{
-				// non-empty section found
+				this.maxNonEmptyHeight = this.getChunkSectionMinHeight(index) + 16;
 				break;
 			}
 		}
@@ -254,7 +251,15 @@ public class ChunkWrapper implements IChunkWrapper
 		return section.hasOnlyAir();
 		#endif
 	}
-	private int getChunkSectionMinHeight(int index) { return (index * 16) + this.getMinBuildHeight(); }
+	private int getChunkSectionMinHeight(int index)
+	{
+		// convert from an index to a block coordinate
+		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
+		return this.chunk.getSections()[index].bottomBlockY();
+		#else
+		return this.chunk.getSectionYFromSectionIndex(index) * 16;
+		#endif
+	}
 	
 	
 	@Override

@@ -59,12 +59,7 @@ public final class StepStructureReference
 		for (ChunkWrapper chunkWrapper : chunkWrappers)
 		{
 			ChunkAccess chunk = chunkWrapper.getChunk();
-			if (chunkWrapper.getStatus().isOrAfter(STATUS))
-			{
-				// this chunk has already generated this step
-				continue;
-			}
-			else if (chunk instanceof ProtoChunk)
+			if (!chunkWrapper.getStatus().isOrAfter(STATUS))
 			{
 				#if MC_VER < MC_1_21
 				((ProtoChunk) chunk).setStatus(STATUS);

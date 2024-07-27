@@ -1,14 +1,14 @@
 package com.seibel.distanthorizons.common.wrappers.world;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiLevelType;
-import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegister;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.block.BiomeWrapper;
 import com.seibel.distanthorizons.common.wrappers.block.BlockStateWrapper;
 import com.seibel.distanthorizons.common.wrappers.block.cache.ClientBlockDetailMap;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
+import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftClientWrapper;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.level.*;
+import com.seibel.distanthorizons.core.level.IKeyedClientLevelManager;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
@@ -19,7 +19,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IDimensionTypeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -40,18 +39,14 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 public class ClientLevelWrapper implements IClientLevelWrapper
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger(ClientLevelWrapper.class.getSimpleName());
-	private static final ConcurrentHashMap<ClientLevel, ClientLevelWrapper> LEVEL_WRAPPER_BY_CLIENT_LEVEL = new ConcurrentHashMap<>(); // TODO can leak
+	private static final ConcurrentHashMap<ClientLevel, ClientLevelWrapper> LEVEL_WRAPPER_BY_CLIENT_LEVEL = new ConcurrentHashMap<>();
 	private static final IKeyedClientLevelManager KEYED_CLIENT_LEVEL_MANAGER = SingletonInjector.INSTANCE.get(IKeyedClientLevelManager.class);
-	
-	private static final Minecraft MINECRAFT = Minecraft.getInstance();
 	
 	private final ClientLevel level;
 	private final ClientBlockDetailMap blockMap = new ClientBlockDetailMap(this);
 	
 	private BlockStateWrapper dirtBlockWrapper;
 	private BiomeWrapper plainsBiomeWrapper;
-	@Deprecated // TODO circular references are bad
-	private IDhLevel parentDhLevel;
 	
 	
 	
@@ -99,7 +94,7 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	{
 		try
 		{
-			Iterable<ServerLevel> serverLevels = MINECRAFT.getSingleplayerServer().getAllLevels();
+			Iterable<ServerLevel> serverLevels = MinecraftClientWrapper.INSTANCE.mc.getSingleplayerServer().getAllLevels();
 			
 			// attempt to find the server level with the same dimension type
 			// TODO this assumes only one level per dimension type, the SubDimensionLevelMatcher will need to be added for supporting multiple levels per dimension
@@ -196,7 +191,7 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	public boolean hasSkyLight() { return this.level.dimensionType().hasSkyLight(); }
 	
 	@Override
-	public int getMaxHeight() { return this.level.getHeight(); }
+	public int getHeight() { return this.level.getHeight(); }
 	
 	@Override
 	public int getMinHeight()
@@ -245,37 +240,7 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	public ClientLevel getWrappedMcObject() { return this.level; }
 	
 	@Override
-	public void onUnload() 
-	{ 
-		LEVEL_WRAPPER_BY_CLIENT_LEVEL.remove(this.level);
-		this.parentDhLevel = null;
-	}
-	
-	
-	
-	//===================//
-	// generic rendering //
-	//===================//
-	
-	@Override
-	public void setParentLevel(IDhLevel parentLevel) { this.parentDhLevel = parentLevel; }
-	
-	@Override 
-	public IDhApiCustomRenderRegister getRenderRegister()
-	{
-		if (this.parentDhLevel == null)
-		{
-			return null;
-		}
-		
-		return this.parentDhLevel.getGenericRenderer();
-	}
-	
-	
-	
-	//================//
-	// base overrides //
-	//================//
+	public void onUnload() { LEVEL_WRAPPER_BY_CLIENT_LEVEL.remove(this.level); }
 	
 	@Override
 	public String toString()

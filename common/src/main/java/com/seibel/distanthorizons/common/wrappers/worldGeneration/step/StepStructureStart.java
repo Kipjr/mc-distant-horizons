@@ -76,12 +76,7 @@ public final class StepStructureStart
 		for (ChunkWrapper chunkWrapper : chunkWrappers)
 		{
 			ChunkAccess chunk = chunkWrapper.getChunk();
-			if (chunkWrapper.getStatus().isOrAfter(STATUS))
-			{
-				// this chunk has already generated this step
-				continue;
-			}
-			else if (chunk instanceof ProtoChunk)
+			if (!chunkWrapper.getStatus().isOrAfter(STATUS))
 			{
 				#if MC_VER < MC_1_21
 				((ProtoChunk) chunk).setStatus(STATUS);
@@ -93,12 +88,12 @@ public final class StepStructureStart
 		}
 		
 		#if MC_VER < MC_1_19_2
-		if (this.environment.params.worldGenSettings.generateFeatures())
+		if (environment.params.worldGenSettings.generateFeatures())
 		{
 		#elif MC_VER < MC_1_19_4
-		if (this.environment.params.worldGenSettings.generateStructures()) {
+		if (environment.params.worldGenSettings.generateStructures()) {
 		#else
-		if (this.environment.params.worldOptions.generateStructures())
+		if (environment.params.worldOptions.generateStructures())
 		{
 		#endif
 			for (ChunkAccess chunk : chunksToDo)

@@ -28,13 +28,13 @@ import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.util.math.Mat4f;
-import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import com.seibel.distanthorizons.coreapi.ModInfo;
+import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
 import net.minecraft.world.level.LevelAccessor;
 
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -165,21 +165,12 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 			return;
 		}
 		
-		// executor to prevent locking up the render/event thread
-		// if the getChunk() takes longer than expected 
-		// (which can be caused by certain mods) 
-		var executor = ThreadPoolUtil.getFileHandlerExecutor();
-		if (executor != null)
-		{
-			executor.execute(() ->
-			{
-				//LOGGER.trace("interact or block place event at blockPos: " + event.getPos());
-				
-				LevelAccessor level = event.getLevel();
-				ChunkAccess chunk = level.getChunk(event.getPos());
-				this.onBlockChangeEvent(level, chunk);
-			});
-		}
+		//LOGGER.trace("interact or block place event at blockPos: " + event.getPos());
+		
+		LevelAccessor level = event.getLevel();
+		
+		ChunkAccess chunk = level.getChunk(event.getPos());
+		this.onBlockChangeEvent(level, chunk);
 	}
 	@SubscribeEvent
 	public void leftClickBlockEvent(PlayerInteractEvent.LeftClickBlock event)
@@ -189,21 +180,12 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 			return;
 		}
 		
-		// executor to prevent locking up the render/event thread
-		// if the getChunk() takes longer than expected 
-		// (which can be caused by certain mods) 
-		var executor = ThreadPoolUtil.getFileHandlerExecutor();
-		if (executor != null)
-		{
-			executor.execute(() ->
-			{
-				//LOGGER.trace("break or block attack at blockPos: " + event.getPos());
-				
-				LevelAccessor level = event.getLevel();
-				ChunkAccess chunk = level.getChunk(event.getPos());
-				this.onBlockChangeEvent(level, chunk);
-			});
-		}
+		//LOGGER.trace("break or block attack at blockPos: " + event.getPos());
+		
+		LevelAccessor level = event.getLevel();
+		
+		ChunkAccess chunk = level.getChunk(event.getPos());
+		this.onBlockChangeEvent(level, chunk);
 	}
 	private void onBlockChangeEvent(LevelAccessor level, ChunkAccess chunk)
 	{
