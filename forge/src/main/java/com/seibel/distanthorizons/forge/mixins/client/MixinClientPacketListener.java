@@ -16,7 +16,7 @@ public class MixinClientPacketListener
 	@Inject(method = "handleLogin", at = @At("RETURN"))
 	void onHandleLoginEnd(CallbackInfo ci) { ClientApi.INSTANCE.onClientOnlyConnected(); }
 	
-	#if PRE_MC_1_19_4
+	#if MC_VER < MC_1_19_4
 	@Inject(method = "cleanup", at = @At("HEAD"))
 	#else
 	@Inject(method = "close", at = @At("HEAD"))

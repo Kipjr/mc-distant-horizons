@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.UUID;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import com.seibel.distanthorizons.api.enums.config.ELodShading;
+import com.seibel.distanthorizons.api.enums.config.EDhApiLodShading;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
@@ -47,7 +47,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.model.ModelManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-#if PRE_MC_1_19_2
+#if MC_VER < MC_1_19_2
 import net.minecraft.network.chat.TextComponent;
 #endif
 import net.minecraft.server.level.ServerLevel;
@@ -113,11 +113,11 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Override
 	public float getShade(EDhDirection lodDirection)
 	{
-		ELodShading lodShading = Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading.get();
+		EDhApiLodShading lodShading = Config.Client.Advanced.Graphics.AdvancedGraphics.lodShading.get();
 		switch (lodShading)
 		{
 			default:
-			case MINECRAFT:
+			case AUTO:
 				if (this.mc.level != null)
 				{
 					Direction mcDir = McObjectConverter.Convert(lodDirection);
@@ -128,7 +128,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 					return 0.0f;
 				}
 			
-			case OLD_LIGHTING:
+			case ENABLED:
 				switch (lodDirection)
 				{
 					case DOWN:
@@ -144,7 +144,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 						return 0.6F;
 				}
 			
-			case NONE:
+			case DISABLED:
 				return 1.0F;
 		}
 	}
@@ -197,7 +197,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Override
 	public DhChunkPos getPlayerChunkPos()
 	{
-        #if PRE_MC_1_17_1
+        #if MC_VER < MC_1_17_1
         ChunkPos playerPos = new ChunkPos(getPlayer().blockPosition());
         #else
 		ChunkPos playerPos = getPlayer().chunkPosition();
@@ -262,7 +262,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	{
 		LocalPlayer p = getPlayer();
 		if (p == null) return;
-        #if PRE_MC_1_19_2
+        #if MC_VER < MC_1_19_2
 		p.sendMessage(new TextComponent(string), getPlayer().getUUID());
         #else
 		p.sendSystemMessage(net.minecraft.network.chat.Component.translatable(string));
@@ -282,7 +282,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	{
 		LOGGER.error(ModInfo.READABLE_NAME + " had the following error: [" + errorMessage + "]. Crashing Minecraft...", exception);
 		CrashReport report = new CrashReport(errorMessage, exception);
-		#if PRE_MC_1_20_4
+		#if MC_VER < MC_1_20_4
 		Minecraft.crash(report);
 		#else
 		Minecraft.getInstance().delayCrash(report);

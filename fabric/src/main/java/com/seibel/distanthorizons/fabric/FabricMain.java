@@ -19,73 +19,56 @@
 
 package com.seibel.distanthorizons.fabric;
 
-import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiAfterDhInitEvent;
-import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeDhInitEvent;
-import com.seibel.distanthorizons.core.config.ConfigBase;
-import com.seibel.distanthorizons.core.jar.ModJarInfo;
-import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
-import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.*;
-import com.seibel.distanthorizons.common.LodCommonMain;
-import com.seibel.distanthorizons.coreapi.ModInfo;
+import com.mojang.brigadier.CommandDispatcher;
+import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
+import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.fabric.wrappers.FabricDependencySetup;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.*;
+import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.fabric.wrappers.modAccessor.*;
-
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.api.DedicatedServerModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.event.Event;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
+import java.awt.*;
+import java.util.function.Consumer;
 
 /**
  * Initialize and setup the Mod. <br>
  * If you are looking for the real start of the mod
  * check out the ClientProxy.
- *
- * @author coolGi
- * @author Ran
- * @version 9-2-2022
  */
-public class FabricMain
+public class FabricMain extends AbstractModInitializer implements ClientModInitializer, DedicatedServerModInitializer
 {
+	private static final ResourceLocation INITIAL_PHASE = ResourceLocation.tryParse("distanthorizons:dedicated_server_initial");
+	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	public static void postInit()
-	{
-		LOGGER.info("Post-Initializing Mod");
-		FabricDependencySetup.runDelayedSetup();
-		
-		if (Config.Client.Advanced.Graphics.Fog.disableVanillaFog.get() && SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("bclib"))
-			ModAccessorInjector.INSTANCE.get(IBCLibAccessor.class).setRenderCustomFog(false); // Remove BCLib's fog
-		#if POST_MC_1_20_1
-		if (SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("sodium"))
-			ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class).setFogOcclusion(false); // FIXME: This is a tmp fix for sodium 0.5.0, and 0.5.1. This is fixed in sodium 0.5.2
-		#endif
-		
-		if (ConfigBase.INSTANCE == null)
-			throw new IllegalStateException("Config was not initialized. Make sure to call LodCommonMain.initConfig() before calling this method.");
-		
-		LOGGER.info("Mod Post-Initialized");
-	}
 	
 	
-	// This loads the mod after minecraft loads which doesn't causes a lot of issues
-	public static void init()
+	@Override
+	protected void createInitialBindings() { SingletonInjector.INSTANCE.bind(IModChecker.class, ModChecker.INSTANCE); }
+	
+	@Override
+	protected IEventProxy createClientProxy() { return new FabricClientProxy(); }
+	
+	@Override
+	protected IEventProxy createServerProxy(boolean isDedicated) { return new FabricServerProxy(isDedicated); }
+	
+	@Override
+	protected void initializeModCompat()
 	{
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDhInitEvent.class, null);
-		
-		LOGGER.info("Initializing Mod");
-		LodCommonMain.startup(null);
-		FabricDependencySetup.createInitialBindings();
-		LOGGER.info(ModInfo.READABLE_NAME + ", Version: " + ModInfo.VERSION);
-		
-		// Print git info (Useful for dev builds)
-		LOGGER.info("DH Branch: " + ModJarInfo.Git_Branch);
-		LOGGER.info("DH Commit: " + ModJarInfo.Git_Commit);
-		LOGGER.info("DH Jar Build Source: " + ModJarInfo.Build_Source);
-		
 		IModChecker modChecker = SingletonInjector.INSTANCE.get(IModChecker.class);
 		if (modChecker.isModLoaded("sodium"))
 		{
@@ -94,10 +77,13 @@ public class FabricMain
 			// If sodium is installed Indium is also necessary in order to use the Fabric rendering API
 			if (!modChecker.isModLoaded("indium"))
 			{
-				// People don't read the crash logs!!!
-				// So, just put a notification, so they hopefully realise what's the problem (and dont just open issues)
-				System.setProperty("java.awt.headless", "false"); // Required to make it work
-				JOptionPane.showMessageDialog(null, ModInfo.READABLE_NAME + " now relies on Indium to work with Sodium.\nPlease download Indium from https://modrinth.com/mod/indium", ModInfo.READABLE_NAME, JOptionPane.INFORMATION_MESSAGE);
+				String indiumMissingMessage = ModInfo.READABLE_NAME + " needs Indium to work with Sodium.\nPlease download Indium from https://modrinth.com/mod/indium";
+				LOGGER.fatal(indiumMissingMessage);
+				
+				if (!GraphicsEnvironment.isHeadless())
+				{
+					JOptionPane.showMessageDialog(null, indiumMissingMessage, ModInfo.READABLE_NAME, JOptionPane.INFORMATION_MESSAGE);
+				}
 				
 				IMinecraftClientWrapper mc = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 				String errorMessage = "loading Distant Horizons. Distant Horizons requires Indium in order to run with Sodium.";
@@ -105,30 +91,44 @@ public class FabricMain
 				mc.crashMinecraft(errorMessage, new Exception(exceptionError));
 			}
 		}
-		if (modChecker.isModLoaded("starlight"))
-		{
-			ModAccessorInjector.INSTANCE.bind(IStarlightAccessor.class, new StarlightAccessor());
-		}
-		if (modChecker.isModLoaded("optifine"))
-		{
-			ModAccessorInjector.INSTANCE.bind(IOptifineAccessor.class, new OptifineAccessor());
-		}
-		if (modChecker.isModLoaded("bclib"))
-		{
-			ModAccessorInjector.INSTANCE.bind(IBCLibAccessor.class, new BCLibAccessor());
-		}
 		
-		#if MC_1_16_5 || MC_1_18_2 || MC_1_19_2 || MC_1_19_4 || MC_1_20_1
-		// 1.17.1 won't support this since there isn't a matching Iris version
-		if (modChecker.isModLoaded("iris"))
-		{
-			ModAccessorInjector.INSTANCE.bind(IIrisAccessor.class, new IrisAccessor());
-		}
+		this.tryCreateModCompatAccessor("starlight", IStarlightAccessor.class, StarlightAccessor::new);
+		this.tryCreateModCompatAccessor("optifine", IOptifineAccessor.class, OptifineAccessor::new);
+		this.tryCreateModCompatAccessor("bclib", IBCLibAccessor.class, BCLibAccessor::new);
+		#if MC_VER >= MC_1_19_4
+		// 1.19.4 is the lowest version Iris supports DH
+		this.tryCreateModCompatAccessor("iris", IIrisAccessor.class, IrisAccessor::new);
+		#endif
+	}
+	
+	@Override
+	protected void subscribeRegisterCommandsEvent(Consumer<CommandDispatcher<CommandSourceStack>> eventHandler) { }
+	
+	@Override
+	protected void subscribeClientStartedEvent(Runnable eventHandler) { ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> eventHandler.run()); }
+	
+	@Override
+	protected void subscribeServerStartingEvent(Consumer<MinecraftServer> eventHandler)
+	{
+		ServerLifecycleEvents.SERVER_STARTING.addPhaseOrdering(INITIAL_PHASE, Event.DEFAULT_PHASE);
+		ServerLifecycleEvents.SERVER_STARTING.register(INITIAL_PHASE, eventHandler::accept);
+	}
+	
+	@Override
+	protected void runDelayedSetup()
+	{
+		SingletonInjector.INSTANCE.runDelayedSetup();
+		
+		if (Config.Client.Advanced.Graphics.Fog.disableVanillaFog.get() && SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("bclib"))
+			ModAccessorInjector.INSTANCE.get(IBCLibAccessor.class).setRenderCustomFog(false); // Remove BCLib's fog
+		
+		#if MC_VER >= MC_1_20_1
+		if (SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("sodium"))
+			ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class).setFogOcclusion(false); // FIXME: This is a tmp fix for sodium 0.5.0, and 0.5.1. This is fixed in sodium 0.5.2
 		#endif
 		
-		LOGGER.info(ModInfo.READABLE_NAME + " Initialized");
-		
-		ApiEventInjector.INSTANCE.fireAllEvents(DhApiAfterDhInitEvent.class, null);
+		if (ConfigBase.INSTANCE == null)
+			throw new IllegalStateException("Config was not initialized. Make sure to call LodCommonMain.initConfig() before calling this method.");
 	}
 	
 }

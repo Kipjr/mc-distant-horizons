@@ -17,32 +17,27 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.forge.wrappers;
+package com.seibel.distanthorizons.neoforge.wrappers.modAccessor;
 
-import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
-import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IModChecker;
-import com.seibel.distanthorizons.forge.wrappers.modAccessor.ModChecker;
+import java.util.HashSet;
 
-/**
- * Binds all necessary dependencies so we
- * can access them in Core. <br>
- * This needs to be called before any Core classes
- * are loaded.
- *
- * @author James Seibel
- * @author Ran
- * @version 12-1-2021
- */
-public class ForgeDependencySetup
+import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOptifineAccessor;
+
+public class OptifineAccessor extends AbstractOptifineAccessor
 {
-	public static void createInitialBindings()
+	
+	@Override
+	public String getModName()
 	{
-		SingletonInjector.INSTANCE.bind(IModChecker.class, ModChecker.INSTANCE);
+		return "Optifine-Forge-1.18.X";
 	}
 	
-	public static void runDelayedSetup()
+	@Override
+	public HashSet<DhChunkPos> getNormalRenderedChunks()
 	{
-		SingletonInjector.INSTANCE.runDelayedSetup();
+		// TODO: Impl proper methods here
+		return null;
 	}
 	
 }

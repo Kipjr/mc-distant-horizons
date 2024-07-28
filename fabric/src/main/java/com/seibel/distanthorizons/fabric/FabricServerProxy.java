@@ -1,11 +1,11 @@
 package com.seibel.distanthorizons.fabric;
 
+import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
-import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.ServerApi;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
@@ -32,7 +32,7 @@ import java.util.function.Supplier;
  * @author Tomlee
  * @version 5-11-2022
  */
-public class FabricServerProxy
+public class FabricServerProxy implements AbstractModInitializer.IEventProxy
 {
 	private static final ServerApi SERVER_API = ServerApi.INSTANCE;
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();

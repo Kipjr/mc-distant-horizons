@@ -17,17 +17,17 @@
     },
     
     "license": "LGPL-3",
-    "icon": "icon.png",
+    "icon": "assets/distanthorizons/icon.png",
     
     "accessWidener": "distanthorizons.accesswidener",
     
     "environment": "*",
     "entrypoints": {
         "client": [
-            "com.seibel.distanthorizons.fabric.FabricClientMain"
+            "com.seibel.distanthorizons.fabric.FabricMain"
         ],
         "server": [
-            "com.seibel.distanthorizons.fabric.FabricDedicatedServerMain"
+            "com.seibel.distanthorizons.fabric.FabricMain"
         ],
         "modmenu": [
             "com.seibel.distanthorizons.fabric.wrappers.config.ModMenuIntegration"
@@ -56,7 +56,6 @@
     },
     
     "suggests": {
-        "blendium": "*"
     },
     
     "breaks": $fabric_incompatibility_list,

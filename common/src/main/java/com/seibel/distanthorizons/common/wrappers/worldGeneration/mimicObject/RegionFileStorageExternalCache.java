@@ -1,13 +1,15 @@
 package com.seibel.distanthorizons.common.wrappers.worldGeneration.mimicObject;
 
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.storage.RegionFile;
 import net.minecraft.world.level.chunk.storage.RegionFileStorage;
+import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,10 +17,26 @@ import java.nio.file.Path;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
+#if MC_VER >= MC_1_20_6
+import net.minecraft.world.level.chunk.storage.RegionStorageInfo;
+#endif
+
+/** 
+ * @deprecated should be replaced with net.minecraft.world.level.chunk.storage.IOWorker to
+ *              prevent potential file corruption and issues with the C2ME mod.
+ *              Generally this would be done via (MC ServerLevel) level.getChunkSource().chunkMap.worker#loadAsync()
+ */
+@Deprecated
 public class RegionFileStorageExternalCache implements AutoCloseable
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	/** Can be null due to the C2ME mod */
+	@Nullable
 	public final RegionFileStorage storage;
 	public static final int MAX_CACHE_SIZE = 16;
+	
+	public static boolean regionCacheNullPointerWarningSent = false;
 	
 	/**
 	 * Present to reduce the chance that we accidentally break underlying MC code that isn't thread safe, 
@@ -50,6 +68,19 @@ public class RegionFileStorageExternalCache implements AutoCloseable
 	@Nullable
 	public RegionFile getRegionFile(ChunkPos pos) throws IOException
 	{
+		if (this.storage == null)
+		{
+			if (!regionCacheNullPointerWarningSent)
+			{
+				regionCacheNullPointerWarningSent = true;
+				LOGGER.warn("Unable to access Minecraft's chunk cache. This may be due to another mod changing said cache. DH will be unable to access any Minecraft chunk data until said mod is removed.");
+			}
+			
+			return null;
+		}
+		
+		
+		
 		long posLong = ChunkPos.asLong(pos.getRegionX(), pos.getRegionZ());
 		RegionFile rFile = null;
 		
@@ -64,7 +95,7 @@ public class RegionFileStorageExternalCache implements AutoCloseable
 			{
 				this.getRegionFileLock.lock();
 				
-				#if MC_1_16_5 || MC_1_17_1
+				#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 				rFile = this.storage.getRegionFile(pos);
 				
 				// keeping the region cache size low helps prevent concurrency issues
@@ -84,7 +115,7 @@ public class RegionFileStorageExternalCache implements AutoCloseable
 			}
 			catch (ArrayIndexOutOfBoundsException e)
 			{
-				#if MC_1_16_5 || MC_1_17_1
+				#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 				// the file just wasn't cached
 				break;
 				#else
@@ -97,6 +128,19 @@ public class RegionFileStorageExternalCache implements AutoCloseable
 				{
 				}
 				#endif
+			}
+			catch (NullPointerException e)
+			{
+				// Can sometimes happen when other mods modify the region cache system (IE C2ME)
+				// instead of blowing up, just use DH's cache instead
+				
+				if (!regionCacheNullPointerWarningSent)
+				{
+					regionCacheNullPointerWarningSent = true;
+					LOGGER.warn("Unable to access Minecraft's chunk cache. This may be due to another mod changing said cache. Falling back to DH's internal cache.");
+				}
+				
+				break;
 			}
 			finally
 			{
@@ -126,7 +170,7 @@ public class RegionFileStorageExternalCache implements AutoCloseable
 		
 		// Otherwise, check if file exist, and if so, add it to the cache
 		Path storageFolderPath;
-		#if MC_1_16_5 || MC_1_17_1
+		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 		storageFolderPath = this.storage.folder.toPath();
 		#else
 		storageFolderPath = this.storage.folder;
@@ -138,10 +182,12 @@ public class RegionFileStorageExternalCache implements AutoCloseable
 		}
 		
 		Path regionFilePath = storageFolderPath.resolve("r." + pos.getRegionX() + "." + pos.getRegionZ() + ".mca");
-		#if MC_1_16_5 || MC_1_17_1
+		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 		rFile = new RegionFile(regionFilePath.toFile(), storageFolderPath.toFile(), false);
-		#else
+		#elif MC_VER <= MC_1_20_4
 		rFile = new RegionFile(regionFilePath, storageFolderPath, false);
+		#else
+		rFile = new RegionFile(new RegionStorageInfo("level", null, "level type"), regionFilePath, storageFolderPath, false);
 		#endif
 		
 		this.regionFileCache.add(new RegionFileCache(ChunkPos.asLong(pos.getRegionX(), pos.getRegionZ()), rFile));

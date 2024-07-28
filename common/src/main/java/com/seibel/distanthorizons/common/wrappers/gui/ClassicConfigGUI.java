@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 // Logger (for debug stuff)
 
 import com.seibel.distanthorizons.api.enums.config.DisallowSelectingViaConfigGui;
-import com.seibel.distanthorizons.api.enums.config.EUpdateBranch;
+import com.seibel.distanthorizons.api.enums.config.EDhApiUpdateBranch;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.config.types.*;
@@ -35,7 +35,7 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-#if PRE_MC_1_20_1
+#if MC_VER < MC_1_20_1
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.GuiComponent;
 #else
@@ -49,7 +49,7 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.resources.language.I18n;    // translation
-#if POST_MC_1_17_1
+#if MC_VER >= MC_1_17_1
 import net.minecraft.client.gui.narration.NarratableEntry;
 #endif
 import net.minecraft.resources.ResourceLocation;
@@ -98,6 +98,7 @@ public class ClassicConfigGUI
 		public static final int SpaceFromRightScreen = 10;
 		public static final int ButtonWidthSpacing = 5;
 		public static final int ResetButtonWidth = 40;
+		public static final int ResetButtonHeight = 20;
 		
 	}
 	
@@ -244,17 +245,23 @@ public class ClassicConfigGUI
 			}
 			
 			// Changelog button
-			if (Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get() && Config.Client.Advanced.AutoUpdater.updateBranch.get() == EUpdateBranch.STABLE)
+			if (Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get() && !ModInfo.IS_DEV_BUILD) // we only have changelogs for stable builds
 			{
 				this.addBtn(new TexturedButtonWidget(
 						// Where the button is on the screen
 						this.width - 28, this.height - 28,
 						// Width and height of the button
 						20, 20,
-						// Offset
+						// texture UV Offset
 						0, 0,
 						// Some textuary stuff
-						0, new ResourceLocation(ModInfo.ID, "textures/gui/changelog.png"), 20, 20,
+						0, 
+						#if MC_VER < MC_1_21 
+						new ResourceLocation(ModInfo.ID, "textures/gui/changelog.png"),
+						#else
+						ResourceLocation.fromNamespaceAndPath(ModInfo.ID, "textures/gui/changelog.png"),
+						#endif
+						20, 20,
 						// Create the button and tell it where to go
 						(buttonWidget) -> {
 							ChangelogScreen changelogScreen = new ChangelogScreen(this);
@@ -269,18 +276,25 @@ public class ClassicConfigGUI
 			}
 			
 			
-			addBtn(MakeBtn(Translatable("distanthorizons.general.cancel"), this.width / 2 - 154, this.height - 28, 150, 20, button -> {
-				ConfigBase.INSTANCE.configFileINSTANCE.loadFromFile();
-				Objects.requireNonNull(minecraft).setScreen(parent);
-			}));
+			addBtn(MakeBtn(Translatable("distanthorizons.general.cancel"), 
+					this.width / 2 - 154, this.height - 28, 
+					150, 20, 
+					button -> 
+					{
+						ConfigBase.INSTANCE.configFileINSTANCE.loadFromFile();
+						Objects.requireNonNull(minecraft).setScreen(parent);
+					}));
 			doneButton = addBtn(MakeBtn(Translatable("distanthorizons.general.done"), this.width / 2 + 4, this.height - 28, 150, 20, (button) -> {
 				ConfigBase.INSTANCE.configFileINSTANCE.saveToFile();
 				Objects.requireNonNull(minecraft).setScreen(parent);
 			}));
 			
 			this.list = new ConfigListWidget(this.minecraft, this.width * 2, this.height, 32, 32, 25);
+			
+			#if MC_VER < MC_1_20_6 // no background is rendered in MC 1.20.6+
 			if (this.minecraft != null && this.minecraft.level != null)
 				this.list.setRenderBackground(false);
+			#endif
 			
 			this.addWidget(this.list);
 			
@@ -311,6 +325,7 @@ public class ClassicConfigGUI
 			initEntry(info, this.translationPrefix);
 			Component name = Translatable(translationPrefix + info.getNameWCategory());
 			
+			
 			if (ConfigEntry.class.isAssignableFrom(info.getClass()))
 			{
 				Button.OnPress btnAction = button -> {
@@ -319,12 +334,12 @@ public class ClassicConfigGUI
 					this.reload = true;
 					Objects.requireNonNull(minecraft).setScreen(this);
 				};
-				int a = this.width - ConfigScreenConfigs.SpaceFromRightScreen - 150 - ConfigScreenConfigs.ButtonWidthSpacing - ConfigScreenConfigs.ResetButtonWidth;
-				int b = 0;
-				int c = ConfigScreenConfigs.ResetButtonWidth;
-				int d = 20;
+				int posX = this.width - ConfigScreenConfigs.SpaceFromRightScreen - 150 - ConfigScreenConfigs.ButtonWidthSpacing - ConfigScreenConfigs.ResetButtonWidth;
+				int posZ = 0;
 				
-				Button resetButton = MakeBtn(Translatable("distanthorizons.general.reset").withStyle(ChatFormatting.RED), a, b, c, d, btnAction);
+				Button resetButton = MakeBtn(Translatable("distanthorizons.general.reset").withStyle(ChatFormatting.RED), 
+						posX, posZ, ConfigScreenConfigs.ResetButtonWidth, ConfigScreenConfigs.ResetButtonHeight, 
+						btnAction);
 				
 				if (((EntryInfo) info.guiValue).widget instanceof Map.Entry)
 				{
@@ -379,13 +394,13 @@ public class ClassicConfigGUI
 		}
 		
 		@Override
-        #if PRE_MC_1_20_1
+        #if MC_VER < MC_1_20_1
 		public void render(PoseStack matrices, int mouseX, int mouseY, float delta)
         #else
 		public void render(GuiGraphics matrices, int mouseX, int mouseY, float delta)
 		#endif
 		{
-			#if PRE_MC_1_20_2 // 1.20.2 now enables this by default in the `this.list.render` function
+			#if MC_VER < MC_1_20_2 // 1.20.2 now enables this by default in the `this.list.render` function
 			this.renderBackground(matrices); // Renders background
 			#else
 			super.render(matrices, mouseX, mouseY, delta);
@@ -441,7 +456,7 @@ public class ClassicConfigGUI
 					}
 				}
 			}
-			#if PRE_MC_1_20_2
+			#if MC_VER < MC_1_20_2
 			super.render(matrices, mouseX, mouseY, delta);
 			#endif
 		}
@@ -539,7 +554,7 @@ public class ClassicConfigGUI
 		
 		public ConfigListWidget(Minecraft minecraftClient, int canvasWidth, int canvasHeight, int topMargin, int botMargin, int itemSpacing)
 		{
-			#if PRE_MC_1_20_4
+			#if MC_VER < MC_1_20_4
 			super(minecraftClient, canvasWidth, canvasHeight, topMargin, canvasHeight - botMargin, itemSpacing);
 			#else
 			super(minecraftClient, canvasWidth, canvasHeight - (topMargin + botMargin), topMargin, itemSpacing);
@@ -605,7 +620,7 @@ public class ClassicConfigGUI
 		}
 		
 		@Override
-        #if PRE_MC_1_20_1
+        #if MC_VER < MC_1_20_1
 		public void render(PoseStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
         #else
 		public void render(GuiGraphics matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
@@ -627,7 +642,7 @@ public class ClassicConfigGUI
 				indexButton.render(matrices, mouseX, mouseY, tickDelta);
 			}
 			if (text != null && (!text.getString().contains("spacer") || button != null))
-                #if PRE_MC_1_20_1
+                #if MC_VER < MC_1_20_1
 				GuiComponent.drawString(matrices, textRenderer, text, 12, y + 5, 0xFFFFFF);
 				#else
 				matrices.drawString(textRenderer, text, 12, y + 5, 0xFFFFFF);
@@ -642,7 +657,7 @@ public class ClassicConfigGUI
 		
 		// Only for 1.17 and over
 		// Remove in 1.16 and below
-		#if POST_MC_1_17_1
+		#if MC_VER >= MC_1_17_1
 		@Override
 		public List<? extends NarratableEntry> narratables()
 		{

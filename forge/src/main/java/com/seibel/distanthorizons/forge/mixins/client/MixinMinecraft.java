@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.forge.mixins.client;
 
-import com.seibel.distanthorizons.api.enums.config.EUpdateBranch;
+import com.seibel.distanthorizons.api.enums.config.EDhApiUpdateBranch;
 import com.seibel.distanthorizons.common.wrappers.gui.updater.UpdateModScreen;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -25,8 +25,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Minecraft.class)
 public class MixinMinecraft
 {
-	#if PRE_MC_1_20_2
-	#if MC_1_20_1
+	#if MC_VER < MC_1_20_2
+	#if MC_VER == MC_1_20_1
 	@Redirect(
 			method = "Lnet/minecraft/client/Minecraft;setInitialScreen(Lcom/mojang/realmsclient/client/RealmsClient;Lnet/minecraft/server/packs/resources/ReloadInstance;Lnet/minecraft/client/main/GameConfig$QuickPlayData;)V",
 			at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V")
@@ -51,7 +51,7 @@ public class MixinMinecraft
 		{
 			instance.setScreen(new UpdateModScreen(
 					new TitleScreen(false), // We don't want to use the vanilla title screen as it would fade the buttons
-					(Config.Client.Advanced.AutoUpdater.updateBranch.get() == EUpdateBranch.STABLE ? ModrinthGetter.getLatestIDForVersion(SingletonInjector.INSTANCE.get(IVersionConstants.class).getMinecraftVersion()): GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha"))
+					(Config.Client.Advanced.AutoUpdater.updateBranch.get() == EDhApiUpdateBranch.STABLE ? ModrinthGetter.getLatestIDForVersion(SingletonInjector.INSTANCE.get(IVersionConstants.class).getMinecraftVersion()): GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha"))
 			));
 		}
 		else
@@ -61,7 +61,7 @@ public class MixinMinecraft
 	}
 	#endif
 	
-	#if POST_MC_1_20_2
+	#if MC_VER >= MC_1_20_2
 	@Redirect(
 			method = "Lnet/minecraft/client/Minecraft;onGameLoadFinished(Lnet/minecraft/client/Minecraft$GameLoadCookie;)V",
 			at = @At(value = "INVOKE", target = "Ljava/lang/Runnable;run()V")
@@ -73,11 +73,23 @@ public class MixinMinecraft
 				&& SelfUpdater.onStart()
 		)
 		{
-			runnable = () -> {
+			runnable = () -> 
+			{
+				String versionId;
+				EDhApiUpdateBranch updateBranch = EDhApiUpdateBranch.convertAutoToStableOrNightly(Config.Client.Advanced.AutoUpdater.updateBranch.get());
+				if (updateBranch == EDhApiUpdateBranch.STABLE)
+				{
+					versionId = ModrinthGetter.getLatestIDForVersion(SingletonInjector.INSTANCE.get(IVersionConstants.class).getMinecraftVersion());
+				}
+				else
+				{
+					versionId = GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha");
+				}
+				
 				Minecraft.getInstance().setScreen(new UpdateModScreen(
 						// TODO: Change to runnable, instead of tittle screen
 						new TitleScreen(false), // We don't want to use the vanilla title screen as it would fade the buttons
-						(Config.Client.Advanced.AutoUpdater.updateBranch.get() == EUpdateBranch.STABLE ? ModrinthGetter.getLatestIDForVersion(SingletonInjector.INSTANCE.get(IVersionConstants.class).getMinecraftVersion()) : GitlabGetter.INSTANCE.projectPipelines.get(0).get("sha"))
+						versionId
 				));
 			};
 		}

@@ -17,32 +17,27 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.fabric.wrappers;
+package com.seibel.distanthorizons.neoforge.wrappers.modAccessor;
 
-import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IModChecker;
-import com.seibel.distanthorizons.fabric.wrappers.modAccessor.ModChecker;
+import net.neoforged.fml.ModList;
 
-/**
- * Binds all necessary dependencies, so we
- * can access them in Core. <br>
- * This needs to be called before any Core classes
- * are loaded.
- *
- * @author James Seibel
- * @author Ran
- * @version 3-5-2022
- */
-public class FabricDependencySetup
+import java.io.File;
+
+public class ModChecker implements IModChecker
 {
-	public static void createInitialBindings()
+	public static final ModChecker INSTANCE = new ModChecker();
+	
+	@Override
+	public boolean isModLoaded(String modid) 
 	{
-		SingletonInjector.INSTANCE.bind(IModChecker.class, ModChecker.INSTANCE);
+		return ModList.get().isLoaded(modid); 
 	}
 	
-	public static void runDelayedSetup()
+	@Override
+	public File modLocation(String modid) 
 	{
-		SingletonInjector.INSTANCE.runDelayedSetup();
+		return ModList.get().getModFileById(modid).getFile().getFilePath().toFile(); 
 	}
 	
 }

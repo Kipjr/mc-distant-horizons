@@ -2,7 +2,7 @@ package com.seibel.distanthorizons.fabric.mixins.mods.sodium;
 
 /* Removed since DH now uses Indium so we can use the Fabric rendering API instead
 
-#if POST_MC_1_20_1
+#if MC_VER >= MC_1_20_1
 // Sodium 0.5
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
@@ -55,7 +55,7 @@ public class MixinSodiumRenderer
 
 }
 
-#elif POST_MC_1_17_1
+#elif MC_VER >= MC_1_17_1
 // Sodium 0.3 to 0.4
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;

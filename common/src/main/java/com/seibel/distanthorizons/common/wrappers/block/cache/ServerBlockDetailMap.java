@@ -29,7 +29,7 @@ import net.minecraft.world.level.block.state.BlockState;
 public class ServerBlockDetailMap
 {
 	private final ConcurrentHashMap<BlockState, ServerBlockStateCache> blockCache = new ConcurrentHashMap<>();
-	//private final ConcurrentHashMap<#if PRE_MC_1_18_2 Biome #else Holder<Biome> #endif, Biome> biomeMap = new ConcurrentHashMap<>();
+	//private final ConcurrentHashMap<#if MC_VER < MC_1_18_2 Biome #else Holder<Biome> #endif, Biome> biomeMap = new ConcurrentHashMap<>();
 	private final ServerLevelWrapper level;
 	public ServerBlockDetailMap(ServerLevelWrapper level) { this.level = level; }
 	

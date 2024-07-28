@@ -27,11 +27,15 @@ import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGeneratio
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.ThreadedParameters;
 
 import net.minecraft.server.level.WorldGenRegion;
-#if PRE_MC_1_19_2
-#endif
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.ProtoChunk;
+
+#if MC_VER <= MC_1_20_4
+import net.minecraft.world.level.chunk.ChunkStatus;
+#else
+import net.minecraft.world.level.chunk.status.ChunkStatus;
+#endif
+
 
 public final class StepStructureReference
 {
@@ -55,9 +59,15 @@ public final class StepStructureReference
 		for (ChunkWrapper chunkWrapper : chunkWrappers)
 		{
 			ChunkAccess chunk = chunkWrapper.getChunk();
-			if (chunk.getStatus().isOrAfter(STATUS)) continue;
-			((ProtoChunk) chunk).setStatus(STATUS);
-			chunksToDo.add(chunk);
+			if (!chunkWrapper.getStatus().isOrAfter(STATUS))
+			{
+				#if MC_VER < MC_1_21
+				((ProtoChunk) chunk).setStatus(STATUS);
+				#else
+				((ProtoChunk) chunk).setPersistedStatus(STATUS);
+				#endif
+				chunksToDo.add(chunk);
+			}
 		}
 		
 		for (ChunkAccess chunk : chunksToDo)

@@ -20,14 +20,17 @@
 package com.seibel.distanthorizons.common.wrappers.worldGeneration.mimicObject;
 
 import java.lang.invoke.MethodHandles;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
-
+import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.SpawnerBlock;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -41,7 +44,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ColorResolver;
-#if POST_MC_1_17_1
+#if MC_VER >= MC_1_17_1
 import net.minecraft.world.level.LevelHeightAccessor;
 #endif
 import net.minecraft.world.level.LightLayer;
@@ -50,34 +53,50 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.ImposterProtoChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.lighting.LevelLightEngine;
+
+#if MC_VER <= MC_1_20_4
+import net.minecraft.world.level.chunk.ChunkStatus;
+#else
+import net.minecraft.world.level.chunk.status.*;
+#endif
+
+#if MC_VER == MC_1_21
+import net.minecraft.util.StaticCache2D;
+import com.google.common.collect.ImmutableList;
+import net.minecraft.server.level.GenerationChunkHolder;
+#endif
+
 
 public class DhLitWorldGenRegion extends WorldGenRegion
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
 	
+	private static ChunkStatus debugTriggeredForStatus = null;
+	
+	
 	public final DummyLightEngine lightEngine;
-	public final BatchGenerationEnvironment.EmptyChunkGenerator generator;
+	public final BatchGenerationEnvironment.IEmptyChunkGeneratorFunc generator;
 	public final int writeRadius;
 	public final int size;
+	
 	private final ChunkPos firstPos;
 	private final List<ChunkAccess> cache;
-	Long2ObjectOpenHashMap<ChunkAccess> chunkMap = new Long2ObjectOpenHashMap<ChunkAccess>();
+	private final Long2ObjectOpenHashMap<ChunkAccess> chunkMap = new Long2ObjectOpenHashMap<ChunkAccess>();
 	
 	/** 
 	 * Present to reduce the chance that we accidentally break underlying MC code that isn't thread safe, 
 	 * specifically: "it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap.getAndMoveToFirst()"
 	 */
-	ReentrantLock getChunkLock = new ReentrantLock();
+	private final ReentrantLock getChunkLock = new ReentrantLock();
 	
-	#if PRE_MC_1_18_2
+	#if MC_VER < MC_1_18_2
 	private ChunkPos overrideCenterPos = null;
 	
 	public void setOverrideCenter(ChunkPos pos) { overrideCenterPos = pos; }
-	#if PRE_MC_1_17_1
+	#if MC_VER < MC_1_17_1
 	@Override
 	public int getCenterX() 
 	{
@@ -100,11 +119,29 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 	
 	
 	public DhLitWorldGenRegion(
+			int centerChunkX, int centerChunkZ,
+			ChunkAccess centerChunk,
 			ServerLevel serverLevel, DummyLightEngine lightEngine,
 			List<ChunkAccess> chunkList, ChunkStatus chunkStatus, int writeRadius,
-			BatchGenerationEnvironment.EmptyChunkGenerator generator)
+			BatchGenerationEnvironment.IEmptyChunkGeneratorFunc generator)
 	{
-		super(serverLevel, chunkList #if POST_MC_1_17_1 , chunkStatus, writeRadius #endif );
+		#if MC_VER == MC_1_16_5
+		super(serverLevel, chunkList);
+		#elif MC_VER < MC_1_21
+		super(serverLevel, chunkList, chunkStatus, writeRadius);
+		#else
+		super(serverLevel, 
+				StaticCache2D.create(
+					centerChunkX, centerChunkZ,
+					writeRadius * 2, (x,z) -> new DhGenerationChunkHolder(new ChunkPos(x, z))), 
+				new ChunkStep(chunkStatus,
+						// reverse is needed because MC uses the index of the chunkStatus to determine how many items are in the list instead of the actual list count
+						new ChunkDependencies(ImmutableList.copyOf(ChunkStatus.getStatusList()).reverse()),
+						new ChunkDependencies(ImmutableList.copyOf(ChunkStatus.getStatusList()).reverse()),
+						writeRadius, (WorldGenContext var1, ChunkStep var2, StaticCache2D<GenerationChunkHolder> var3, ChunkAccess var4) -> null),
+				centerChunk);
+		
+		#endif
 		this.firstPos = chunkList.get(0).getPos();
 		this.generator = generator;
 		this.lightEngine = lightEngine;
@@ -115,7 +152,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 	
 	
 	
-	#if POST_MC_1_17_1
+	#if MC_VER >= MC_1_17_1
 	// Bypass BCLib mixin overrides.
 	@Override
 	public boolean ensureCanWrite(BlockPos blockPos)
@@ -130,7 +167,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 		{
 			return false;
 		}
-		#if POST_MC_1_18_2
+		#if MC_VER >= MC_1_18_2
 		if (center.isUpgrading())
 		{
 			LevelHeightAccessor levelHeightAccessor = center.getHeightAccessorForGeneration();
@@ -185,7 +222,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 		BlockState blockState = this.getBlockState(blockPos);
 		
 		// This is a bypass for the spawner block since MC complains about not having it
-		#if POST_MC_1_17_1
+		#if MC_VER >= MC_1_17_1
 		if (blockState.getBlock() instanceof SpawnerBlock)
 		{
 			return ((EntityBlock) blockState.getBlock()).newBlockEntity(blockPos, blockState);
@@ -198,12 +235,9 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 		#endif
 	}
 	
-	// Skip BlockEntity stuff. It aren't really needed
+	/** Skip BlockEntity stuff. They aren't needed for our use case. */
 	@Override
-	public boolean addFreshEntity(Entity entity)
-	{
-		return true;
-	}
+	public boolean addFreshEntity(@NotNull Entity entity) { return true; }
 	
 	// Allays have empty chunks even if it's outside the worldGenRegion
 	// @Override
@@ -214,13 +248,13 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 	// Override to ensure no other mod mixins cause skipping the overrided
 	// getChunk(...)
 	@Override
-	public ChunkAccess getChunk(int i, int j)
+	public @NotNull ChunkAccess getChunk(int chunkX, int chunkZ)
 	{
 		try
 		{
 			// lock is to prevent issues with underlying MC code that doesn't support multithreading
 			this.getChunkLock.lock();
-			return this.getChunk(i, j, ChunkStatus.EMPTY);
+			return this.getChunk(chunkX, chunkZ, ChunkStatus.EMPTY);
 		}
 		finally
 		{
@@ -231,13 +265,19 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 	// Override to ensure no other mod mixins cause skipping the overrided
 	// getChunk(...)
 	@Override
-	public ChunkAccess getChunk(int i, int j, ChunkStatus chunkStatus)
+	public @NotNull ChunkAccess getChunk(int chunkX, int chunkZ, @NotNull ChunkStatus chunkStatus)
 	{
 		try
 		{
 			// lock is to prevent issues with underlying MC code that doesn't support multithreading
 			this.getChunkLock.lock();
-			return this.getChunk(i, j, chunkStatus, true);
+			
+			ChunkAccess chunk = this.getChunk(chunkX, chunkZ, chunkStatus, true);
+			if (chunk == null)
+			{
+				LodUtil.assertNotReach("getChunk shouldn't return null values");
+			}
+			return chunk;
 		}
 		finally
 		{
@@ -245,102 +285,117 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 		}
 	}
 	
-	// Use this instead of super.getChunk() to bypass C2ME concurrency checks
-	private ChunkAccess superGetChunk(int x, int z, ChunkStatus cs)
-	{
-		int k = x - firstPos.x;
-		int l = z - firstPos.z;
-		return cache.get(k + l * size);
-	}
-	
-	// Use this instead of super.hasChunk() to bypass C2ME concurrency checks
-	public boolean superHasChunk(int x, int z)
-	{
-		int k = x - firstPos.x;
-		int l = z - firstPos.z;
-		return l >= 0 && l < size && k >= 0 && k < size;
-	}
-	
-	// Allow creating empty chunks even if it's outside the worldGenRegion
+	/** Allows creating empty chunks even if they're outside the worldGenRegion */
 	@Override
 	@Nullable
-	public ChunkAccess getChunk(int i, int j, ChunkStatus chunkStatus, boolean bl)
+	public ChunkAccess getChunk(int chunkX, int chunkZ, @NotNull ChunkStatus chunkStatus, boolean returnNonNull)
 	{
-		ChunkAccess chunk = getChunkAccess(i, j, chunkStatus, bl);
+		ChunkAccess chunk = this.getChunkAccess(chunkX, chunkZ, chunkStatus, returnNonNull);
 		if (chunk instanceof LevelChunk)
 		{
-			chunk = new ImposterProtoChunk((LevelChunk) chunk #if POST_MC_1_18_2 , true #endif );
+			chunk = new ImposterProtoChunk((LevelChunk) chunk #if MC_VER >= MC_1_18_2 , true #endif );
 		}
 		return chunk;
 	}
 	
-	private static ChunkStatus debugTriggeredForStatus = null;
-	
-	private ChunkAccess getChunkAccess(int i, int j, ChunkStatus chunkStatus, boolean bl)
+	/**
+	 * @param returnNonNull if true this method will always return a non-null chunk,
+	 *                      if false it will return null if no chunk exists at the given position with the given status 
+	 */
+	private ChunkAccess getChunkAccess(int chunkX, int chunkZ, ChunkStatus chunkStatus, boolean returnNonNull)
 	{
-		ChunkAccess chunk = superHasChunk(i, j) ? superGetChunk(i, j, ChunkStatus.EMPTY) : null;
-		if (chunk != null && chunk.getStatus().isOrAfter(chunkStatus))
+		ChunkAccess chunk = this.superHasChunk(chunkX, chunkZ) ? this.superGetChunk(chunkX, chunkZ) : null;
+		if (chunk != null && ChunkWrapper.getStatus(chunk).isOrAfter(chunkStatus))
 		{
 			return chunk;
 		}
-		if (!bl)
+		else if (!returnNonNull)
+		{
+			// no chunk found with the necessary status and null return values are allowed
 			return null;
+		}
+		
+		
+		// we need a non-null chunk
 		if (chunk == null)
 		{
-			chunk = chunkMap.get(ChunkPos.asLong(i, j));
+			// check memory
+			chunk = this.chunkMap.get(ChunkPos.asLong(chunkX, chunkZ));
 			if (chunk == null)
 			{
-				chunk = generator.generate(i, j);
+				// chunk isn't in memory, generate a new one
+				chunk = this.generator.generate(chunkX, chunkZ);
 				if (chunk == null)
+				{
 					throw new NullPointerException("The provided generator should not return null!");
-				chunkMap.put(ChunkPos.asLong(i, j), chunk);
+				}
+				this.chunkMap.put(ChunkPos.asLong(chunkX, chunkZ), chunk);
 			}
 		}
+		
 		if (chunkStatus != ChunkStatus.EMPTY && chunkStatus != debugTriggeredForStatus)
 		{
 			LOGGER.info("WorldGen requiring " + chunkStatus
 					+ " outside expected range detected. Force passing EMPTY chunk and seeing if it works.");
 			debugTriggeredForStatus = chunkStatus;
 		}
+		
 		return chunk;
 	}
 	
-	/** Overriding allows us to use our own lighting engine */
-	@Override
-	public LevelLightEngine getLightEngine() { return this.lightEngine; }
-	
-	/** Overriding allows us to use our own lighting engine */
-	@Override
-	public int getBrightness(LightLayer lightLayer, BlockPos blockPos) { return 0; }
-	
-	/** Overriding allows us to use our own lighting engine */
-	@Override
-	public int getRawBrightness(BlockPos blockPos, int i) { return 0; }
-	
-	/** Overriding allows us to use our own lighting engine */
-	@Override
-	public boolean canSeeSky(BlockPos blockPos)
+	/** Use this instead of super.hasChunk() to bypass C2ME concurrency checks */
+	public boolean superHasChunk(int x, int z)
 	{
-		return (getBrightness(LightLayer.SKY, blockPos) >= getMaxLightLevel());
+		int k = x - this.firstPos.x;
+		int l = z - this.firstPos.z;
+		return l >= 0 && l < this.size && k >= 0 && k < this.size;
 	}
 	
-	public int getBlockTint(BlockPos blockPos, ColorResolver colorResolver)
+	/** Use this instead of super.getChunk() to bypass C2ME concurrency checks */
+	private ChunkAccess superGetChunk(int x, int z)
 	{
-		return calculateBlockTint(blockPos, colorResolver);
+		int k = x - this.firstPos.x;
+		int l = z - this.firstPos.z;
+		return this.cache.get(k + l * this.size);
+	}
+	
+	
+	/** Overriding allows us to use our own lighting engine */
+	@Override
+	public @NotNull LevelLightEngine getLightEngine() { return this.lightEngine; }
+	
+	/** Overriding allows us to use our own lighting engine */
+	@Override
+	public int getBrightness(@NotNull LightLayer lightLayer, @NotNull BlockPos blockPos) { return 0; }
+	
+	/** Overriding allows us to use our own lighting engine */
+	@Override
+	public int getRawBrightness(@NotNull BlockPos blockPos, int i) { return 0; }
+	
+	/** Overriding allows us to use our own lighting engine */
+	@Override
+	public boolean canSeeSky(@NotNull BlockPos blockPos)
+	{
+		return (this.getBrightness(LightLayer.SKY, blockPos) >= this.getMaxLightLevel());
+	}
+	
+	public int getBlockTint(@NotNull BlockPos blockPos, @NotNull ColorResolver colorResolver)
+	{
+		return this.calculateBlockTint(blockPos, colorResolver);
 	}
 	
 	private Biome _getBiome(BlockPos pos)
 	{
-		#if POST_MC_1_18_2
-		return getBiome(pos).value();
+		#if MC_VER >= MC_1_18_2
+		return this.getBiome(pos).value();
 		#else
-		return getBiome(pos);
+		return this.getBiome(pos);
 		#endif
 	}
 	
 	public int calculateBlockTint(BlockPos blockPos, ColorResolver colorResolver)
 	{
-		#if PRE_MC_1_19_2
+		#if MC_VER < MC_1_19_2
 		int i = (Minecraft.getInstance()).options.biomeBlendRadius;
 		#else
 		int i = (Minecraft.getInstance()).options.biomeBlendRadius().get();

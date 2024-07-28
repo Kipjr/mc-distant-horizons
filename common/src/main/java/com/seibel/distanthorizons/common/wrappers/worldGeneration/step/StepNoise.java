@@ -28,15 +28,17 @@ import com.seibel.distanthorizons.common.wrappers.worldGeneration.ThreadedParame
 
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
 import net.minecraft.server.level.WorldGenRegion;
-#if POST_MC_1_17_1
-#endif
-#if PRE_MC_1_19_2
-#endif
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.ProtoChunk;
-#if POST_MC_1_18_2
+
+#if MC_VER >= MC_1_18_2
 import net.minecraft.world.level.levelgen.blending.Blender;
+#endif
+
+#if MC_VER <= MC_1_20_4
+import net.minecraft.world.level.chunk.ChunkStatus;
+#else
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 #endif
 
 public final class StepNoise
@@ -56,29 +58,40 @@ public final class StepNoise
 			List<ChunkWrapper> chunkWrappers)
 	{
 		
-		ArrayList<ChunkAccess> chunksToDo = new ArrayList<ChunkAccess>();
+		ArrayList<ChunkAccess> chunksToDo = new ArrayList<>();
 		
 		for (ChunkWrapper chunkWrapper : chunkWrappers)
 		{
 			ChunkAccess chunk = chunkWrapper.getChunk();
-			if (chunk.getStatus().isOrAfter(STATUS)) continue;
+			if (chunkWrapper.getStatus().isOrAfter(STATUS))
+			{
+				continue;
+			}
+			
+			#if MC_VER < MC_1_21
 			((ProtoChunk) chunk).setStatus(STATUS);
+			#else
+			((ProtoChunk) chunk).setPersistedStatus(STATUS);
+			#endif
 			chunksToDo.add(chunk);
 		}
 		
 		for (ChunkAccess chunk : chunksToDo)
 		{
 			// System.out.println("StepNoise: "+chunk.getPos());
-			#if PRE_MC_1_17_1
-			environment.params.generator.fillFromNoise(worldGenRegion, tParams.structFeat, chunk);
-			#elif PRE_MC_1_18_2
-			chunk = environment.joinSync(environment.params.generator.fillFromNoise(Runnable::run,
+			#if MC_VER < MC_1_17_1
+			this.environment.params.generator.fillFromNoise(worldGenRegion, tParams.structFeat, chunk);
+			#elif MC_VER < MC_1_18_2
+			chunk = this.environment.joinSync(this.environment.params.generator.fillFromNoise(Runnable::run,
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
-			#elif PRE_MC_1_19_2
-			chunk = environment.joinSync(environment.params.generator.fillFromNoise(Runnable::run, Blender.of(worldGenRegion),
+			#elif MC_VER < MC_1_19_2
+			chunk = this.environment.joinSync(this.environment.params.generator.fillFromNoise(Runnable::run, Blender.of(worldGenRegion),
+					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
+			#elif MC_VER < MC_1_21
+			chunk = this.environment.joinSync(this.environment.params.generator.fillFromNoise(Runnable::run, Blender.of(worldGenRegion), this.environment.params.randomState,
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
 			#else
-			chunk = environment.joinSync(environment.params.generator.fillFromNoise(Runnable::run, Blender.of(worldGenRegion), environment.params.randomState,
+			chunk = this.environment.joinSync(this.environment.params.generator.fillFromNoise(Blender.of(worldGenRegion), this.environment.params.randomState,
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
 			#endif
 			UncheckedInterruptedException.throwIfInterrupted();

@@ -21,9 +21,11 @@ package com.seibel.distanthorizons.common.wrappers.minecraft;
 
 import java.awt.Color;
 import java.lang.invoke.MethodHandles;
+import java.nio.FloatBuffer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
@@ -39,12 +41,13 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.render.DhApiRenderProxy;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 
-#if PRE_MC_1_19_4
-import com.mojang.math.Vector3f;
+#if MC_VER < MC_1_19_4
+import org.joml.Vector3f;
 #else
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 #endif
-#if POST_MC_1_20_2
+#if MC_VER >= MC_1_20_2
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
 #endif
 
@@ -67,7 +70,7 @@ import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.effect.MobEffects;
-#if PRE_MC_1_17_1
+#if MC_VER < MC_1_17_1
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.material.FluidState;
@@ -78,6 +81,7 @@ import net.minecraft.world.level.material.FogType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.Logger;
+import org.joml.Matrix4f;
 
 
 /**
@@ -102,7 +106,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	 * In the case of immersive portals multiple levels may be active at once, causing conflicting lightmaps. <br> 
 	 * Requiring the use of multiple {@link LightMapWrapper}.
 	 */
-	public HashMap<IDimensionTypeWrapper, LightMapWrapper> lightmapByDimensionType = new HashMap<>();
+	public ConcurrentHashMap<IDimensionTypeWrapper, LightMapWrapper> lightmapByDimensionType = new ConcurrentHashMap<>();
 	
 	/** 
 	 * Holds the render buffer that should be used when displaying levels to the screen.
@@ -116,8 +120,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	public Vec3f getLookAtVector()
 	{
 		Camera camera = MC.gameRenderer.getMainCamera();
-		Vector3f cameraDir = camera.getLookVector();
-		return new Vec3f(cameraDir.x(), cameraDir.y(), cameraDir.z());
+		return new Vec3f(camera.getLookVector().x(), camera.getLookVector().y(), camera.getLookVector().z());
 	}
 	
 	@Override
@@ -133,7 +136,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	public boolean playerHasBlindingEffect()
 	{
 		return MC.player.getActiveEffectsMap().get(MobEffects.BLINDNESS) != null
-				#if POST_AND_MC_1_19_2
+				#if MC_VER >= MC_1_19_2
 				|| MC.player.getActiveEffectsMap().get(MobEffects.DARKNESS) != null // Deep dark effect
 				#endif
 				;
@@ -149,9 +152,26 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	}
 	
 	@Override
+	public Mat4f getWorldViewMatrix()
+	{
+		Camera camera = MC.gameRenderer.getMainCamera();
+		Vector3f cameraVec3 = new Vector3f(
+				(float)camera.getPosition().x,
+				(float)camera.getPosition().y,
+				(float)camera.getPosition().z);
+		cameraVec3 = cameraVec3.negate();
+		
+		Matrix4f matWorldView = new Matrix4f()
+				.rotateX((float)Math.toRadians(camera.getXRot()))
+				.rotateY((float)Math.toRadians(camera.getYRot() + 180f))
+				.translate(cameraVec3);
+		return new Mat4f(matWorldView);
+	}
+	
+	@Override
 	public Mat4f getDefaultProjectionMatrix(float partialTicks)
 	{
-		#if PRE_MC_1_17_1
+		#if MC_VER < MC_1_17_1
 		return McObjectConverter.Convert(Minecraft.getInstance().gameRenderer.getProjectionMatrix(Minecraft.getInstance().gameRenderer.getMainCamera(), partialTicks, true));
 		#else
 		return McObjectConverter.Convert(MC.gameRenderer.getProjectionMatrix(MC.gameRenderer.getFov(MC.gameRenderer.getMainCamera(), partialTicks, true)));
@@ -161,7 +181,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public double getGamma()
 	{
-		#if PRE_MC_1_19_2
+		#if MC_VER < MC_1_19_2
 		return MC.options.gamma;
 		#else
 		return MC.options.gamma().get();
@@ -171,7 +191,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public Color getFogColor(float partialTicks)
 	{
-		#if PRE_MC_1_17_1
+		#if MC_VER < MC_1_17_1
 		float[] colorValues = new float[4];
 		GL15.glGetFloatv(GL15.GL_FOG_COLOR, colorValues);
 		#else
@@ -192,15 +212,24 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	{
 		if (MC.level.dimensionType().hasSkyLight())
 		{
-			#if PRE_MC_1_17_1
-			Vec3 colorValues = MC.level.getSkyColor(MC.gameRenderer.getMainCamera().getBlockPosition(), MC.getFrameTime());
+			float frameTime;
+			#if MC_VER < MC_1_21
+			frameTime = MC.getFrameTime();
 			#else
-			Vec3 colorValues = MC.level.getSkyColor(MC.gameRenderer.getMainCamera().getPosition(), MC.getFrameTime());
+			frameTime = MC.getTimer().getRealtimeDeltaTicks();
+			#endif
+			
+			#if MC_VER < MC_1_17_1
+			Vec3 colorValues = MC.level.getSkyColor(MC.gameRenderer.getMainCamera().getBlockPosition(), frameTime);
+			#else
+			Vec3 colorValues = MC.level.getSkyColor(MC.gameRenderer.getMainCamera().getPosition(), frameTime);
 			#endif
 			return new Color((float) colorValues.x, (float) colorValues.y, (float) colorValues.z);
 		}
 		else
+		{
 			return new Color(0, 0, 0);
+		}
 	}
 	
 	@Override
@@ -213,7 +242,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public int getRenderDistance()
 	{
-		#if PRE_MC_1_18_2
+		#if MC_VER < MC_1_18_2
 		//FIXME: How to resolve this?
 		return MC.options.renderDistance;
 		#else
@@ -261,12 +290,6 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public int getTargetFrameBuffer()
 	{
-		int frameBufferOverrideId = DhApiRenderProxy.INSTANCE.targetFrameBufferOverride;
-		if (frameBufferOverrideId != -1)
-		{
-			return frameBufferOverrideId;
-		}
-		
 		// used so we can access the framebuffer shaders end up rendering to
 		if (AbstractOptifineAccessor.optifinePresent())
 		{
@@ -321,16 +344,25 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 		{
 			try
 			{
-				#if PRE_MC_1_20_2
+				#if MC_VER < MC_1_20_2
 				LevelRenderer levelRenderer = MC.levelRenderer;
 				Collection<LevelRenderer.RenderChunkInfo> chunks =
-					#if PRE_MC_1_18_2 levelRenderer.renderChunks;
+					#if MC_VER < MC_1_18_2 levelRenderer.renderChunks;
 					#else levelRenderer.renderChunkStorage.get().renderChunks; #endif
 				
 				return (chunks.stream().map((chunk) -> {
 					AABB chunkBoundingBox =
-						#if PRE_MC_1_18_2 chunk.chunk.bb;
+						#if MC_VER < MC_1_18_2 chunk.chunk.bb;
 						#else chunk.chunk.getBoundingBox(); #endif
+					return new DhChunkPos(Math.floorDiv((int) chunkBoundingBox.minX, 16),
+							Math.floorDiv((int) chunkBoundingBox.minZ, 16));
+				}).collect(Collectors.toCollection(HashSet::new)));
+				#else
+				LevelRenderer levelRenderer = MC.levelRenderer;
+				Collection<SectionRenderDispatcher.RenderSection> chunks = levelRenderer.visibleSections;
+				
+				return (chunks.stream().map((chunk) -> {
+					AABB chunkBoundingBox = chunk.getBoundingBox();
 					return new DhChunkPos(Math.floorDiv((int) chunkBoundingBox.minX, 16),
 							Math.floorDiv((int) chunkBoundingBox.minZ, 16));
 				}).collect(Collectors.toCollection(HashSet::new)));
@@ -371,7 +403,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public boolean isFogStateSpecial()
 	{
-		#if PRE_MC_1_17_1
+		#if MC_VER < MC_1_17_1
 		Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
 		FluidState fluidState = camera.getFluidInCamera();
 		Entity entity = camera.getEntity();
@@ -392,11 +424,8 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 		// so this will have to do for now
 		IDimensionTypeWrapper dimensionType = level.getDimensionType();
 		
-		if (!this.lightmapByDimensionType.containsKey(dimensionType))
-		{
-			this.lightmapByDimensionType.put(dimensionType, new LightMapWrapper());
-		}
-		this.lightmapByDimensionType.get(dimensionType).uploadLightmap(lightPixels);
+		LightMapWrapper wrapper = this.lightmapByDimensionType.compute(dimensionType, (dimType, oldWrapper) -> new LightMapWrapper());
+		wrapper.uploadLightmap(lightPixels);
 	}
 	
 }

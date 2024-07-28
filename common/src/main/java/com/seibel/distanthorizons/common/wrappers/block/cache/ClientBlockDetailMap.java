@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ClientBlockDetailMap
 {
 	private final ConcurrentHashMap<BlockState, ClientBlockStateCache> blockCache = new ConcurrentHashMap<>();
-	//private final ConcurrentHashMap<#if PRE_MC_1_18_2 Biome #else Holder<Biome> #endif, Biome> biomeMap = new ConcurrentHashMap<>();
+	//private final ConcurrentHashMap<#if MC_VER < MC_1_18_2 Biome #else Holder<Biome> #endif, Biome> biomeMap = new ConcurrentHashMap<>();
 	private final ClientLevelWrapper level;
 	public ClientBlockDetailMap(ClientLevelWrapper level) { this.level = level; }
 	

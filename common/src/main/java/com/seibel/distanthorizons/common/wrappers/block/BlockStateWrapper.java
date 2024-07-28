@@ -24,7 +24,10 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrappe
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.apache.logging.log4j.Logger;
 
@@ -32,11 +35,11 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-#if MC_1_16_5 || MC_1_17_1
+#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 import net.minecraft.core.Registry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.EmptyBlockGetter;
-#elif MC_1_18_2 || MC_1_19_2
+#elif MC_VER == MC_1_18_2 || MC_VER == MC_1_19_2
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
 import net.minecraft.core.BlockPos;
@@ -62,9 +65,12 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
     public static final ConcurrentHashMap<BlockState, BlockStateWrapper> WRAPPER_BY_BLOCK_STATE = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<String, BlockStateWrapper> WRAPPER_BY_RESOURCE_LOCATION = new ConcurrentHashMap<>();
 	
 	public static final String AIR_STRING = "AIR";
 	public static final BlockStateWrapper AIR = new BlockStateWrapper(null, null);
+	
+	public static final String DIRT_RESOURCE_LOCATION_STRING = "minecraft:dirt";
 	
 	// TODO: Make this changeable through the config
 	public static final String[] RENDERER_IGNORED_BLOCKS_RESOURCE_LOCATIONS = { AIR_STRING, "minecraft:barrier", "minecraft:structure_void", "minecraft:light", "minecraft:tripwire" };
@@ -80,11 +86,14 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	public final BlockState blockState;
 	/** technically final, but since it requires a method call to generate it can't be marked as such */
 	private String serialString;
+	private final int hashCode;
 	/** 
 	 * Cached opacity value, -1 if not populated. <br>
 	 * Should be between {@link IBlockStateWrapper#FULLY_OPAQUE} and {@link IBlockStateWrapper#FULLY_OPAQUE}
 	 */
 	private int opacity = -1;
+	/** used by the Iris shader mod to determine how each LOD should be rendered */
+	private byte irisBlockMaterialId = 0;
 	
 	
 	
@@ -116,7 +125,10 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	{
 		this.blockState = blockState;
 		this.serialString = this.serialize(levelWrapper);
-		LOGGER.trace("Created BlockStateWrapper ["+this.serialString+"] for ["+blockState+"]");
+		this.hashCode = Objects.hash(this.serialString);
+		this.irisBlockMaterialId = this.calculateIrisBlockMaterialId();
+		
+		//LOGGER.trace("Created BlockStateWrapper ["+this.serialString+"] for ["+blockState+"] with material ID ["+this.irisBlockMaterialId+"]");
 	}
 	
 	
@@ -239,7 +251,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	}
 	
 	@Override
-	public int hashCode() { return Objects.hash(this.getSerialString()); }
+	public int hashCode() { return this.hashCode; } 
 	
 	
 	@Override
@@ -252,7 +264,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	@Override
 	public boolean isSolid()
 	{
-        #if PRE_MC_1_20_1
+        #if MC_VER < MC_1_20_1
 		return this.blockState.getMaterial().isSolid();
         #else
 		return !this.blockState.getCollisionShape(EmptyBlockGetter.INSTANCE, BlockPos.ZERO).isEmpty();
@@ -267,12 +279,15 @@ public class BlockStateWrapper implements IBlockStateWrapper
 			return false;
 		}
 		
-        #if PRE_MC_1_20_1
+        #if MC_VER < MC_1_20_1
 		return this.blockState.getMaterial().isLiquid() || !this.blockState.getFluidState().isEmpty();
         #else
 		return !this.blockState.getFluidState().isEmpty();
         #endif
 	}
+	
+	@Override
+	public byte getIrisBlockMaterialId() { return this.irisBlockMaterialId; }
 	
 	@Override
 	public String toString() { return this.getSerialString(); }
@@ -293,15 +308,15 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		
 		
 		// older versions of MC have a static registry
-		#if !(MC_1_16_5 || MC_1_17_1)
+		#if MC_VER > MC_1_17_1
 		Level level = (Level)levelWrapper.getWrappedMcObject();
 		net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
 		#endif
 		
 		ResourceLocation resourceLocation;
-		#if MC_1_16_5 || MC_1_17_1
+		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 		resourceLocation = Registry.BLOCK.getKey(this.blockState.getBlock());
-		#elif MC_1_18_2 || MC_1_19_2
+		#elif MC_VER == MC_1_18_2 || MC_VER == MC_1_19_2
 		resourceLocation = registryAccess.registryOrThrow(Registry.BLOCK_REGISTRY).getKey(this.blockState.getBlock());
 		#else
 		resourceLocation = registryAccess.registryOrThrow(Registries.BLOCK).getKey(this.blockState.getBlock());
@@ -325,103 +340,139 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	/** will only work if a level is currently loaded */
 	public static IBlockStateWrapper deserialize(String resourceStateString, ILevelWrapper levelWrapper) throws IOException
 	{
-		if (resourceStateString.equals(AIR_STRING) || resourceStateString.equals("")) // the empty string shouldn't normally happen, but just in case
+		// we need the final string for the concurrent hash map later
+		final String finalResourceStateString = resourceStateString;
+		
+		if (finalResourceStateString.equals(AIR_STRING) || finalResourceStateString.equals("")) // the empty string shouldn't normally happen, but just in case
 		{
 			return AIR;
 		}
 		
-		
-		
-		// try to parse out the BlockState
-		String blockStatePropertiesString = null; // will be null if no properties were included
-		int stateSeparatorIndex = resourceStateString.indexOf(STATE_STRING_SEPARATOR);
-		if (stateSeparatorIndex != -1)
+		// attempt to use the existing wrapper
+		if (WRAPPER_BY_RESOURCE_LOCATION.containsKey(finalResourceStateString))
 		{
-			// blockstate properties found
-			blockStatePropertiesString = resourceStateString.substring(stateSeparatorIndex + STATE_STRING_SEPARATOR.length());
-			resourceStateString = resourceStateString.substring(0, stateSeparatorIndex);
+			return WRAPPER_BY_RESOURCE_LOCATION.get(finalResourceStateString);
 		}
 		
-		// parse the resource location
-		int resourceSeparatorIndex = resourceStateString.indexOf(RESOURCE_LOCATION_SEPARATOR);
-		if (resourceSeparatorIndex == -1)
-		{
-			throw new IOException("Unable to parse Resource Location out of string: [" + resourceStateString + "].");
-		}
-		ResourceLocation resourceLocation = new ResourceLocation(resourceStateString.substring(0, resourceSeparatorIndex), resourceStateString.substring(resourceSeparatorIndex + 1));
 		
 		
-		
-		// attempt to get the BlockState from all possible BlockStates
+		// if no wrapper is found, default to air
+		BlockStateWrapper foundWrapper = AIR;
 		try
 		{
-			
-			#if !(MC_1_16_5 || MC_1_17_1)
-			// use the given level if possible, otherwise try using the currently loaded one 
-			Level level = (levelWrapper != null ? (Level)levelWrapper.getWrappedMcObject() : null);
-			level = (level == null ? Minecraft.getInstance().level : level);
-			#endif
-			
-			Block block;
-			#if MC_1_16_5 || MC_1_17_1
-			block = Registry.BLOCK.get(resourceLocation);
-			#elif MC_1_18_2 || MC_1_19_2
-			net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
-			block = registryAccess.registryOrThrow(Registry.BLOCK_REGISTRY).get(resourceLocation);
-			#else
-			net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
-			block = registryAccess.registryOrThrow(Registries.BLOCK).get(resourceLocation);
-			#endif
-			
-			
-			if (block == null)
+			// try to parse out the BlockState
+			String blockStatePropertiesString = null; // will be null if no properties were included
+			int stateSeparatorIndex = resourceStateString.indexOf(STATE_STRING_SEPARATOR);
+			if (stateSeparatorIndex != -1)
 			{
-				// shouldn't normally happen, but here to make the compiler happy
-				if (!BrokenResourceLocations.contains(resourceLocation))
-				{
-					BrokenResourceLocations.add(resourceLocation);
-					LOGGER.warn("Unable to find BlockState with the resourceLocation [" + resourceLocation + "] and properties: [" + blockStatePropertiesString + "]. Air will be used instead, some data may be lost.");
-				}
-				return AIR;
+				// blockstate properties found
+				blockStatePropertiesString = resourceStateString.substring(stateSeparatorIndex + STATE_STRING_SEPARATOR.length());
+				resourceStateString = resourceStateString.substring(0, stateSeparatorIndex);
+			}
+			
+			// parse the resource location
+			int separatorIndex = resourceStateString.indexOf(RESOURCE_LOCATION_SEPARATOR);
+			if (separatorIndex == -1)
+			{
+				throw new IOException("Unable to parse Resource Location out of string: [" + resourceStateString + "].");
+			}
+			
+			ResourceLocation resourceLocation;
+			try
+			{
+				#if MC_VER < MC_1_21
+				resourceLocation = new ResourceLocation(resourceStateString.substring(0, separatorIndex), resourceStateString.substring(separatorIndex + 1));
+				#else
+				resourceLocation = ResourceLocation.fromNamespaceAndPath(resourceStateString.substring(0, separatorIndex), resourceStateString.substring(separatorIndex + 1));
+				#endif
+			}
+			catch (Exception e)
+			{
+				throw new IOException("No Resource Location found for the string: [" + resourceStateString + "] Error: [" + e.getMessage() + "].");
 			}
 			
 			
-			// attempt to find the blockstate from all possibilities
-			BlockState foundState = null;
-			if (blockStatePropertiesString != null)
-			{
-				List<BlockState> possibleStateList = block.getStateDefinition().getPossibleStates();
-				for (BlockState possibleState : possibleStateList)
-				{
-					String possibleStatePropertiesString = serializeBlockStateProperties(possibleState);
-					if (possibleStatePropertiesString.equals(blockStatePropertiesString))
-					{
-						foundState = possibleState;
-						break;
-					}
-				}
-			}
 			
-			// use the default if no state was found or given
-			if (foundState == null)
+			// attempt to get the BlockState from all possible BlockStates
+			try
 			{
-				if (blockStatePropertiesString != null)
+				
+				#if MC_VER > MC_1_17_1
+				// use the given level if possible, otherwise try using the currently loaded one 
+				Level level = (levelWrapper != null ? (Level) levelWrapper.getWrappedMcObject() : null);
+				level = (level == null ? Minecraft.getInstance().level : level);
+				#endif
+				
+				Block block;
+				#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
+				block = Registry.BLOCK.get(resourceLocation);
+				#elif MC_VER == MC_1_18_2 || MC_VER == MC_1_19_2
+				net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
+				block = registryAccess.registryOrThrow(Registry.BLOCK_REGISTRY).get(resourceLocation);
+				#else
+				net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
+				block = registryAccess.registryOrThrow(Registries.BLOCK).get(resourceLocation);
+				#endif
+				
+				
+				if (block == null)
 				{
-					// we should have found a blockstate, but didn't
+					// shouldn't normally happen, but here to make the compiler happy
 					if (!BrokenResourceLocations.contains(resourceLocation))
 					{
 						BrokenResourceLocations.add(resourceLocation);
-						LOGGER.warn("Unable to find BlockState for Block [" + resourceLocation + "] with properties: [" + blockStatePropertiesString + "]. Using the default block state.");
+						LOGGER.warn("Unable to find BlockState with the resourceLocation [" + resourceLocation + "] and properties: [" + blockStatePropertiesString + "]. Air will be used instead, some data may be lost.");
+					}
+					
+					return AIR;
+				}
+				
+				
+				// attempt to find the blockstate from all possibilities
+				BlockState foundState = null;
+				if (blockStatePropertiesString != null)
+				{
+					List<BlockState> possibleStateList = block.getStateDefinition().getPossibleStates();
+					for (BlockState possibleState : possibleStateList)
+					{
+						String possibleStatePropertiesString = serializeBlockStateProperties(possibleState);
+						if (possibleStatePropertiesString.equals(blockStatePropertiesString))
+						{
+							foundState = possibleState;
+							break;
+						}
 					}
 				}
 				
-				foundState = block.defaultBlockState();
+				// use the default if no state was found or given
+				if (foundState == null)
+				{
+					if (blockStatePropertiesString != null)
+					{
+						// we should have found a blockstate, but didn't
+						if (!BrokenResourceLocations.contains(resourceLocation))
+						{
+							BrokenResourceLocations.add(resourceLocation);
+							LOGGER.warn("Unable to find BlockState for Block [" + resourceLocation + "] with properties: [" + blockStatePropertiesString + "]. Using the default block state.");
+						}
+					}
+					
+					foundState = block.defaultBlockState();
+				}
+				
+				foundWrapper = new BlockStateWrapper(foundState, levelWrapper);
+				return foundWrapper;
 			}
-			return new BlockStateWrapper(foundState, levelWrapper);
+			catch (Exception e)
+			{
+				throw new IOException("Failed to deserialize the string [" + finalResourceStateString + "] into a BlockStateWrapper: " + e.getMessage(), e);
+			}
 		}
-		catch (Exception e)
+		finally
 		{
-			throw new IOException("Failed to deserialize the string [" + resourceStateString + "] into a BlockStateWrapper: " + e.getMessage(), e);
+			// put if absent in case two threads deserialize at the same time
+			// unfortunately we can't put everything in a computeIfAbsent() since we also throw exceptions
+			WRAPPER_BY_RESOURCE_LOCATION.putIfAbsent(finalResourceStateString, foundWrapper);
 		}
 	}
 	
@@ -456,5 +507,112 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	}
 	
 	
+	
+	//==============//
+	// Iris methods //
+	//==============//
+	
+	private byte calculateIrisBlockMaterialId() 
+	{
+		if (this.blockState == null)
+		{
+			return IrisBlockMaterial.AIR;
+		}
+		
+		
+		String serialString = this.getSerialString().toLowerCase();
+		
+		if (this.blockState.is(BlockTags.LEAVES) 
+			|| serialString.contains("bamboo") 
+			|| serialString.contains("cactus")
+			|| serialString.contains("chorus_flower")
+			|| serialString.contains("mushroom")
+			) 
+		{
+			return IrisBlockMaterial.LEAVES;
+		}
+		else if (this.blockState.is(Blocks.LAVA))
+		{
+			return IrisBlockMaterial.LAVA;
+		}
+		else if (this.isLiquid() || this.blockState.is(Blocks.WATER))
+		{
+			return IrisBlockMaterial.WATER;
+		}
+		else if (this.blockState.getSoundType() == SoundType.WOOD
+				|| serialString.contains("root")
+				#if MC_VER >= MC_1_19_4
+				|| this.blockState.getSoundType() == SoundType.CHERRY_WOOD
+				#endif
+				) 
+		{
+			return IrisBlockMaterial.WOOD;
+		}
+		else if (this.blockState.getSoundType() == SoundType.METAL
+				#if MC_VER >= MC_1_19_2
+				|| this.blockState.getSoundType() == SoundType.COPPER
+				#endif
+				#if MC_VER >= MC_1_20_4
+				|| this.blockState.getSoundType() == SoundType.COPPER_BULB
+				|| this.blockState.getSoundType() == SoundType.COPPER_GRATE
+				#endif
+				) 
+		{
+			return IrisBlockMaterial.METAL;
+		}
+		else if (serialString.contains("grass_block"))
+		{
+			return IrisBlockMaterial.GRASS;
+		}
+		else if (
+			serialString.contains("dirt")
+			|| serialString.contains("gravel")
+			|| serialString.contains("mud")
+			|| serialString.contains("podzol")
+			|| serialString.contains("mycelium")
+			)
+		{
+			return IrisBlockMaterial.DIRT;
+		}
+		#if MC_VER >= MC_1_17_1
+		else if (this.blockState.getSoundType() == SoundType.DEEPSLATE
+				|| this.blockState.getSoundType() == SoundType.DEEPSLATE_BRICKS
+				|| this.blockState.getSoundType() == SoundType.DEEPSLATE_TILES 
+				|| this.blockState.getSoundType() == SoundType.POLISHED_DEEPSLATE
+				|| serialString.contains("deepslate") ) 
+		{
+			return IrisBlockMaterial.DEEPSLATE;
+		} 
+		#endif
+		else if (this.serialString.contains("snow"))
+		{
+			return IrisBlockMaterial.SNOW;
+		} 
+		else if (serialString.contains("sand"))
+		{
+			return IrisBlockMaterial.SAND;
+		}
+		else if (serialString.contains("terracotta"))
+		{
+			return IrisBlockMaterial.TERRACOTTA;
+		} 
+		else if (this.blockState.is(BlockTags.BASE_STONE_NETHER)) 
+		{
+			return IrisBlockMaterial.NETHER_STONE;
+		} 
+		else if (serialString.contains("stone")
+				|| serialString.contains("ore")) 
+		{
+			return IrisBlockMaterial.STONE;
+		}
+		else if (this.blockState.getLightEmission() > 0) 
+		{
+			return IrisBlockMaterial.ILLUMINATED;
+		}
+		else
+		{
+			return IrisBlockMaterial.UNKOWN;
+		}
+	}
 	
 }

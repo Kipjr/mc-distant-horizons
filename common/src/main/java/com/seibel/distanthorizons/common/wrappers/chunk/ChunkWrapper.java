@@ -25,20 +25,18 @@ import com.seibel.distanthorizons.common.wrappers.worldGeneration.mimicObject.Dh
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.ChunkLightStorage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import com.seibel.distanthorizons.coreapi.ModInfo;
 import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 
@@ -47,38 +45,42 @@ import org.apache.logging.log4j.Logger;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-#if POST_MC_1_17_1
+#if MC_VER >= MC_1_17_1
 import net.minecraft.core.QuartPos;
 #endif
 
-#if MC_1_16_5
+#if MC_VER == MC_1_16_5
 import net.minecraft.world.level.chunk.LevelChunkSection;
 #endif
 
-#if MC_1_17_1
+#if MC_VER == MC_1_17_1
 import net.minecraft.world.level.chunk.LevelChunkSection;
 #endif
 
-#if MC_1_18_2
+#if MC_VER == MC_1_18_2
 import net.minecraft.world.level.chunk.LevelChunkSection;
 #endif
 
-#if MC_1_19_2 || MC_1_19_4
+#if MC_VER == MC_1_19_2 || MC_VER == MC_1_19_4
 import net.minecraft.world.level.chunk.LevelChunkSection;
 #endif
 
-#if POST_MC_1_20_1
+#if MC_VER >= MC_1_20_1
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.core.SectionPos;
 #endif
 
+#if MC_VER <= MC_1_20_4
+import net.minecraft.world.level.chunk.ChunkStatus;
+#else
+import net.minecraft.world.level.chunk.status.ChunkStatus;
+#endif
+
+
 public class ChunkWrapper implements IChunkWrapper
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
-	
-	/** useful for debugging, but can slow down chunk operations quite a bit due to being called every time. */
-	private static final boolean RUN_RELATIVE_POS_INDEX_VALIDATION = ModInfo.IS_DEV_BUILD;
 	
 	/** can be used for interactions with the underlying chunk where creating new BlockPos objects could cause issues for the garbage collector. */
 	private static final ThreadLocal<BlockPos.MutableBlockPos> MUTABLE_BLOCK_POS_REF = ThreadLocal.withInitial(() -> new BlockPos.MutableBlockPos());
@@ -99,6 +101,11 @@ public class ChunkWrapper implements IChunkWrapper
 	private ArrayList<DhBlockPos> blockLightPosList = null;
 	
 	private boolean useDhLighting;
+	
+	private int minNonEmptyHeight = Integer.MIN_VALUE;
+	private int maxNonEmptyHeight = Integer.MAX_VALUE;
+	
+	private int blockBiomeHashCode = 0;
 	
 	/**
 	 * Due to vanilla `isClientLightReady()` not being designed for use by a non-render thread, it may return 'true'
@@ -139,34 +146,48 @@ public class ChunkWrapper implements IChunkWrapper
 	
 	
 	//=========//
-	// methods //
+	// getters //
 	//=========//
 	
 	@Override
-	public int getHeight()
+	public int getHeight() { return getHeight(this.chunk); }
+	public static int getHeight(ChunkAccess chunk)
 	{
-		#if PRE_MC_1_17_1
+		#if MC_VER < MC_1_17_1
 		return 255;
 		#else
-		return this.chunk.getHeight();
+		return chunk.getHeight();
 		#endif
 	}
 	
 	@Override
-	public int getMinBuildHeight()
+	public int getMinBuildHeight() { return getMinBuildHeight(this.chunk); }
+	public static int getMinBuildHeight(ChunkAccess chunk)
 	{
-		#if PRE_MC_1_17_1
+		#if MC_VER < MC_1_17_1
 		return 0;
 		#else
-		return this.chunk.getMinBuildHeight();
+		return chunk.getMinBuildHeight();
 		#endif
 	}
-	@Override
-	public int getMaxBuildHeight() { return this.chunk.getMaxBuildHeight(); }
 	
 	@Override
-	public int getMinFilledHeight()
+	public int getMaxBuildHeight() { return getMaxBuildHeight(this.chunk); }
+	public static int getMaxBuildHeight(ChunkAccess chunk) { return chunk.getMaxBuildHeight(); }
+	
+	@Override
+	public int getMinNonEmptyHeight()
 	{
+		if (this.minNonEmptyHeight != Integer.MIN_VALUE)
+		{
+			return this.minNonEmptyHeight;
+		}
+		
+		
+		// default if every section is empty or missing
+		this.minNonEmptyHeight = this.getMinBuildHeight();
+		
+		// determine the lowest empty section (bottom up)
 		LevelChunkSection[] sections = this.chunk.getSections();
 		for (int index = 0; index < sections.length; index++)
 		{
@@ -175,27 +196,65 @@ public class ChunkWrapper implements IChunkWrapper
 				continue;
 			}
 			
-			#if MC_1_16_5
-			if (!sections[index].isEmpty())
+			if (!isChunkSectionEmpty(sections[index]))
 			{
-				// convert from an index to a block coordinate
-				return this.chunk.getSections()[index].bottomBlockY() * 16;
+				this.minNonEmptyHeight = this.getChunkSectionMinHeight(index);
+				break;
 			}
-			#elif MC_1_17_1
-			if (!sections[index].isEmpty())
-			{
-				// convert from an index to a block coordinate
-				return this.chunk.getSections()[index].bottomBlockY() * 16;
-			}	
-			#else
-			if (!sections[index].hasOnlyAir())
-			{
-				// convert from an index to a block coordinate
-				return this.chunk.getSectionYFromSectionIndex(index) * 16;
-			}
-			#endif
 		}
-		return Integer.MAX_VALUE;
+		
+		return this.minNonEmptyHeight;
+	}
+	
+	
+	@Override
+	public int getMaxNonEmptyHeight()
+	{
+		if (this.maxNonEmptyHeight != Integer.MAX_VALUE)
+		{
+			return this.maxNonEmptyHeight;
+		}
+		
+		
+		// default if every section is empty or missing
+		this.maxNonEmptyHeight = this.getMaxBuildHeight();
+		
+		// determine the highest empty section (top down)
+		LevelChunkSection[] sections = this.chunk.getSections();
+		for (int index = sections.length-1; index >= 0; index--)
+		{
+			if (sections[index] == null)
+			{
+				continue;
+			}
+			
+			if (!isChunkSectionEmpty(sections[index]))
+			{
+				this.maxNonEmptyHeight = this.getChunkSectionMinHeight(index) + 16;
+				break;
+			}
+		}
+		
+		return this.maxNonEmptyHeight;
+	}
+	private static boolean isChunkSectionEmpty(LevelChunkSection section)
+	{
+		#if MC_VER == MC_1_16_5
+		return section.isEmpty();
+		#elif MC_VER == MC_1_17_1
+		return section.isEmpty();
+		#else
+		return section.hasOnlyAir();
+		#endif
+	}
+	private int getChunkSectionMinHeight(int index)
+	{
+		// convert from an index to a block coordinate
+		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
+		return this.chunk.getSections()[index].bottomBlockY();
+		#else
+		return this.chunk.getSectionYFromSectionIndex(index) * 16;
+		#endif
 	}
 	
 	
@@ -206,19 +265,18 @@ public class ChunkWrapper implements IChunkWrapper
 	public int getLightBlockingHeightMapValue(int xRel, int zRel) { return this.chunk.getOrCreateHeightmapUnprimed(Heightmap.Types.MOTION_BLOCKING).getFirstAvailable(xRel, zRel); }
 	
 	
-	
 	@Override
 	public IBiomeWrapper getBiome(int relX, int relY, int relZ)
 	{
-		#if PRE_MC_1_17_1
+		#if MC_VER < MC_1_17_1
 		return BiomeWrapper.getBiomeWrapper(this.chunk.getBiomes().getNoiseBiome(
 				relX >> 2, relY >> 2, relZ >> 2),
 				this.wrappedLevel);
-		#elif PRE_MC_1_18_2
+		#elif MC_VER < MC_1_18_2
 		return BiomeWrapper.getBiomeWrapper(this.chunk.getBiomes().getNoiseBiome(
 				QuartPos.fromBlock(relX), QuartPos.fromBlock(relY), QuartPos.fromBlock(relZ)),
 				this.wrappedLevel);
-		#elif PRE_MC_1_18_2
+		#elif MC_VER < MC_1_18_2
 		return BiomeWrapper.getBiomeWrapper(this.chunk.getNoiseBiome(
 				QuartPos.fromBlock(relX), QuartPos.fromBlock(relY), QuartPos.fromBlock(relZ)),
 				this.wrappedLevel);
@@ -231,9 +289,33 @@ public class ChunkWrapper implements IChunkWrapper
 	}
 	
 	@Override
+	public IBlockStateWrapper getBlockState(int relX, int relY, int relZ)
+	{
+		this.throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(relX, relY, relZ);
+		
+		BlockPos.MutableBlockPos blockPos = MUTABLE_BLOCK_POS_REF.get();
+		
+		blockPos.setX(relX);
+		blockPos.setY(relY);
+		blockPos.setZ(relZ);
+		
+		return BlockStateWrapper.fromBlockState(this.chunk.getBlockState(blockPos), this.wrappedLevel);
+	}
+	
+	@Override
 	public DhChunkPos getChunkPos() { return this.chunkPos; }
 	
 	public ChunkAccess getChunk() { return this.chunk; }
+	
+	public ChunkStatus getStatus() { return getStatus(this.getChunk()); }
+	public static ChunkStatus getStatus(ChunkAccess chunk)
+	{
+		#if MC_VER < MC_1_21 
+		return chunk.getStatus();
+		#else
+		return chunk.getPersistedStatus(); 
+		#endif
+	}
 	
 	@Override
 	public int getMaxBlockX() { return this.chunk.getPos().getMaxBlockX(); }
@@ -244,16 +326,17 @@ public class ChunkWrapper implements IChunkWrapper
 	@Override
 	public int getMinBlockZ() { return this.chunk.getPos().getMinBlockZ(); }
 	
-	@Override
-	public long getLongChunkPos() { return this.chunk.getPos().toLong(); }
+	
+	
+	//==========//
+	// lighting //
+	//==========//
 	
 	@Override
 	public void setIsDhLightCorrect(boolean isDhLightCorrect) { this.isDhLightCorrect = isDhLightCorrect; }
 	
 	@Override
 	public void setUseDhLighting(boolean useDhLighting) { this.useDhLighting = useDhLighting; }
-	
-	
 	
 	@Override
 	public boolean isLightCorrect()
@@ -264,7 +347,7 @@ public class ChunkWrapper implements IChunkWrapper
 		}
 		
 		
-		#if MC_1_16_5 || MC_1_17_1
+		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
 		return false; // MC's lighting engine doesn't work consistently enough to trust for 1.16 or 1.17
 		#else
 		if (this.chunk instanceof LevelChunk)
@@ -307,10 +390,11 @@ public class ChunkWrapper implements IChunkWrapper
 	{
 		if (this.blockLightStorage == null)
 		{
-			this.blockLightStorage = new ChunkLightStorage(this.getMinBuildHeight(), this.getMaxBuildHeight());
+			this.blockLightStorage = ChunkLightStorage.createBlockLightStorage(this);
 		}
 		return this.blockLightStorage;
 	}
+	public void setBlockLightStorage(ChunkLightStorage lightStorage) { this.blockLightStorage = lightStorage; }
 	
 	
 	@Override
@@ -330,10 +414,11 @@ public class ChunkWrapper implements IChunkWrapper
 	{
 		if (this.skyLightStorage == null)
 		{
-			this.skyLightStorage = new ChunkLightStorage(this.getMinBuildHeight(), this.getMaxBuildHeight());
+			this.skyLightStorage = ChunkLightStorage.createSkyLightStorage(this);
 		}
 		return this.skyLightStorage;
 	}
+	public void setSkyLightStorage(ChunkLightStorage lightStorage) { this.skyLightStorage = lightStorage; }
 	
 	
 	@Override
@@ -374,8 +459,12 @@ public class ChunkWrapper implements IChunkWrapper
 		}
 	}
 	
+	/** 
+	 * FIXME synchronized is necessary for a rare issue where this method is called from two separate threads at the same time
+	 *  before the list has finished populating.
+	 */
 	@Override
-	public ArrayList<DhBlockPos> getBlockLightPosList()
+	public synchronized ArrayList<DhBlockPos> getBlockLightPosList()
 	{
 		// only populate the list once
 		if (this.blockLightPosList == null)
@@ -383,7 +472,7 @@ public class ChunkWrapper implements IChunkWrapper
 			this.blockLightPosList = new ArrayList<>();
 			
 			
-			#if PRE_MC_1_20_1
+			#if MC_VER < MC_1_20_1
 			this.chunk.getLights().forEach((blockPos) ->
 			{
 				this.blockLightPosList.add(new DhBlockPos(blockPos.getX(), blockPos.getY(), blockPos.getZ()));
@@ -398,6 +487,69 @@ public class ChunkWrapper implements IChunkWrapper
 		
 		return this.blockLightPosList;
 	}
+	
+	public static void syncedUpdateClientLightStatus()
+	{
+		#if MC_VER < MC_1_18_2
+		// TODO: Check what to do in 1.18.1 and older
+		
+		// since we don't currently handle this list,
+		// clear it to prevent memory leaks
+		chunksNeedingClientLightUpdating.clear();
+		
+		#else
+		
+		// update the chunks client lighting
+		ChunkWrapper chunkWrapper = chunksNeedingClientLightUpdating.poll();
+		while (chunkWrapper != null)
+		{
+			chunkWrapper.updateIsClientLightingCorrect();
+			chunkWrapper = chunksNeedingClientLightUpdating.poll();
+		}
+		
+		#endif
+	}
+	/** Should be called after client light updates are triggered. */
+	private void updateIsClientLightingCorrect()
+	{
+		if (this.chunk instanceof LevelChunk && ((LevelChunk) this.chunk).getLevel() instanceof ClientLevel)
+		{
+			LevelChunk levelChunk = (LevelChunk) this.chunk;
+			ClientChunkCache clientChunkCache = ((ClientLevel) levelChunk.getLevel()).getChunkSource();
+			this.isMcClientLightingCorrect = clientChunkCache.getChunkForLighting(this.chunk.getPos().x, this.chunk.getPos().z) != null &&
+					#if MC_VER <= MC_1_17_1
+					levelChunk.isLightCorrect();
+					#elif MC_VER < MC_1_20_1
+					levelChunk.isClientLightReady();
+					#else
+					checkLightSectionsOnChunk(levelChunk, levelChunk.getLevel().getLightEngine());
+					#endif
+		}
+	}
+	#if MC_VER >= MC_1_20_1
+	private static boolean checkLightSectionsOnChunk(LevelChunk chunk, LevelLightEngine engine)
+	{
+		LevelChunkSection[] sections = chunk.getSections();
+		int minY = chunk.getMinSection();
+		int maxY = chunk.getMaxSection();
+		for (int y = minY; y < maxY; ++y)
+		{
+			LevelChunkSection section = sections[chunk.getSectionIndexFromSectionY(y)];
+			if (section.hasOnlyAir()) continue;
+			if (!engine.lightOnInSection(SectionPos.of(chunk.getPos(), y)))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	#endif
+	
+	
+	
+	//===============//
+	// other methods //
+	//===============//
 	
 	@Override
 	public boolean doNearbyChunksExist()
@@ -425,146 +577,27 @@ public class ChunkWrapper implements IChunkWrapper
 		return true;
 	}
 	
-	public LevelReader getColorResolver() { return this.lightSource; }
-	
-	@Override
-	public String toString() { return this.chunk.getClass().getSimpleName() + this.chunk.getPos(); }
-	
-	@Override
-	public IBlockStateWrapper getBlockState(int relX, int relY, int relZ)
-	{
-		this.throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(relX, relY, relZ);
-		
-		BlockPos.MutableBlockPos blockPos = MUTABLE_BLOCK_POS_REF.get();
-		
-		blockPos.setX(relX);
-		blockPos.setY(relY);
-		blockPos.setZ(relZ);
-		
-		return BlockStateWrapper.fromBlockState(this.chunk.getBlockState(blockPos), this.wrappedLevel);
-	}
-	
 	@Override
 	public boolean isStillValid() { return this.wrappedLevel.tryGetChunk(this.chunkPos) == this; }
 	
 	
-	public static void syncedUpdateClientLightStatus()
-	{
-		#if PRE_MC_1_18_2
-		// TODO: Check what to do in 1.18.1 and older
-		
-		// since we don't currently handle this list,
-		// clear it to prevent memory leaks
-		chunksNeedingClientLightUpdating.clear();
-		
-		#else
-		
-		// update the chunks client lighting
-		ChunkWrapper chunkWrapper = chunksNeedingClientLightUpdating.poll();
-		while (chunkWrapper != null)
-		{
-			chunkWrapper.updateIsClientLightingCorrect();
-			chunkWrapper = chunksNeedingClientLightUpdating.poll();
-		}
-		
-		#endif
-	}
-	/** Should be called after client light updates are triggered. */
-	private void updateIsClientLightingCorrect()
-	{
-		if (this.chunk instanceof LevelChunk && ((LevelChunk) this.chunk).getLevel() instanceof ClientLevel)
-		{
-			LevelChunk levelChunk = (LevelChunk) this.chunk;
-			ClientChunkCache clientChunkCache = ((ClientLevel) levelChunk.getLevel()).getChunkSource();
-			this.isMcClientLightingCorrect = clientChunkCache.getChunkForLighting(this.chunk.getPos().x, this.chunk.getPos().z) != null &&
-					#if MC_1_16_5 || MC_1_17_1
-					levelChunk.isLightCorrect();
-					#elif PRE_MC_1_20_1
-					levelChunk.isClientLightReady();
-					#else
-					checkLightSectionsOnChunk(levelChunk, levelChunk.getLevel().getLightEngine());
-					#endif
-		}
-	}
-	#if POST_MC_1_20_1
-	private static boolean checkLightSectionsOnChunk(LevelChunk chunk, LevelLightEngine engine)
-	{
-		LevelChunkSection[] sections = chunk.getSections();
-		int minY = chunk.getMinSection();
-		int maxY = chunk.getMaxSection();
-		for (int y = minY; y < maxY; ++y)
-		{
-			LevelChunkSection section = sections[chunk.getSectionIndexFromSectionY(y)];
-			if (section.hasOnlyAir()) continue;
-			if (!engine.lightOnInSection(SectionPos.of(chunk.getPos(), y)))
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-	#endif
-	
-	
 	
 	//================//
-	// helper methods //
+	// base overrides //
 	//================//
 	
-	/** used to prevent accidentally attempting to get/set values outside this chunk's boundaries */
-	private void throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(int x, int y, int z) throws IndexOutOfBoundsException
-	{
-		if (!RUN_RELATIVE_POS_INDEX_VALIDATION)
-		{
-			return;
-		}
-		
-		
-		// FIXME +1 is to handle the fact that LodDataBuilder adds +1 to all block lighting calculations, also done in the constructor
-		int minHeight = this.getMinBuildHeight();
-		int maxHeight = this.getMaxBuildHeight() + 1;
-		
-		if (x < 0 || x >= LodUtil.CHUNK_WIDTH
-				|| z < 0 || z >= LodUtil.CHUNK_WIDTH
-				|| y < minHeight || y > maxHeight)
-		{
-			String errorMessage = "Relative position [" + x + "," + y + "," + z + "] out of bounds. \n" +
-					"X/Z must be between 0 and 15 (inclusive) \n" +
-					"Y must be between [" + minHeight + "] and [" + maxHeight + "] (inclusive).";
-			throw new IndexOutOfBoundsException(errorMessage);
-		}
-	}
+	@Override
+	public String toString() { return this.chunk.getClass().getSimpleName() + this.chunk.getPos(); }
 	
-	
-	/**
-	 * Converts a 3D position into a 1D array index. <br><br>
-	 *
-	 * Source: <br>
-	 * <a href="https://stackoverflow.com/questions/7367770/how-to-flatten-or-index-3d-array-in-1d-array">stackoverflow</a>
-	 */
-	public int relativeBlockPosToIndex(int xRel, int y, int zRel)
-	{
-		int yRel = y - this.getMinBuildHeight();
-		return (zRel * LodUtil.CHUNK_WIDTH * this.getHeight()) + (yRel * LodUtil.CHUNK_WIDTH) + xRel;
-	}
-	
-	/**
-	 * Converts a 3D position into a 1D array index. <br><br>
-	 *
-	 * Source: <br>
-	 * <a href="https://stackoverflow.com/questions/7367770/how-to-flatten-or-index-3d-array-in-1d-array">stackoverflow</a>
-	 */
-	public DhBlockPos indexToRelativeBlockPos(int index)
-	{
-		final int zRel = index / (LodUtil.CHUNK_WIDTH * this.getHeight());
-		index -= (zRel * LodUtil.CHUNK_WIDTH * this.getHeight());
-		
-		final int y = index / LodUtil.CHUNK_WIDTH;
-		final int yRel = y + this.getMinBuildHeight();
-		
-		final int xRel = index % LodUtil.CHUNK_WIDTH;
-		return new DhBlockPos(xRel, yRel, zRel);
-	}
-	
+	//@Override 
+	//public int hashCode()
+	//{
+	//	if (this.blockBiomeHashCode == 0)
+	//	{
+	//		this.blockBiomeHashCode = this.getBlockBiomeHashCode();
+	//	}
+	//	
+	//	return this.blockBiomeHashCode;
+	//}
 	
 }

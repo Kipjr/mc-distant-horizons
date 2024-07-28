@@ -19,7 +19,6 @@
 
 package com.seibel.distanthorizons.common.wrappers.block;
 
-import com.seibel.distanthorizons.common.LodCommonMain;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.*;
@@ -50,7 +49,7 @@ public class TintGetterOverrideFast implements BlockAndTintGetter
 	
 	private Biome _getBiome(BlockPos pos)
 	{
-		#if POST_MC_1_18_2
+		#if MC_VER >= MC_1_18_2
 		return parent.getBiome(pos).value();
 		#else
 		return parent.getBiome(pos);
@@ -58,18 +57,7 @@ public class TintGetterOverrideFast implements BlockAndTintGetter
 	}
 	
 	@Override
-	public int getBlockTint(BlockPos blockPos, ColorResolver colorResolver)
-	{
-		if (LodCommonMain.forgeMethodCaller != null)
-		{
-			return LodCommonMain.forgeMethodCaller.colorResolverGetColor(colorResolver, _getBiome(blockPos),
-					blockPos.getX(), blockPos.getZ());
-		}
-		else
-		{
-			return colorResolver.getColor(_getBiome(blockPos), blockPos.getX(), blockPos.getZ());
-		}
-	}
+	public int getBlockTint(BlockPos blockPos, ColorResolver colorResolver) { return colorResolver.getColor(this._getBiome(blockPos), blockPos.getX(), blockPos.getZ()); }
 	
 	@Override
 	public float getShade(Direction direction, boolean bl) { return this.parent.getShade(direction, bl); }
@@ -167,7 +155,7 @@ public class TintGetterOverrideFast implements BlockAndTintGetter
 		return parent.getMaxBuildHeight();
 	}
 	
-	#if POST_MC_1_17_1
+	#if MC_VER >= MC_1_17_1
 	@Override
 	public <T extends BlockEntity> Optional<T> getBlockEntity(BlockPos blockPos, BlockEntityType<T> blockEntityType)
 	{

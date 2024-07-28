@@ -36,7 +36,7 @@ public class GetConfigScreen
 			case JavaFX:
 				return MinecraftScreen.getScreen(parent, new JavaScreenHandlerScreen(new ConfigScreen()), ModInfo.ID + ".title");
 			default:
-				return null;
+				throw new IllegalArgumentException("No config screen implementation defined for ["+useScreen+"].");
 		}
 	}
 	

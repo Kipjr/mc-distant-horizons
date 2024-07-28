@@ -20,15 +20,20 @@
 package com.seibel.distanthorizons.fabric.mixins.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-#if PRE_MC_1_19_4
+#if MC_VER < MC_1_19_4
 import com.mojang.math.Matrix4f;
 #else
-import net.minecraft.client.Camera;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.LightTexture;
 import org.joml.Matrix4f;
 #endif
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
+import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
+import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
+import com.seibel.distanthorizons.coreapi.util.math.Mat4f;
+import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import com.seibel.distanthorizons.core.config.Config;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -37,6 +42,7 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.level.lighting.LevelLightEngine;
+import org.lwjgl.opengl.GL15;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -62,50 +68,66 @@ public class MixinLevelRenderer
 {
     @Shadow
     private ClientLevel level;
-    @Unique
-    private static float previousPartialTicks = 0;
 
-    // Inject rendering at first call to renderChunkLayer
-    // HEAD or RETURN
-	#if PRE_MC_1_17_1
-	@Inject(at = @At("RETURN"), method = "renderSky(Lcom/mojang/blaze3d/vertex/PoseStack;F)V")
-	private void renderSky(PoseStack matrixStackIn, float partialTicks, CallbackInfo callback)
-	{
-		// get the partial ticks since renderBlockLayer doesn't
-		// have access to them
-		previousPartialTicks = partialTicks;
-	}
-	#else
-    @Inject(method = "renderClouds", at = @At("HEAD"), cancellable = true)
-    public void renderClouds(PoseStack poseStack, Matrix4f projectionMatrix, float tickDelta, double cameraX, double cameraY, double cameraZ, CallbackInfo ci) {
-        // get the partial ticks since renderChunkLayer doesn't
-        // have access to them
-        previousPartialTicks = tickDelta;
-    }
-    #endif
-
-	#if PRE_MC_1_17_1
+	#if MC_VER < MC_1_17_1
     @Inject(at = @At("HEAD"),
 			method = "renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDD)V",
 			cancellable = true)
 	private void renderChunkLayer(RenderType renderType, PoseStack matrixStackIn, double xIn, double yIn, double zIn, CallbackInfo callback)
-	#elif PRE_MC_1_19_4
+	#elif MC_VER < MC_1_19_4
     @Inject(at = @At("HEAD"),
             method = "renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V",
             cancellable = true)
     private void renderChunkLayer(RenderType renderType, PoseStack modelViewMatrixStack, double cameraXBlockPos, double cameraYBlockPos, double cameraZBlockPos, Matrix4f projectionMatrix, CallbackInfo callback)
-	#elif PRE_MC_1_20_2
+	#elif MC_VER < MC_1_20_2
     @Inject(at = @At("HEAD"),
             method = "renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V",
             cancellable = true)
     private void renderChunkLayer(RenderType renderType, PoseStack modelViewMatrixStack, double cameraXBlockPos, double cameraYBlockPos, double cameraZBlockPos, Matrix4f projectionMatrix, CallbackInfo callback)
-    #else
+    #elif MC_VER < MC_1_20_6
 	@Inject(at = @At("HEAD"),
 			method = "Lnet/minecraft/client/renderer/LevelRenderer;renderSectionLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V",
 			cancellable = true)
 	private void renderChunkLayer(RenderType renderType, PoseStack modelViewMatrixStack, double camX, double camY, double camZ, Matrix4f projectionMatrix, CallbackInfo callback)
+	#else
+	@Inject(at = @At("HEAD"),
+			method = "Lnet/minecraft/client/renderer/LevelRenderer;renderSectionLayer(Lnet/minecraft/client/renderer/RenderType;DDDLorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V",
+			cancellable = true)
+	private void renderChunkLayer(RenderType renderType, double x, double y, double z, Matrix4f projectionMatrix, Matrix4f frustumMatrix, CallbackInfo callback)
     #endif
     {
+		#if MC_VER == MC_1_16_5
+	    // get the matrices from the OpenGL fixed pipeline
+	    float[] mcProjMatrixRaw = new float[16];
+	    GL15.glGetFloatv(GL15.GL_PROJECTION_MATRIX, mcProjMatrixRaw);
+	    Mat4f mcProjectionMatrix = new Mat4f(mcProjMatrixRaw);
+	    mcProjectionMatrix.transpose();
+	    
+	    Mat4f mcModelViewMatrix = McObjectConverter.Convert(matrixStackIn.last().pose());
+		
+		#elif MC_VER <= MC_1_20_4
+		// get the matrices directly from MC
+		Mat4f mcModelViewMatrix = McObjectConverter.Convert(modelViewMatrixStack.last().pose());
+		Mat4f mcProjectionMatrix = McObjectConverter.Convert(projectionMatrix);
+		#else
+	    // get the matrices directly from MC
+	    Mat4f mcModelViewMatrix = McObjectConverter.Convert(projectionMatrix);
+	    Mat4f mcProjectionMatrix = new Mat4f();
+	    mcProjectionMatrix.setIdentity();
+		#endif
+	    
+	    if (renderType.equals(RenderType.translucent())) {
+		    ClientApi.INSTANCE.renderDeferredLods(ClientLevelWrapper.getWrapper(this.level),
+				    mcModelViewMatrix,
+				    mcProjectionMatrix,
+					#if MC_VER < MC_1_21
+					Minecraft.getInstance().getFrameTime()
+					#else
+				    Minecraft.getInstance().getTimer().getRealtimeDeltaTicks()
+					#endif
+				    );
+	    }
+		
 		// FIXME completely disables rendering when sodium is installed
 		if (Config.Client.Advanced.Debugging.lodOnlyMode.get())
 		{
@@ -113,15 +135,18 @@ public class MixinLevelRenderer
 		}
     }
 	
-	#if PRE_MC_1_19_4
+	#if MC_VER < MC_1_19_4
 	@Inject(at = @At(value = "TAIL", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;runUpdates(IZZ)I"), method = "renderLevel")
 	public void callAfterRunUpdates(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci)
-	#elif PRE_MC_1_20_1
+	#elif MC_VER < MC_1_20_1
 	@Inject(at = @At(value = "TAIL", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;runUpdates(IZZ)I"), method = "renderLevel")
 	public void callAfterRunUpdates(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci)
+	#elif MC_VER < MC_1_20_6
+	@Inject(at = @At(value = "TAIL", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;runLightUpdates()I"), method = "renderLevel")
+	private void callAfterRunUpdates(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci)
 	#else
 	@Inject(at = @At(value = "TAIL", target = "Lnet/minecraft/world/level/lighting/LevelLightEngine;runLightUpdates()I"), method = "renderLevel")
-	private void callAfterRunUpdates(PoseStack poseStack, float partialTick, long finishNanoTime, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci) 
+	private void callAfterRunUpdates(CallbackInfo ci) 
 	#endif
 	{
 		ChunkWrapper.syncedUpdateClientLightStatus();

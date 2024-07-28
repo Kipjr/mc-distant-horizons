@@ -17,7 +17,7 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.forge.mixins.client;
+package com.seibel.distanthorizons.neoforge.mixins.client;
 
 
 import com.mojang.blaze3d.platform.NativeImage;
@@ -26,47 +26,34 @@ import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftRenderWrapp
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import com.seibel.distanthorizons.common.util.ILightTextureMarker;
-
-import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.client.renderer.LightTexture;
 
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(DynamicTexture.class)
-public class MixinDynamicTexture implements ILightTextureMarker
+@Mixin(LightTexture.class)
+public class MixinLightTexture
 {
-	/** Used to prevent accidentally using other dynamic textures as a lightmap */
-	@Unique
-	private boolean isLightTexture = false;
-	
 	@Shadow
 	@Final
-	private NativeImage pixels;
+	private NativeImage lightPixels;
 	
-	@Inject(method = "upload()V", at = @At("HEAD"))
-	public void updateLightTexture(CallbackInfo ci)
+	
+	@Inject(method = "updateLightTexture(F)V", at = @At("RETURN"))
+	public void updateLightTexture(float partialTicks, CallbackInfo ci)
 	{
-		// since the light map is always updated on the client render thread we should be able to access the client level at the same time
 		IMinecraftClientWrapper mc = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-		if (!this.isLightTexture
-			|| mc == null
-			|| mc.getWrappedClientLevel() == null
-			)
+		if (mc == null || mc.getWrappedClientLevel() == null)
 		{
 			return;
 		}
 		
-		//ApiShared.LOGGER.info("Lightmap update");
 		IClientLevelWrapper clientLevel = mc.getWrappedClientLevel();
-		MinecraftRenderWrapper.INSTANCE.updateLightmap(this.pixels, clientLevel);
+		MinecraftRenderWrapper.INSTANCE.updateLightmap(this.lightPixels, clientLevel);
 	}
-	
-	public void markLightTexture() { this.isLightTexture = true; }
 	
 }

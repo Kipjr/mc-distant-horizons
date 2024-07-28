@@ -25,12 +25,18 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkSource;
-import net.minecraft.world.level.chunk.ChunkStatus;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
+
+#if MC_VER <= MC_1_20_4
+import net.minecraft.world.level.chunk.ChunkStatus;
+#else
+import net.minecraft.world.level.chunk.status.ChunkStatus;
+#endif
 
 public class ClientLevelWrapper implements IClientLevelWrapper
 {
@@ -40,6 +46,9 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	
 	private final ClientLevel level;
 	private final ClientBlockDetailMap blockMap = new ClientBlockDetailMap(this);
+	
+	private BlockStateWrapper dirtBlockWrapper;
+	private BiomeWrapper plainsBiomeWrapper;
 	
 	
 	
@@ -117,6 +126,46 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	}
 	
 	@Override
+	public int getDirtBlockColor()
+	{
+		if (this.dirtBlockWrapper == null)
+		{
+			try
+			{
+				this.dirtBlockWrapper = (BlockStateWrapper) BlockStateWrapper.deserialize(BlockStateWrapper.DIRT_RESOURCE_LOCATION_STRING, this);
+			}
+			catch (IOException e)
+			{
+				// shouldn't happen, but just in case
+				LOGGER.warn("Unable to get dirt color with resource location ["+BlockStateWrapper.DIRT_RESOURCE_LOCATION_STRING+"] with level ["+this+"].", e);
+				return -1;
+			}
+		}
+		
+		return this.blockMap.getColor(this.dirtBlockWrapper.blockState, BiomeWrapper.EMPTY_WRAPPER, DhBlockPos.ZERO);
+	}
+	
+	@Override
+	public IBiomeWrapper getPlainsBiomeWrapper()
+	{
+		if (this.plainsBiomeWrapper == null)
+		{
+			try
+			{
+				this.plainsBiomeWrapper = (BiomeWrapper) BiomeWrapper.deserialize(BiomeWrapper.PLAINS_RESOURCE_LOCATION_STRING, this);
+			}
+			catch (IOException e)
+			{
+				// shouldn't happen, but just in case
+				LOGGER.warn("Unable to get planes biome with resource location ["+BiomeWrapper.PLAINS_RESOURCE_LOCATION_STRING+"] with level ["+this+"].", e);
+				return null;
+			}
+		}
+		
+		return this.plainsBiomeWrapper;
+	}
+	
+	@Override
 	public IDimensionTypeWrapper getDimensionType() { return DimensionTypeWrapper.getDimensionTypeWrapper(this.level.dimensionType()); }
 	
 	@Override
@@ -136,7 +185,7 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	@Override
 	public int getMinHeight()
 	{
-        #if PRE_MC_1_17_1
+        #if MC_VER < MC_1_17_1
         return 0;
         #else
 		return this.level.getMinBuildHeight();

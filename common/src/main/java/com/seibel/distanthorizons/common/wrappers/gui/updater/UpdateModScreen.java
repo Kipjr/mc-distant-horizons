@@ -1,23 +1,19 @@
 package com.seibel.distanthorizons.common.wrappers.gui.updater;
 
-import com.mojang.blaze3d.platform.NativeImage;
-import com.seibel.distanthorizons.api.enums.config.EUpdateBranch;
+import com.seibel.distanthorizons.api.enums.config.EDhApiUpdateBranch;
 import com.seibel.distanthorizons.common.wrappers.gui.DhScreen;
 import com.seibel.distanthorizons.common.wrappers.gui.TexturedButtonWidget;
 import com.seibel.distanthorizons.core.jar.ModJarInfo;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.jar.JarUtils;
 import com.seibel.distanthorizons.core.jar.installer.ModrinthGetter;
 import com.seibel.distanthorizons.core.jar.updater.SelfUpdater;
-import net.minecraft.client.Minecraft;
-#if POST_MC_1_20_1
+#if MC_VER >= MC_1_20_1
 import net.minecraft.client.gui.GuiGraphics;
 #else
 import com.mojang.blaze3d.vertex.PoseStack;
 #endif
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
 
 import static com.seibel.distanthorizons.common.wrappers.gui.GuiHelper.*;
@@ -45,16 +41,18 @@ public class UpdateModScreen extends DhScreen
 		super(Translatable(ModInfo.ID + ".updater.title"));
 		this.parent = parent;
 		this.newVersionID = newVersionID;
-
-        switch (Config.Client.Advanced.AutoUpdater.updateBranch.get()) {
-	        case STABLE:
-                currentVer = ModInfo.VERSION;
-                nextVer = ModrinthGetter.releaseNames.get(this.newVersionID);
-				break;
-	        case NIGHTLY:
-                currentVer = ModJarInfo.Git_Commit.substring(0,7);
-                nextVer = this.newVersionID.substring(0,7);
-				break;
+		
+		
+		EDhApiUpdateBranch updateBranch = EDhApiUpdateBranch.convertAutoToStableOrNightly(Config.Client.Advanced.AutoUpdater.updateBranch.get());
+		if (updateBranch == EDhApiUpdateBranch.STABLE)
+        {
+	        this.currentVer = ModInfo.VERSION;
+	        this.nextVer = ModrinthGetter.releaseNames.get(this.newVersionID);
+        }
+	    else
+        {
+	        this.currentVer = ModJarInfo.Git_Commit.substring(0,7);
+	        this.nextVer = this.newVersionID.substring(0,7);
         }
 	}
 	
@@ -66,13 +64,6 @@ public class UpdateModScreen extends DhScreen
 		
 		try
 		{
-			// We cannot get assets from the root of the mod so we use this hack
-			// TODO: Load the icon.png and logo.png in the mod initialise rather than here
-			ResourceLocation logoLocation = new ResourceLocation(ModInfo.ID, "logo.png");
-			Minecraft.getInstance().getTextureManager().register(
-					logoLocation,
-					new DynamicTexture(NativeImage.read(JarUtils.accessFile("logo.png")))
-			);
 			
 			
 			// Logo image
@@ -84,7 +75,13 @@ public class UpdateModScreen extends DhScreen
 					// Offset
 					0, 0,
 					// Some textuary stuff
-					0, logoLocation, 130, 65,
+					0, 
+					#if MC_VER < MC_1_21 
+					new ResourceLocation(ModInfo.ID, "logo.png"),
+					#else
+					ResourceLocation.fromNamespaceAndPath(ModInfo.ID, "logo.png"),
+					#endif
+					130, 65,
 					// Create the button and tell it where to go
 					// For now it goes to the client option by default
 					(buttonWidget) -> System.out.println("Nice, you found an easter egg :)"), // TODO: Add a proper easter egg to pressing the logo (maybe with confetti)
@@ -99,7 +96,7 @@ public class UpdateModScreen extends DhScreen
 			e.printStackTrace();
 		}
 		
-		if (Config.Client.Advanced.AutoUpdater.updateBranch.get() == EUpdateBranch.STABLE)
+		if (!ModInfo.IS_DEV_BUILD)
 		{
 			this.addBtn(new TexturedButtonWidget(
 					// Where the button is on the screen
@@ -109,7 +106,13 @@ public class UpdateModScreen extends DhScreen
 					// Offset
 					0, 0,
 					// Some textuary stuff
-					0, new ResourceLocation(ModInfo.ID, "textures/gui/changelog.png"), 20, 20,
+					0, 
+					#if MC_VER < MC_1_21 
+					new ResourceLocation(ModInfo.ID, "textures/gui/changelog.png"),
+					#else
+					ResourceLocation.fromNamespaceAndPath(ModInfo.ID, "textures/gui/changelog.png"),
+					#endif
+					20, 20,
 					// Create the button and tell it where to go
 					(buttonWidget) -> Objects.requireNonNull(minecraft).setScreen(new ChangelogScreen(this, this.newVersionID)), // TODO: Add a proper easter egg to pressing the logo (maybe with confetti)
 					// Add a title to the button
@@ -146,29 +149,27 @@ public class UpdateModScreen extends DhScreen
 	}
 	
 	@Override
-    #if PRE_MC_1_20_1
+    #if MC_VER < MC_1_20_1
 	public void render(PoseStack matrices, int mouseX, int mouseY, float delta)
     #else
 	public void render(GuiGraphics matrices, int mouseX, int mouseY, float delta)
     #endif
 	{
-		#if PRE_MC_1_20_2
+		#if MC_VER < MC_1_20_2
 		this.renderBackground(matrices); // Render background
 		#else
 		this.renderBackground(matrices, mouseX, mouseY, delta); // Render background
 		#endif
 		
+		// TODO: add the tooltips for the buttons
+		super.render(matrices, mouseX, mouseY, delta); // Render the buttons
+		// TODO: Add tooltips
 		
 		// Render the text's
 		DhDrawCenteredString(matrices, this.font, Translatable(ModInfo.ID + ".updater.text1"), this.width / 2, this.height / 2 - 35, 0xFFFFFF);
 		DhDrawCenteredString(matrices, this.font, 
 				Translatable(ModInfo.ID + ".updater.text2", currentVer, nextVer), 
 				this.width / 2, this.height / 2 - 20, 0x52FD52);
-		
-		// TODO: add the tooltips for the buttons
-		super.render(matrices, mouseX, mouseY, delta); // Render the buttons
-		
-		// TODO: Add tooltips
 	}
 	
 	@Override

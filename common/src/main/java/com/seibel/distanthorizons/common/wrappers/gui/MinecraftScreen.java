@@ -4,7 +4,7 @@ import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.seibel.distanthorizons.core.config.gui.AbstractScreen;
 import net.minecraft.client.Minecraft;
-#if POST_MC_1_20_1
+#if MC_VER >= MC_1_20_1
 import net.minecraft.client.gui.GuiGraphics;
 #endif
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
@@ -28,7 +28,7 @@ public class MinecraftScreen
 		private AbstractScreen screen;
 		
 		
-		#if PRE_MC_1_19_2
+		#if MC_VER < MC_1_19_2
 		public static net.minecraft.network.chat.TranslatableComponent translate(String str, Object... args)
 		{
 			return new net.minecraft.network.chat.TranslatableComponent(str, args);
@@ -60,19 +60,23 @@ public class MinecraftScreen
 			screen.init(); // Init our own config screen
 			
 			this.list = new ConfigListWidget(this.minecraft, this.width, this.height, 0, 0, 25); // Select the area to tint
+			
+			#if MC_VER < MC_1_20_6 // no background is rendered in MC 1.20.6+
 			if (this.minecraft != null && this.minecraft.level != null) // Check if in game
 				this.list.setRenderBackground(false); // Disable from rendering
+			#endif
+			
 			this.addWidget(this.list); // Add the tint to the things to be rendered
 		}
 		
 		@Override
-        #if PRE_MC_1_20_1
+        #if MC_VER < MC_1_20_1
 		public void render(PoseStack matrices, int mouseX, int mouseY, float delta)
         #else
 		public void render(GuiGraphics matrices, int mouseX, int mouseY, float delta)
         #endif
 		{
-			#if PRE_MC_1_20_2
+			#if MC_VER < MC_1_20_2
 			this.renderBackground(matrices); // Render background
 			#else
 			this.renderBackground(matrices, mouseX, mouseY, delta); // Render background
@@ -133,7 +137,7 @@ public class MinecraftScreen
 	{
 		public ConfigListWidget(Minecraft minecraftClient, int canvasWidth, int canvasHeight, int topMargin, int botMargin, int itemSpacing)
 		{
-			#if PRE_MC_1_20_4
+			#if MC_VER < MC_1_20_4
 			super(minecraftClient, canvasWidth, canvasHeight, topMargin, canvasHeight - botMargin, itemSpacing);
 			#else
 			super(minecraftClient, canvasWidth, canvasHeight - (topMargin + botMargin), topMargin, itemSpacing);

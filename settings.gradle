@@ -4,10 +4,18 @@ pluginManagement {
             name "Fabric"
             url "https://maven.fabricmc.net/"
         }
-        // TODO: Stop using Forge for versions with NeoForge
+        // TODO: Stop using Forge for versions with NeoForged
         maven {
             name "Forge"
             url "https://maven.minecraftforge.net/"
+        }
+        maven {
+            name "NeoForge Releases"
+            url "https://maven.neoforged.net/releases/"
+        }
+        maven {
+            name "NeoForge Snapshot"
+            url "https://maven.neoforged.net/snapshots/"
         }
         maven {
             name "Architectury (Better Forge because regular Forge is annoying)" // TODO: Once we switch to NeoForge, would it's gradle work better? or will it have Forge's problems in it
@@ -21,14 +29,36 @@ pluginManagement {
             name "Sponge"
             url "https://repo.spongepowered.org/repository/maven-public/"
         }
+        maven {
+            name "ParchmentMC"
+            url "https://maven.parchmentmc.org"
+        }
         mavenCentral()
         gradlePluginPortal()
+        
+        // Not needed, but useful for debugging gradle plugins
+        mavenLocal()
     }
 }
 
 
 
-// Loads the version.properties
+// Throw an error and a little help message if the user forgot to clone the core sub-project
+if (!file("./coreSubProjects/LICENSE.txt").exists()) { // the LICENCE.txt file should always, and only exist if the core-sub-project was cloned
+    println('''
+It seems that the core sub project was not included...
+ please make sure that when you were cloning the repo, you were using the `--recurse-submodules` flag on git.
+ and if its too late now to re-clone the project, please grab the core sub project in whatever way you can from https://gitlab.com/jeseibel/distant-horizons-core.git
+
+If you still need help with compiling, please read the Readme.md
+    ''')
+    throw new GradleException("coreSubProject not found")
+}
+
+
+
+
+/** Loads the VersionProperties fiel for the currently selected Minecraft version. */
 def loadProperties() {
     def defaultMcVersion = "1.20.1" // 1.20.1 is our current most stable version so we use that if no version was defined
 
@@ -65,7 +95,6 @@ def loadProperties() {
     gradle.ext.mcVers = mcVers
     gradle.ext.mcIndex = mcIndex
 }
-
 loadProperties()
 
 
@@ -81,7 +110,9 @@ project(":api").projectDir = file('coreSubProjects/api')
 include("common")
 // Enables or disables the subprojects depending on whats in the versionProperties/mcVer.properties
 for (loader in ((String) gradle.builds_for).split(",")) {
-    include(loader.strip()) // Strip it in case a space is added before or after the comma
+    def loaderName = loader.strip() // Strip it in case a space is added before or after the comma
+    println "Adding loader " + loaderName
+    include(loaderName)
 }
 //if (gradle.builds_for.contains("fabric") || gradle.builds_for.contains("quilt"))
 //    include("fabricLike")

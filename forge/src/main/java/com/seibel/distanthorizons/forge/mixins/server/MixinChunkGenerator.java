@@ -22,7 +22,7 @@ package com.seibel.distanthorizons.forge.mixins.server;
 import org.spongepowered.asm.mixin.Mixin;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 
-#if PRE_MC_1_18_2
+#if MC_VER < MC_1_18_2
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 

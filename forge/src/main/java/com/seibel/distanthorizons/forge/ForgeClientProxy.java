@@ -19,6 +19,7 @@
 
 package com.seibel.distanthorizons.forge;
 
+import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.common.util.ProxyUtil;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftRenderWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
@@ -36,7 +37,7 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
 import net.minecraft.world.level.LevelAccessor;
 
 import net.minecraft.client.multiplayer.ClientLevel;
-#if PRE_MC_1_19_2
+#if MC_VER < MC_1_19_2
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 #else
@@ -44,13 +45,13 @@ import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.event.level.LevelEvent;
 #endif
 
-#if POST_MC_1_18_2
+#if MC_VER >= MC_1_18_2
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 #endif
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraft.world.level.chunk.ChunkAccess;
 
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.common.MinecraftForge;
 //import net.minecraftforge.network.NetworkRegistry;
 //import net.minecraftforge.network.simple.SimpleChannel;
 import org.apache.logging.log4j.Logger;
@@ -71,7 +72,7 @@ import org.lwjgl.opengl.GL32;
  * @author James_Seibel
  * @version 2023-7-27
  */
-public class ForgeClientProxy
+public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 {
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
@@ -79,11 +80,20 @@ public class ForgeClientProxy
 //	private static SimpleChannel multiversePluginChannel;
 	
 	
-	#if PRE_MC_1_19_2
+	#if MC_VER < MC_1_19_2
 	private static LevelAccessor GetEventLevel(WorldEvent e) { return e.getWorld(); }
 	#else
 	private static LevelAccessor GetEventLevel(LevelEvent e) { return e.getLevel(); }
 	#endif
+	
+	
+	
+	@Override
+	public void registerEvents()
+	{
+		MinecraftForge.EVENT_BUS.register(this);
+		this.setupNetworkingListeners();
+	}
 	
 	
 	
@@ -107,7 +117,7 @@ public class ForgeClientProxy
 	//==============//
 	
 	@SubscribeEvent
-	#if PRE_MC_1_19_2
+	#if MC_VER < MC_1_19_2
 	public void clientLevelLoadEvent(WorldEvent.Load event)
 	#else
 	public void clientLevelLoadEvent(LevelEvent.Load event)
@@ -115,7 +125,7 @@ public class ForgeClientProxy
 	{
 		LOGGER.info("level load");
 		
-		#if PRE_MC_1_19_2
+		#if MC_VER < MC_1_19_2
 		LevelAccessor level = event.getWorld();
 		#else
 		LevelAccessor level = event.getLevel();
@@ -131,15 +141,15 @@ public class ForgeClientProxy
 		ClientApi.INSTANCE.clientLevelLoadEvent(clientLevelWrapper);
 	}
 	@SubscribeEvent
-	#if PRE_MC_1_19_2
+	#if MC_VER < MC_1_19_2
 	public void clientLevelUnloadEvent(WorldEvent.Unload event)
 	#else
-	public void clientLevelUnloadEvent(LevelEvent.Load event)
+	public void clientLevelUnloadEvent(LevelEvent.Unload event)
 	#endif
 	{
 		LOGGER.info("level unload");
 		
-		#if PRE_MC_1_19_2
+		#if MC_VER < MC_1_19_2
 		LevelAccessor level = event.getWorld();
 		#else
 		LevelAccessor level = event.getLevel();
@@ -163,9 +173,14 @@ public class ForgeClientProxy
 	@SubscribeEvent
 	public void rightClickBlockEvent(PlayerInteractEvent.RightClickBlock event)
 	{
-		LOGGER.trace("interact or block place event at blockPos: " + event.getPos());
+		if (SharedApi.isChunkAtBlockPosAlreadyUpdating(event.getPos().getX(), event.getPos().getZ()))
+		{
+			return;
+		}
 		
-		#if PRE_MC_1_19_2
+		//LOGGER.trace("interact or block place event at blockPos: " + event.getPos());
+		
+		#if MC_VER < MC_1_19_2
 		LevelAccessor level = event.getWorld();
 		#else
 		LevelAccessor level = event.getLevel();
@@ -177,9 +192,14 @@ public class ForgeClientProxy
 	@SubscribeEvent
 	public void leftClickBlockEvent(PlayerInteractEvent.LeftClickBlock event)
 	{
-		LOGGER.trace("break or block attack at blockPos: " + event.getPos());
+		if (SharedApi.isChunkAtBlockPosAlreadyUpdating(event.getPos().getX(), event.getPos().getZ()))
+		{
+			return;
+		}
 		
-		#if PRE_MC_1_19_2
+		//LOGGER.trace("break or block attack at blockPos: " + event.getPos());
+		
+		#if MC_VER < MC_1_19_2
 		LevelAccessor level = event.getWorld();
 		#else
 		LevelAccessor level = event.getLevel();
@@ -217,7 +237,7 @@ public class ForgeClientProxy
 	//==============//
 	
 	@SubscribeEvent
-	public void registerKeyBindings(#if PRE_MC_1_19_2 InputEvent.KeyInputEvent #else InputEvent.Key #endif event)
+	public void registerKeyBindings(#if MC_VER < MC_1_19_2 InputEvent.KeyInputEvent #else InputEvent.Key #endif event)
 	{
 		if (Minecraft.getInstance().player == null)
 		{
@@ -237,8 +257,7 @@ public class ForgeClientProxy
 	// networking //
 	//============//
 	
-	/** @param event this is just to ensure the event is called at the right time, if it is called outside the {@link FMLClientSetupEvent} event, the binding may fail */
-	public static void setupNetworkingListeners(FMLClientSetupEvent event)
+	public void setupNetworkingListeners()
 	{
 //		multiversePluginChannel = NetworkRegistry.newSimpleChannel(
 //				new ResourceLocation(ModInfo.NETWORKING_RESOURCE_NAMESPACE, ModInfo.MULTIVERSE_PLUGIN_NAMESPACE),
@@ -298,20 +317,18 @@ public class ForgeClientProxy
 	//===========//
 	
 	@SubscribeEvent
-	#if POST_MC_1_18_2
+	#if MC_VER >= MC_1_18_2
 	public void afterLevelRenderEvent(RenderLevelStageEvent event)
 	#else
 	public void afterLevelRenderEvent(TickEvent.RenderTickEvent event)
 	#endif
 	{
-		#if POST_MC_1_20_1
+		#if MC_VER >= MC_1_20_1
 		if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL)
-		#elif POST_MC_1_18_2
+		#elif MC_VER >= MC_1_18_2
 		if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_SOLID_BLOCKS)
 		#else
-		// FIXME: Is this the correct location for 1.16 & 1.17???
-		// I couldnt find anything for rendering after the level, so is rendering after overlays ok?
-		if (event.type.equals(TickEvent.RenderTickEvent.Type.WORLD))
+		if (event.type.equals(TickEvent.RenderTickEvent.Type.RENDER))
 		#endif
 		{
 			try

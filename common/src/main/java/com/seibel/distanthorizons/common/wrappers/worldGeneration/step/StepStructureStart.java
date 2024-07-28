@@ -30,9 +30,15 @@ import com.seibel.distanthorizons.common.wrappers.worldGeneration.ThreadedParame
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import org.apache.logging.log4j.Logger;
+
+#if MC_VER <= MC_1_20_4
+import net.minecraft.world.level.chunk.ChunkStatus;
+#else
+import net.minecraft.world.level.chunk.status.ChunkStatus;
+#endif
+
 
 public final class StepStructureStart
 {
@@ -70,17 +76,21 @@ public final class StepStructureStart
 		for (ChunkWrapper chunkWrapper : chunkWrappers)
 		{
 			ChunkAccess chunk = chunkWrapper.getChunk();
-			if (!chunk.getStatus().isOrAfter(STATUS))
+			if (!chunkWrapper.getStatus().isOrAfter(STATUS))
 			{
+				#if MC_VER < MC_1_21
 				((ProtoChunk) chunk).setStatus(STATUS);
+				#else
+				((ProtoChunk) chunk).setPersistedStatus(STATUS);
+				#endif
 				chunksToDo.add(chunk);
 			}
 		}
 		
-		#if PRE_MC_1_19_2
+		#if MC_VER < MC_1_19_2
 		if (environment.params.worldGenSettings.generateFeatures())
 		{
-		#elif PRE_MC_1_19_4
+		#elif MC_VER < MC_1_19_4
 		if (environment.params.worldGenSettings.generateStructures()) {
 		#else
 		if (environment.params.worldOptions.generateStructures())
@@ -98,10 +108,10 @@ public final class StepStructureStart
 				// and should prevent some concurrency issues
 				STRUCTURE_PLACEMENT_LOCK.lock();
 				
-				#if PRE_MC_1_19_2
+				#if MC_VER < MC_1_19_2
 				environment.params.generator.createStructures(environment.params.registry, tParams.structFeat, chunk, environment.params.structures,
 						environment.params.worldSeed);
-				#elif PRE_MC_1_19_4
+				#elif MC_VER < MC_1_19_4
 				environment.params.generator.createStructures(environment.params.registry, environment.params.randomState, tParams.structFeat, chunk, environment.params.structures,
 						environment.params.worldSeed);
 				#else
@@ -110,7 +120,7 @@ public final class StepStructureStart
 						tParams.structFeat, chunk, environment.params.structures);
 				#endif
 				
-				#if POST_MC_1_18_2
+				#if MC_VER >= MC_1_18_2
 				try
 				{
 					tParams.structCheck.onStructureLoad(chunk.getPos(), chunk.getAllStarts());

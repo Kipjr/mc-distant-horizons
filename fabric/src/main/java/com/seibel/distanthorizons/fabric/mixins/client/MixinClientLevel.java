@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import net.minecraft.client.multiplayer.ClientLevel;
-#if POST_MC_1_18_2
+#if MC_VER >= MC_1_18_2
 #endif
 import net.minecraft.world.level.chunk.LevelChunk;
 import org.spongepowered.asm.mixin.Mixin;
@@ -44,14 +44,14 @@ public class MixinClientLevel
 //    //Moved to MixinClientPacketListener
 //    @Inject(method = "<init>", at = @At("TAIL"))
 //    private void loadWorldEvent(ClientPacketListener clientPacketListener, ClientLevel.ClientLevelData clientLevelData, ResourceKey resourceKey,
-//            #if POST_MC_1_18_2 Holder holder, #else DimensionType dimensionType, #endif int i,
-//            #if POST_MC_1_18_2 int j, #endif Supplier supplier, LevelRenderer levelRenderer, boolean bl, long l, CallbackInfo ci)
+//            #if MC_VER >= MC_1_18_2 Holder holder, #else DimensionType dimensionType, #endif int i,
+//            #if MC_VER >= MC_1_18_2 int j, #endif Supplier supplier, LevelRenderer levelRenderer, boolean bl, long l, CallbackInfo ci)
 //	{
 //        ClientApi.INSTANCE.clientLevelLoadEvent(WorldWrapper.getWorldWrapper((ClientLevel)(Object)this));
 //    }
 	
 	// Moved to overriding the enableChunkLight(...) method over at ClientPacketListener for 1.20+
-	#if POST_MC_1_18_2 && PRE_MC_1_20_1 // Only the setLightReady is only available after 1.18. This ensures the light data is ready.
+	#if MC_VER >= MC_1_18_2 && MC_VER < MC_1_20_1 // Only the setLightReady is only available after 1.18. This ensures the light data is ready.
 	@Inject(method = "setLightReady", at = @At("HEAD"))
 	private void onChunkLightReady(int x, int z, CallbackInfo ci)
 	{
