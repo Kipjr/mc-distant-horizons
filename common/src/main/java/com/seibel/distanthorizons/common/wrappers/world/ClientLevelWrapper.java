@@ -5,14 +5,16 @@ import com.seibel.distanthorizons.api.interfaces.render.IDhApiCustomRenderRegist
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.block.BiomeWrapper;
 import com.seibel.distanthorizons.common.wrappers.block.BlockStateWrapper;
-import com.seibel.distanthorizons.common.wrappers.block.cache.ClientBlockDetailMap;
+import com.seibel.distanthorizons.common.wrappers.block.ClientBlockStateColorCache;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.*;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
+import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
@@ -22,6 +24,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapp
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkSource;
 import org.apache.logging.log4j.Logger;
@@ -46,7 +49,7 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	private static final Minecraft MINECRAFT = Minecraft.getInstance();
 	
 	private final ClientLevel level;
-	private final ClientBlockDetailMap blockMap = new ClientBlockDetailMap(this);
+	private final ConcurrentHashMap<BlockState, ClientBlockStateColorCache> blockCache = new ConcurrentHashMap<>();
 	
 	private BlockStateWrapper dirtBlockWrapper;
 	private BiomeWrapper plainsBiomeWrapper;
@@ -129,9 +132,13 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	//====================//
 	
 	@Override
-	public int computeBaseColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper blockState)
+	public int getBlockColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper blockWrapper)
 	{
-		return this.blockMap.getColor(((BlockStateWrapper) blockState).blockState, (BiomeWrapper) biome, pos);
+		ClientBlockStateColorCache blockColorCache = this.blockCache.computeIfAbsent(
+				((BlockStateWrapper) blockWrapper).blockState,
+				(block) -> new ClientBlockStateColorCache(block, this));
+		
+		return blockColorCache.getColor((BiomeWrapper) biome, pos);
 	}
 	
 	@Override
@@ -151,8 +158,11 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 			}
 		}
 		
-		return this.blockMap.getColor(this.dirtBlockWrapper.blockState, BiomeWrapper.EMPTY_WRAPPER, DhBlockPos.ZERO);
+		return this.getBlockColor(DhBlockPos.ZERO,BiomeWrapper.EMPTY_WRAPPER, this.dirtBlockWrapper);
 	}
+	
+	@Override 
+	public void clearBlockColorCache() { this.blockCache.clear(); }
 	
 	@Override
 	public IBiomeWrapper getPlainsBiomeWrapper()

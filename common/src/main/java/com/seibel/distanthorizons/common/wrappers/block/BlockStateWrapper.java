@@ -232,7 +232,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		String ignoreBlockCsv = config.get();
 		if (ignoreBlockCsv != null)
 		{
-			blockStringList.addAll(List.of(ignoreBlockCsv.split(",")));
+			blockStringList.addAll(Arrays.asList(ignoreBlockCsv.split(",")));
 		}
 		
 		return getBlockWrappers(blockStringList, levelWrapper);
