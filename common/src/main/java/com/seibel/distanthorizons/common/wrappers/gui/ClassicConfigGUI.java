@@ -158,19 +158,22 @@ public class ClassicConfigGUI
 //            button.active = entries.stream().allMatch(e -> e.inLimits);
 			
 			
-			if (((ConfigEntry) info).isValid(value) == 0 && info.getType() != List.class)
+			if (info.getType() == String.class
+				|| info.getType() == List.class)
+			{
+				((ConfigEntry) info).uiSetWithoutSaving(stringValue);
+			}
+			else if (((ConfigEntry) info).isValid(value) == 0)
 			{
 				if (!cast)
+				{
 					((ConfigEntry) info).uiSetWithoutSaving(value);
+				}
 				else
+				{
 					((ConfigEntry) info).uiSetWithoutSaving(value.intValue());
+				}
 			}
-//            else if (((ConfigEntry) info).isValidMemoryAddress() == 0)
-//            {
-//                if (((List<String>) info.get()).size() == ((EntryInfo) info.guiValue).index)
-//                    info.uiSet(((List<String>) info.get()).add(""));
-//                info.uiSet(((List<String>) info.get()).set(((EntryInfo) info.guiValue).index, Arrays.stream(((EntryInfo) info.guiValue).tempValue.replace("[", "").replace("]", "").split(", ")).collect(Collectors.toList()).get(0)));
-//            }
 			
 			return true;
 		};
@@ -443,7 +446,9 @@ public class ClassicConfigGUI
 						String key = translationPrefix + (newInfo.category.isEmpty() ? "" : newInfo.category + ".") + newInfo.getName() + ".@tooltip";
 						
 						if (((EntryInfo) newInfo.guiValue).error != null && text.equals(name))
+						{
 							DhRenderTooltip(matrices, font, ((EntryInfo) newInfo.guiValue).error.getValue(), mouseX, mouseY);
+						}
 						else if (I18n.exists(key) && (text != null && text.equals(name)))
 						{
 							List<Component> list = new ArrayList<>();

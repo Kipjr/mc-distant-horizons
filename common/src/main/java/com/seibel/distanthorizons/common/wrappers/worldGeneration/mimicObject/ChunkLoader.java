@@ -252,8 +252,8 @@ public class ChunkLoader
 				biomes.asHolderIdMap(), biomes.holderByNameCodec(), PalettedContainer.Strategy.SECTION_BIOMES, biomes.getHolderOrThrow(Biomes.PLAINS));
 			#endif
 		#endif
-		int i = #if MC_VER < MC_1_17_1 16; #else level.getSectionsCount(); #endif
-		LevelChunkSection[] chunkSections = new LevelChunkSection[i];
+		int sectionYIndex = #if MC_VER < MC_1_17_1 16; #else level.getSectionsCount(); #endif
+		LevelChunkSection[] chunkSections = new LevelChunkSection[sectionYIndex];
 		
 		boolean isLightOn = chunkData.getBoolean("isLightOn");
 		boolean hasSkyLight = level.dimensionType().hasSkyLight();
@@ -288,7 +288,7 @@ public class ChunkLoader
 				#endif
 				
 				blockStateContainer = tagSection.contains("block_states", 10)
-						? BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tagSection.getCompound("block_states")).promotePartial(string -> logErrors(chunkPos, sectionYPos, string))
+						? BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tagSection.getCompound("block_states")).promotePartial(string -> logBlockDeserializationWarning(chunkPos, sectionYPos, string))
 						#if MC_VER < MC_1_20_6 
 						.getOrThrow(false, LOGGER::error)
 						#else
@@ -303,7 +303,7 @@ public class ChunkLoader
 				#else
 				
 				biomeContainer = tagSection.contains("biomes", 10)
-						? biomeCodec.parse(NbtOps.INSTANCE, tagSection.getCompound("biomes")).promotePartial(string -> logErrors(chunkPos, i, (String) string))
+						? biomeCodec.parse(NbtOps.INSTANCE, tagSection.getCompound("biomes")).promotePartial(string -> logBiomeDeserializationWarning(chunkPos, sectionYIndex, (String) string))
 						#if MC_VER < MC_1_20_6 
 						.getOrThrow(false, LOGGER::error)
 						#else
@@ -495,9 +495,13 @@ public class ChunkLoader
 		}
 	}
 	
-	private static void logErrors(ChunkPos chunkPos, int i, String string)
+	private static void logBlockDeserializationWarning(ChunkPos chunkPos, int sectionYIndex, String message)
 	{
-		LOGGER.error("Distant Horizons: Recoverable errors when loading section [" + chunkPos.x + ", " + i + ", " + chunkPos.z + "]: " + string);
+		LOGGER.warn("Unable to deserialize blocks for chunk section [" + chunkPos.x + ", " + sectionYIndex + ", " + chunkPos.z + "], error: ["+message+"]. This can probably be ignored, although if your world looks wrong, optimizing it via the single player menu then deleting your DH database(s) should fix the problem.");
+	}
+	private static void logBiomeDeserializationWarning(ChunkPos chunkPos, int sectionYIndex, String message)
+	{
+		LOGGER.warn("Unable to deserialize biomes for chunk section [" + chunkPos.x + ", " + sectionYIndex + ", " + chunkPos.z + "], error: ["+message+"]. This can probably be ignored, although if your world looks wrong, optimizing it via the single player menu then deleting your DH database(s) should fix the problem.");
 	}
 	
 	

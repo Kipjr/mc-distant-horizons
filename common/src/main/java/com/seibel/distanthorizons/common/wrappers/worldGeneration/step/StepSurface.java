@@ -58,7 +58,12 @@ public final class StepSurface
 		for (ChunkWrapper chunkWrapper : chunkWrappers)
 		{
 			ChunkAccess chunk = chunkWrapper.getChunk();
-			if (!chunkWrapper.getStatus().isOrAfter(STATUS))
+			if (chunkWrapper.getStatus().isOrAfter(STATUS))
+			{
+				// this chunk has already generated this step
+				continue;
+			}
+			else if (chunk instanceof ProtoChunk)
 			{
 				#if MC_VER < MC_1_21
 				((ProtoChunk) chunk).setStatus(STATUS);

@@ -19,7 +19,12 @@
 
 package com.seibel.distanthorizons.common.wrappers.block;
 
+import com.seibel.distanthorizons.api.enums.rendering.EDhApiBlockMaterial;
+import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.util.ColorUtil;
+import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -31,8 +36,10 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.apache.logging.log4j.Logger;
 
+import java.awt.*;
 import java.io.IOException;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 #if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
@@ -71,9 +78,8 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	
 	public static final String DIRT_RESOURCE_LOCATION_STRING = "minecraft:dirt";
 	
-	// TODO: Make this changeable through the config
-	public static final String[] RENDERER_IGNORED_BLOCKS_RESOURCE_LOCATIONS = { AIR_STRING, "minecraft:barrier", "minecraft:structure_void", "minecraft:light", "minecraft:tripwire" };
 	public static HashSet<IBlockStateWrapper> rendererIgnoredBlocks = null;
+	public static HashSet<IBlockStateWrapper> rendererIgnoredCaveBlocks = null;
 	
 	/** keep track of broken blocks so we don't log every time */
 	private static final HashSet<ResourceLocation> BrokenResourceLocations = new HashSet<>();
@@ -88,11 +94,16 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	private final int hashCode;
 	/** 
 	 * Cached opacity value, -1 if not populated. <br>
-	 * Should be between {@link IBlockStateWrapper#FULLY_OPAQUE} and {@link IBlockStateWrapper#FULLY_OPAQUE}
+	 * Should be between {@link LodUtil#BLOCK_FULLY_OPAQUE} and {@link LodUtil#BLOCK_FULLY_OPAQUE}
 	 */
 	private int opacity = -1;
 	/** used by the Iris shader mod to determine how each LOD should be rendered */
-	private byte irisBlockMaterialId = 0;
+	private byte blockMaterialId = 0;
+	
+	private final boolean isBeaconBlock; 
+	private final boolean isBeaconBaseBlock; 
+	private final boolean isGlassBlock; 
+	private final Color mapColor;
 	
 	
 	
@@ -125,16 +136,46 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		this.blockState = blockState;
 		this.serialString = this.serialize(levelWrapper);
 		this.hashCode = Objects.hash(this.serialString);
-		this.irisBlockMaterialId = this.calculateIrisBlockMaterialId();
+		this.blockMaterialId = this.calculateEDhApiBlockMaterialId().index;
 		
-		//LOGGER.trace("Created BlockStateWrapper ["+this.serialString+"] for ["+blockState+"] with material ID ["+this.irisBlockMaterialId+"]");
+		String lowercaseSerial = this.serialString.toLowerCase();
+		boolean isBeaconBaseBlock = false;
+		for (int i = 0; i < LodUtil.BEACON_BASE_BLOCK_NAME_LIST.size(); i++)
+		{
+			String baseBlockName = LodUtil.BEACON_BASE_BLOCK_NAME_LIST.get(i);
+			if (lowercaseSerial.contains(baseBlockName))
+			{
+				isBeaconBaseBlock = true;
+				break;
+			}
+		}
+		this.isBeaconBaseBlock = isBeaconBaseBlock;
+		this.isBeaconBlock = lowercaseSerial.contains("minecraft:beacon");
+		this.isGlassBlock = lowercaseSerial.contains("glass");
+		
+		int mcColor = 0;
+		if (this.blockState != null)
+		{
+			#if MC_VER < MC_1_20_1
+			mcColor = this.blockState.getMaterial().getColor().col;
+	        #else
+			mcColor = this.blockState.getMapColor(EmptyBlockGetter.INSTANCE, BlockPos.ZERO).col;
+            #endif
+			this.mapColor = ColorUtil.toColorObjRGB(mcColor);
+		}
+		else
+		{
+			this.mapColor = new Color(0,0,0,0);
+		}
+		
+		//LOGGER.trace("Created BlockStateWrapper ["+this.serialString+"] for ["+blockState+"] with material ID ["+this.EDhApiBlockMaterialId+"]");
 	}
 	
 	
 	
-	//================//
-	// helper methods //
-	//================//
+	//====================//
+	// LodBuilder methods //
+	//====================//
 	
 	/** 
 	 * Requires a {@link ILevelWrapper} since {@link BlockStateWrapper#deserialize(String,ILevelWrapper)} also requires one. 
@@ -148,37 +189,104 @@ public class BlockStateWrapper implements IBlockStateWrapper
 			return rendererIgnoredBlocks;
 		}
 		
+		HashSet<String> baseIgnoredBlock = new HashSet<>();
+		baseIgnoredBlock.add(AIR_STRING);
+		rendererIgnoredBlocks = getBlockWrappers(Config.Client.Advanced.LodBuilding.ignoredRenderBlockCsv, baseIgnoredBlock, levelWrapper);
+		return rendererIgnoredBlocks;
+	}
+	/**
+	 * Requires a {@link ILevelWrapper} since {@link BlockStateWrapper#deserialize(String,ILevelWrapper)} also requires one. 
+	 * This way the method won't accidentally be called before the deserialization can be completed.
+	 */
+	public static HashSet<IBlockStateWrapper> getRendererIgnoredCaveBlocks(ILevelWrapper levelWrapper)
+	{
+		// use the cached version if possible
+		if (rendererIgnoredCaveBlocks != null)
+		{
+			return rendererIgnoredCaveBlocks;
+		}
 		
+		HashSet<String> baseIgnoredBlock = new HashSet<>();
+		baseIgnoredBlock.add(AIR_STRING);
+		rendererIgnoredCaveBlocks = getBlockWrappers(Config.Client.Advanced.LodBuilding.ignoredRenderCaveBlockCsv, baseIgnoredBlock, levelWrapper);
+		return rendererIgnoredCaveBlocks;
+	}
+	
+	public static void clearRendererIgnoredBlocks() { rendererIgnoredBlocks = null; }
+	public static void clearRendererIgnoredCaveBlocks() { rendererIgnoredCaveBlocks = null; }
+	
+	
+	
+	// lod builder helpers //
+	
+	private static HashSet<IBlockStateWrapper> getBlockWrappers(ConfigEntry<String> config, HashSet<String> baseResourceLocations, ILevelWrapper levelWrapper)
+	{
+		// get the base blocks 
+		HashSet<String> blockStringList = new HashSet<>();
+		if (baseResourceLocations != null)
+		{
+			blockStringList.addAll(baseResourceLocations);	
+		}
+		
+		// get the config blocks
+		String ignoreBlockCsv = config.get();
+		if (ignoreBlockCsv != null)
+		{
+			blockStringList.addAll(List.of(ignoreBlockCsv.split(",")));
+		}
+		
+		return getBlockWrappers(blockStringList, levelWrapper);
+	}
+	private static HashSet<IBlockStateWrapper> getBlockWrappers(HashSet<String> blockResourceLocationSet, ILevelWrapper levelWrapper)
+	{
 		// deserialize each of the given resource locations
 		HashSet<IBlockStateWrapper> blockStateWrappers = new HashSet<>();
-		for (String blockResourceLocation : RENDERER_IGNORED_BLOCKS_RESOURCE_LOCATIONS)
+		for (String blockResourceLocation : blockResourceLocationSet)
 		{
 			try
 			{
-				BlockStateWrapper DefaultBlockStateToIgnore = (BlockStateWrapper) deserialize(blockResourceLocation, levelWrapper);
-				blockStateWrappers.add(DefaultBlockStateToIgnore);
-				
-				if (DefaultBlockStateToIgnore == AIR)
+				if (blockResourceLocation == null)
+				{
+					// shouldn't happen, but just in case
+					continue;
+				}
+				String cleanedResourceLocation = blockResourceLocation.trim();
+				if (cleanedResourceLocation.length() == 0)
 				{
 					continue;
 				}
 				
-				// add all possible blockstates (to account for light blocks with different light values and such)
-				List<BlockState> blockStatesToIgnore = DefaultBlockStateToIgnore.blockState.getBlock().getStateDefinition().getPossibleStates();
-				for (BlockState blockState : blockStatesToIgnore)
+				
+				BlockStateWrapper defaultBlockStateToIgnore = (BlockStateWrapper) deserialize(cleanedResourceLocation, levelWrapper);
+				blockStateWrappers.add(defaultBlockStateToIgnore);
+				
+				if (defaultBlockStateToIgnore != AIR)
 				{
-					BlockStateWrapper newBlockToIgnore = BlockStateWrapper.fromBlockState(blockState, levelWrapper);
-					blockStateWrappers.add(newBlockToIgnore);
+					// add all possible blockstates (to account for light blocks with different light values and such)
+					List<BlockState> blockStatesToIgnore = defaultBlockStateToIgnore.blockState.getBlock().getStateDefinition().getPossibleStates();
+					for (BlockState blockState : blockStatesToIgnore)
+					{
+						BlockStateWrapper newBlockToIgnore = BlockStateWrapper.fromBlockState(blockState, levelWrapper);
+						blockStateWrappers.add(newBlockToIgnore);
+					}
+				}
+				else
+				{
+					// air is a special case so it must be handled separately
+					blockStateWrappers.add(AIR);
 				}
 			}
 			catch (IOException e)
 			{
-				LOGGER.warn("Unable to deserialize rendererIgnoredBlock with the resource location: ["+blockResourceLocation+"]. Error: "+e.getMessage(), e);
+				LOGGER.warn("Unable to deserialize block with the resource location: ["+blockResourceLocation+"]. Error: "+e.getMessage(), e);
+			}
+			catch (Exception e)
+			{
+				LOGGER.warn("Unexpected error deserializing block with the resource location: ["+blockResourceLocation+"]. Error: "+e.getMessage(), e);
 			}
 		}
 		
-		rendererIgnoredBlocks = blockStateWrappers;
-		return rendererIgnoredBlocks;
+		return blockStateWrappers;
 	}
 	
 	
@@ -201,23 +309,23 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		int opacity;
 		if (this.isAir())
 		{
-			opacity = FULLY_TRANSPARENT;
+			opacity = LodUtil.BLOCK_FULLY_TRANSPARENT;
 		}
 		else if (this.isLiquid() && !this.blockState.canOcclude())
 		{
 			// probably not a waterlogged block (which should block light entirely)
 			
 			// +1 to indicate that the block is translucent (in between transparent and opaque) 
-			opacity = FULLY_TRANSPARENT + 1;
+			opacity = LodUtil.BLOCK_FULLY_TRANSPARENT + 1;
 		}
 		else if (this.blockState.propagatesSkylightDown(EmptyBlockGetter.INSTANCE, BlockPos.ZERO))
 		{
-			opacity = FULLY_TRANSPARENT;
+			opacity = LodUtil.BLOCK_FULLY_TRANSPARENT;
 		}
 		else
 		{
 			// default for all other blocks
-			opacity = FULLY_OPAQUE;
+			opacity = LodUtil.BLOCK_FULLY_OPAQUE;
 		}
 		
 		
@@ -286,7 +394,17 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	}
 	
 	@Override
-	public byte getIrisBlockMaterialId() { return this.irisBlockMaterialId; }
+	public boolean isBeaconBlock() { return this.isBeaconBlock; }
+	@Override
+	public boolean isBeaconBaseBlock() { return this.isBeaconBaseBlock; }
+	@Override
+	public boolean isGlassBlock() { return this.isGlassBlock; }
+	
+	@Override
+	public Color getMapColor() { return this.mapColor; }
+	
+	@Override
+	public byte getMaterialId() { return this.blockMaterialId; }
 	
 	@Override
 	public String toString() { return this.getSerialString(); }
@@ -509,11 +627,11 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	// Iris methods //
 	//==============//
 	
-	private byte calculateIrisBlockMaterialId() 
+	private EDhApiBlockMaterial calculateEDhApiBlockMaterialId() 
 	{
 		if (this.blockState == null)
 		{
-			return IrisBlockMaterial.AIR;
+			return EDhApiBlockMaterial.AIR;
 		}
 		
 		
@@ -526,15 +644,15 @@ public class BlockStateWrapper implements IBlockStateWrapper
 			|| serialString.contains("mushroom")
 			) 
 		{
-			return IrisBlockMaterial.LEAVES;
+			return EDhApiBlockMaterial.LEAVES;
 		}
 		else if (this.blockState.is(Blocks.LAVA))
 		{
-			return IrisBlockMaterial.LAVA;
+			return EDhApiBlockMaterial.LAVA;
 		}
 		else if (this.isLiquid() || this.blockState.is(Blocks.WATER))
 		{
-			return IrisBlockMaterial.WATER;
+			return EDhApiBlockMaterial.WATER;
 		}
 		else if (this.blockState.getSoundType() == SoundType.WOOD
 				|| serialString.contains("root")
@@ -543,7 +661,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 				#endif
 				) 
 		{
-			return IrisBlockMaterial.WOOD;
+			return EDhApiBlockMaterial.WOOD;
 		}
 		else if (this.blockState.getSoundType() == SoundType.METAL
 				#if MC_VER >= MC_1_19_2
@@ -555,11 +673,11 @@ public class BlockStateWrapper implements IBlockStateWrapper
 				#endif
 				) 
 		{
-			return IrisBlockMaterial.METAL;
+			return EDhApiBlockMaterial.METAL;
 		}
 		else if (serialString.contains("grass_block"))
 		{
-			return IrisBlockMaterial.GRASS;
+			return EDhApiBlockMaterial.GRASS;
 		}
 		else if (
 			serialString.contains("dirt")
@@ -569,7 +687,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 			|| serialString.contains("mycelium")
 			)
 		{
-			return IrisBlockMaterial.DIRT;
+			return EDhApiBlockMaterial.DIRT;
 		}
 		#if MC_VER >= MC_1_17_1
 		else if (this.blockState.getSoundType() == SoundType.DEEPSLATE
@@ -578,37 +696,37 @@ public class BlockStateWrapper implements IBlockStateWrapper
 				|| this.blockState.getSoundType() == SoundType.POLISHED_DEEPSLATE
 				|| serialString.contains("deepslate") ) 
 		{
-			return IrisBlockMaterial.DEEPSLATE;
+			return EDhApiBlockMaterial.DEEPSLATE;
 		} 
 		#endif
 		else if (this.serialString.contains("snow"))
 		{
-			return IrisBlockMaterial.SNOW;
+			return EDhApiBlockMaterial.SNOW;
 		} 
 		else if (serialString.contains("sand"))
 		{
-			return IrisBlockMaterial.SAND;
+			return EDhApiBlockMaterial.SAND;
 		}
 		else if (serialString.contains("terracotta"))
 		{
-			return IrisBlockMaterial.TERRACOTTA;
+			return EDhApiBlockMaterial.TERRACOTTA;
 		} 
 		else if (this.blockState.is(BlockTags.BASE_STONE_NETHER)) 
 		{
-			return IrisBlockMaterial.NETHER_STONE;
+			return EDhApiBlockMaterial.NETHER_STONE;
 		} 
 		else if (serialString.contains("stone")
 				|| serialString.contains("ore")) 
 		{
-			return IrisBlockMaterial.STONE;
+			return EDhApiBlockMaterial.STONE;
 		}
 		else if (this.blockState.getLightEmission() > 0) 
 		{
-			return IrisBlockMaterial.ILLUMINATED;
+			return EDhApiBlockMaterial.ILLUMINATED;
 		}
 		else
 		{
-			return IrisBlockMaterial.UNKOWN;
+			return EDhApiBlockMaterial.UNKNOWN;
 		}
 	}
 	
