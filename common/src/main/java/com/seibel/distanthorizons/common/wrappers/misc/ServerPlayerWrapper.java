@@ -7,7 +7,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapp
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.network.ServerPlayerConnection;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.phys.Vec3;
 
 import java.net.SocketAddress;
@@ -19,12 +19,12 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class ServerPlayerWrapper implements IServerPlayerWrapper
 {
-	private static final ConcurrentMap<ServerPlayerConnection, ServerPlayerWrapper> serverPlayerWrapperMap = new MapMaker().weakKeys().weakValues().makeMap();
+	private static final ConcurrentMap<ServerGamePacketListenerImpl, ServerPlayerWrapper> serverPlayerWrapperMap = new MapMaker().weakKeys().weakValues().makeMap();
 	
-	private final ServerPlayerConnection connection;
+	private final ServerGamePacketListenerImpl connection;
 	private ServerPlayer serverPlayer()
 	{
-		return this.connection.getPlayer();
+		return this.connection.player;
 	}
 	
 	public static ServerPlayerWrapper getWrapper(ServerPlayer serverPlayer)
@@ -32,7 +32,7 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper
 		return serverPlayerWrapperMap.computeIfAbsent(serverPlayer.connection, ignored -> new ServerPlayerWrapper(serverPlayer.connection));
 	}
 	
-	private ServerPlayerWrapper(ServerPlayerConnection connection)
+	private ServerPlayerWrapper(ServerGamePacketListenerImpl connection)
 	{
 		this.connection = connection;
 	}
@@ -96,10 +96,11 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper
 		{
 			return true;
 		}
-		if (!(o instanceof ServerPlayerWrapper that))
+		if (!(o instanceof ServerPlayerWrapper))
 		{
 			return false;
 		}
+		ServerPlayerWrapper that = (ServerPlayerWrapper) o;
 		return Objects.equal(this.connection, that.connection);
 	}
 	

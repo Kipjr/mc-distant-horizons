@@ -51,6 +51,8 @@ import net.minecraft.client.gui.screens.TitleScreen;
 #if MC_VER >= MC_1_20_6
 import com.seibel.distanthorizons.common.CommonPacketPayload;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+#else
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 #endif
 
 #if MC_VER < MC_1_19_4
