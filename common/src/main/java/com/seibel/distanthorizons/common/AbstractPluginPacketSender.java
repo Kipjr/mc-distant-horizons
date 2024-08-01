@@ -2,18 +2,21 @@ package com.seibel.distanthorizons.common;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
+import com.seibel.distanthorizons.core.network.event.ProtocolErrorEvent;
 import com.seibel.distanthorizons.core.network.messages.MessageRegistry;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
-import com.seibel.distanthorizons.core.network.INetworkObject;
+import com.seibel.distanthorizons.core.network.messages.base.CloseReasonMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
+import io.netty.buffer.ByteBufUtil;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.Objects;
 
 public abstract class AbstractPluginPacketSender implements IPluginPacketSender
@@ -43,6 +46,8 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 	@Nullable
 	public static NetworkMessage decodeMessage(FriendlyByteBuf in)
 	{
+		NetworkMessage message = null;
+		
 		try
 		{
 			if (in.readShort() != ModInfo.PROTOCOL_VERSION)
@@ -50,24 +55,55 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 				return null;
 			}
 			
-			NetworkMessage message = MessageRegistry.INSTANCE.createMessage(in.readUnsignedShort());
-			return INetworkObject.decodeToInstance(message, in);
+			message = MessageRegistry.INSTANCE.createMessage(in.readUnsignedShort());
+			message.decode(in);
+			
+			if (in.isReadable())
+			{
+				throw new IOException("Buffer has not been fully read");
+			}
+			
+			return message;
 		}
 		catch (Exception e)
 		{
 			LOGGER.error("Failed to decode message", e);
-			return null;
+			LOGGER.error("Buffer: {}", in);
+			LOGGER.error("Buffer contents: {}", ByteBufUtil.hexDump(in));
+			
+			return new ProtocolErrorEvent(e, message);
+		}
+		finally
+		{
+			// Prevent connection crashing if not entire buffer has been read
+			in.readerIndex(in.writerIndex());
 		}
 	}
 	
 	public static void encodeMessage(FriendlyByteBuf out, NetworkMessage message)
 	{
+		// This is intentionally unhandled, because errors related to this are unlikely to appear in wild
 		Objects.requireNonNull(message);
-		
 		out.writeShort(ModInfo.PROTOCOL_VERSION);
 		
-		out.writeShort(MessageRegistry.INSTANCE.getMessageId(message));
-		message.encode(out);
+		try
+		{
+			out.markWriterIndex();
+			out.writeShort(MessageRegistry.INSTANCE.getMessageId(message));
+			message.encode(out);
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Failed to encode message", e);
+			LOGGER.error("Message: {}", message);
+			message.session.tryHandleMessage(new ProtocolErrorEvent(e, message));
+			
+			// Encode close reason message instead
+			out.resetWriterIndex();
+			message = new CloseReasonMessage("Internal error on opposing side");
+			out.writeShort(MessageRegistry.INSTANCE.getMessageId(message));
+			message.encode(out);
+		}
 	}
 	
 }
