@@ -40,6 +40,7 @@ loom {
             ideConfigGenerated(false)
             runDir("../run/client")
 //            vmArgs("-XX:-OmitStackTraceInFastThrow", minecraftMemoryJavaArg)
+            programArgs("--username", "NoNick")
         }
         server {
             server()

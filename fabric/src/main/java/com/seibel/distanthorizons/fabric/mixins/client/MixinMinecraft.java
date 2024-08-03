@@ -132,7 +132,7 @@ public abstract class MixinMinecraft
 		}
 		if (level != null)
 		{
-			ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper(level));
+			ClientApi.INSTANCE.clientLevelLoadEvent(ClientLevelWrapper.getWrapper(level, true));
 		}
 		this.lastLevel = level;
 	}

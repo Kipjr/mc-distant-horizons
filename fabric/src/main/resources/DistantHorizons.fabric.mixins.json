@@ -5,7 +5,8 @@
     "mixins": [
         "server.MixinChunkGenerator",
         "server.MixinChunkMap",
-        "server.MixinUtilBackgroundThread"
+      "server.MixinUtilBackgroundThread",
+      "server.MixinServerPlayer"
     ],
     "client": [
         "client.MixinClientLevel",

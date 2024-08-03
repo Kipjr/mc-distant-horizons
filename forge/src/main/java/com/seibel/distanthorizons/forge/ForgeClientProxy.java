@@ -121,7 +121,7 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 	#endif
 	{
 		LOGGER.info("level load");
-		
+
 		#if MC_VER < MC_1_19_2
 		LevelAccessor level = event.getWorld();
 		#else
@@ -133,7 +133,7 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 		}
 		
 		ClientLevel clientLevel = (ClientLevel) level;
-		IClientLevelWrapper clientLevelWrapper = ClientLevelWrapper.getWrapper(clientLevel);
+		IClientLevelWrapper clientLevelWrapper = ClientLevelWrapper.getWrapper(clientLevel, true);
 		// TODO this causes a crash due to level being set to null somewhere
 		ClientApi.INSTANCE.clientLevelLoadEvent(clientLevelWrapper);
 	}
@@ -145,7 +145,7 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 	#endif
 	{
 		LOGGER.info("level unload");
-		
+
 		#if MC_VER < MC_1_19_2
 		LevelAccessor level = event.getWorld();
 		#else

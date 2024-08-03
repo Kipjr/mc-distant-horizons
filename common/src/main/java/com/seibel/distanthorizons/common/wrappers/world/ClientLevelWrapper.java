@@ -76,9 +76,9 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	}
 	
 	@Nullable
-	public static IClientLevelWrapper getWrapper(@Nullable ClientLevel level, boolean bypassMultiverse)
+	public static IClientLevelWrapper getWrapper(@Nullable ClientLevel level, boolean bypassLevelKeyManager)
 	{
-		if (!bypassMultiverse)
+		if (!bypassLevelKeyManager)
 		{
 			if (level == null)
 			{

@@ -6,6 +6,7 @@ import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.phys.Vec3;
@@ -47,11 +48,17 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper
 	@Override
 	public IServerLevelWrapper getLevel()
 	{
-		#if MC_VER < MC_1_20_1
-		return ServerLevelWrapper.getWrapper(this.serverPlayer().getLevel());
-		#else
-		return ServerLevelWrapper.getWrapper(this.serverPlayer().serverLevel());
-		#endif
+		ServerLevel level = ((IMixinServerPlayer) this.serverPlayer()).distantHorizons$getDimensionChangeDestination();
+		if (level == null)
+		{
+			#if MC_VER < MC_1_20_1
+			level = this.serverPlayer().getLevel();
+			#else
+			level = this.serverPlayer().serverLevel();
+			#endif
+		}
+		
+		return ServerLevelWrapper.getWrapper(level);
 	}
 	
 	@Override

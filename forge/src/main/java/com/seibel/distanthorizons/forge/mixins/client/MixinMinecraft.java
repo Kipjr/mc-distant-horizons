@@ -2,6 +2,8 @@ package com.seibel.distanthorizons.forge.mixins.client;
 
 import com.seibel.distanthorizons.api.enums.config.EDhApiUpdateBranch;
 import com.seibel.distanthorizons.common.wrappers.gui.updater.UpdateModScreen;
+import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.installer.GitlabGetter;
@@ -11,7 +13,9 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.multiplayer.ClientLevel;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;

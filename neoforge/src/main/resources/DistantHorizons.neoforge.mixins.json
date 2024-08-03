@@ -5,7 +5,8 @@
     "mixins": [
         "server.MixinUtilBackgroundThread",
         "server.MixinChunkGenerator",
-        "server.MixinTFChunkGenerator"
+      "server.MixinTFChunkGenerator",
+      "server.MixinServerPlayer"
     ],
     "client": [
         "client.MixinClientPacketListener",
