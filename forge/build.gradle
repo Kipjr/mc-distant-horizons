@@ -28,6 +28,7 @@ loom {
         extraAccessWideners.add loom.accessWidenerPath.get().asFile.name
 
         mixinConfigs = [
+                "DistantHorizons.common.mixins.json",
                 "DistantHorizons.forge.mixins.json"
         ]
     }

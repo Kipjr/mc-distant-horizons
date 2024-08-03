@@ -1,4 +1,4 @@
-package com.seibel.distanthorizons.neoforge.mixins.client;
+package com.seibel.distanthorizons.common.mixins.client;
 
 import com.seibel.distanthorizons.common.wrappers.DependencySetupDoneCheck;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
@@ -10,18 +10,18 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// TODO: Check if this port from fabric works
 @Mixin(GameRenderer.class)
 public class MixinGameRenderer
 {
 	private static final Logger LOGGER = LogManager.getLogger(MixinGameRenderer.class.getSimpleName());
+	
 	
 	#if MC_VER >= MC_1_17_1
 	// FIXME: This I think will dup multiple renderStartupEvent calls...
 	@Inject(method = {"reloadShaders", "preloadUiShader"}, at = @At("TAIL"))
 	public void onStartupShaders(CallbackInfo ci)
 	{
-		LOGGER.info("Starting up renderer (forge)");
+		LOGGER.info("Starting up renderer (fabric)");
 		if (!DependencySetupDoneCheck.isDone)
 		{
 			LOGGER.warn("Dependency setup is not done yet, skipping renderer this startup event!");
@@ -33,7 +33,7 @@ public class MixinGameRenderer
 	@Inject(method = "shutdownShaders", at = @At("HEAD"))
 	public void onShutdownShaders(CallbackInfo ci)
 	{
-		LOGGER.info("Shutting down renderer (forge)");
+		LOGGER.info("Shutting down renderer (fabric)");
 		if (!DependencySetupDoneCheck.isDone)
 		{
 			LOGGER.warn("Dependency setup is not done yet, skipping renderer this shutdown event!");
@@ -42,17 +42,17 @@ public class MixinGameRenderer
 		ClientApi.INSTANCE.rendererShutdownEvent();
 	}
     #else
-    
+    // FIXME: on 1.16 we dont have stuff for reloading/shutting down shaders
 	
-    @Inject(method = {"loadEffect"}, at = @At("TAIL"))
-    public void onStartupShaders(CallbackInfo ci) {
-        ClientApi.INSTANCE.rendererStartupEvent();
-    }
+	// FIXME: This I think will dup multiple renderStartupEvent calls...
+	@Inject(method = {"loadEffect"}, at = @At("TAIL"))
+	public void onStartupShaders(CallbackInfo ci) {
+		ClientApi.INSTANCE.rendererStartupEvent();
+	}
 	
 	@Inject(method = "shutdownEffect", at = @At("HEAD"))
 	public void onShutdownShaders(CallbackInfo ci) {
 		ClientApi.INSTANCE.rendererShutdownEvent();
 	}
     #endif
-	
 }

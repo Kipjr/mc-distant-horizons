@@ -25,6 +25,8 @@ issueTrackerURL = "${issues}"
 
 # We may need this to make forge (lexforge) & neoforge work together
 [[mixins]]
+config = "DistantHorizons.common.mixins.json"
+[[mixins]]
     config = "DistantHorizons.neoforge.mixins.json"
 
 [[dependencies.distanthorizons]]

@@ -17,7 +17,7 @@
  *    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.seibel.distanthorizons.neoforge.mixins.client;
+package com.seibel.distanthorizons.common.mixins.client;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -41,8 +41,6 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.FogType;
 #endif
 
-
-
 @Mixin(FogRenderer.class)
 public class MixinFogRenderer
 {
@@ -51,11 +49,14 @@ public class MixinFogRenderer
 	private static final float A_REALLY_REALLY_BIG_VALUE = 420694206942069.F;
 	private static final float A_EVEN_LARGER_VALUE = 42069420694206942069.F;
 	
-	@Inject(at = @At("RETURN"),
-			method = "setupFog(Lnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/FogRenderer$FogMode;FZF)V",
-			remap = #if MC_VER == MC_1_17_1 || MC_VER == MC_1_18_2 false #else true #endif ) // Remap messiness due to this being weird in forge
-	private static void disableSetupFog(Camera camera, FogMode fogMode, float f, boolean bl, float partTick, CallbackInfo callback)
+	@Inject(at = @At("RETURN"), method = "setupFog")
+	#if MC_VER < MC_1_19_2
+	private static void disableSetupFog(Camera camera, FogMode fogMode, float f, boolean bl, CallbackInfo callback)
 	{
+	#else
+	private static void disableSetupFog(Camera camera, FogMode fogMode, float f, boolean bl, float g, CallbackInfo callback)
+	{
+	#endif
 		#if MC_VER < MC_1_17_1
 		FluidState fluidState = camera.getFluidInCamera();
 		boolean cameraNotInFluid = fluidState.isEmpty();
@@ -63,7 +64,6 @@ public class MixinFogRenderer
 		FogType fogTypes = camera.getFluidInCamera();
 		boolean cameraNotInFluid = fogTypes == FogType.NONE;
 		#endif
-		
 		
 		Entity entity = camera.getEntity();
 		boolean isSpecialFog = (entity instanceof LivingEntity) && ((LivingEntity) entity).hasEffect(MobEffects.BLINDNESS);

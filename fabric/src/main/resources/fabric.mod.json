@@ -35,6 +35,7 @@
     },
     
     "mixins": [
+        "DistantHorizons.common.mixins.json",
         "DistantHorizons.fabric.mixins.json"
     ],
     
