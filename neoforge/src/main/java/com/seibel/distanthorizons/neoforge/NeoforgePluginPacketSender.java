@@ -26,8 +26,8 @@ public class NeoforgePluginPacketSender extends AbstractPluginPacketSender
 	{
 		packetConsumer = consumer;
 		
-		PayloadRegistrar registrar = event.registrar("1");
-		registrar.commonBidirectional(CommonPacketPayload.TYPE, new CommonPacketPayload.Codec(), (payload, context) ->
+		PayloadRegistrar registrar = event.registrar("1").optional();
+		registrar.playBidirectional(CommonPacketPayload.TYPE, new CommonPacketPayload.Codec(), (payload, context) ->
 		{
 			ServerPlayerWrapper serverPlayer = Optional.of(context.player())
 					.map(player -> player instanceof ServerPlayer ? (ServerPlayer) player : null)
