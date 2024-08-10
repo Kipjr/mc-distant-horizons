@@ -292,7 +292,6 @@ public abstract class AbstractModInitializer
 		
 		this.commandDispatcher.register(builder);
 		
-		//noinspection ConstantValue
 		if (DEBUG_ENABLE_CODEC_CRASH_MESSAGE)
 		{
 			LiteralArgumentBuilder<CommandSourceStack> dhcrash = literal("dhcrash")
@@ -301,7 +300,11 @@ public abstract class AbstractModInitializer
 							.executes(c -> {
 								assert SharedApi.getIDhServerWorld() != null;
 								((DhServerWorld) SharedApi.getIDhServerWorld()).remotePlayerConnectionHandler
+										#if MC_VER >= MC_1_19_2
 										.getConnectedPlayer(ServerPlayerWrapper.getWrapper(Objects.requireNonNull(c.getSource().getPlayer())))
+										#else
+										.getConnectedPlayer(ServerPlayerWrapper.getWrapper(Objects.requireNonNull(c.getSource().getPlayerOrException())))
+										#endif
 										.session.sendMessage(new CodecCrashMessage(CodecCrashMessage.ECrashPhase.ENCODE));
 								return 1;
 							}))
@@ -309,7 +312,11 @@ public abstract class AbstractModInitializer
 							.executes(c -> {
 								assert SharedApi.getIDhServerWorld() != null;
 								((DhServerWorld) SharedApi.getIDhServerWorld()).remotePlayerConnectionHandler
+										#if MC_VER >= MC_1_19_2
 										.getConnectedPlayer(ServerPlayerWrapper.getWrapper(Objects.requireNonNull(c.getSource().getPlayer())))
+										#else
+										.getConnectedPlayer(ServerPlayerWrapper.getWrapper(Objects.requireNonNull(c.getSource().getPlayerOrException())))
+										#endif
 										.session.sendMessage(new CodecCrashMessage(CodecCrashMessage.ECrashPhase.DECODE));
 								return 1;
 							}));
