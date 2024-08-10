@@ -9,6 +9,7 @@ import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiAfterDh
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeDhInitEvent;
 import com.seibel.distanthorizons.common.wrappers.DependencySetup;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftDedicatedServerWrapper;
+import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.ConfigBase;
@@ -19,7 +20,11 @@ import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.ModJarInfo;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.network.messages.MessageRegistry;
+import com.seibel.distanthorizons.core.network.messages.base.CodecCrashMessage;
 import com.seibel.distanthorizons.core.util.objects.Pair;
+import com.seibel.distanthorizons.core.world.DhServerWorld;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IModAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IModChecker;
 import com.seibel.distanthorizons.coreapi.DependencyInjection.ApiEventInjector;
@@ -31,6 +36,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -284,6 +290,31 @@ public abstract class AbstractModInitializer
 		}
 		
 		this.commandDispatcher.register(builder);
+		
+		//noinspection ConstantValue
+		if (true)
+		{
+			MessageRegistry.INSTANCE.registerMessage(CodecCrashMessage.class, CodecCrashMessage::new);
+			LiteralArgumentBuilder<CommandSourceStack> dhcrash = literal("dhcrash")
+					.requires(source -> source.hasPermission(4))
+					.then(literal("encode")
+							.executes(c -> {
+								assert SharedApi.getIDhServerWorld() != null;
+								((DhServerWorld) SharedApi.getIDhServerWorld()).remotePlayerConnectionHandler
+										.getConnectedPlayer(ServerPlayerWrapper.getWrapper(Objects.requireNonNull(c.getSource().getPlayer())))
+										.session.sendMessage(new CodecCrashMessage(CodecCrashMessage.ECrashPhase.ENCODE));
+								return 1;
+							}))
+					.then(literal("decode")
+							.executes(c -> {
+								assert SharedApi.getIDhServerWorld() != null;
+								((DhServerWorld) SharedApi.getIDhServerWorld()).remotePlayerConnectionHandler
+										.getConnectedPlayer(ServerPlayerWrapper.getWrapper(Objects.requireNonNull(c.getSource().getPlayer())))
+										.session.sendMessage(new CodecCrashMessage(CodecCrashMessage.ECrashPhase.DECODE));
+								return 1;
+							}));
+			this.commandDispatcher.register(dhcrash);
+		}
 	}
 	
 	
