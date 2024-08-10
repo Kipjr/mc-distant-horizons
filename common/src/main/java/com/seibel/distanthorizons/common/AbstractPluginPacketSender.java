@@ -68,10 +68,10 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 		catch (Exception e)
 		{
 			LOGGER.error("Failed to decode message", e);
-			LOGGER.error("Buffer:", in);
-			LOGGER.error("Buffer contents:", ByteBufUtil.hexDump(in));
+			LOGGER.error("Buffer: {}", in);
+			LOGGER.error("Buffer contents: [{}]", ByteBufUtil.hexDump(in));
 			
-			return new ProtocolErrorEvent(e, message);
+			return new ProtocolErrorEvent(e, message, true);
 		}
 		finally
 		{
@@ -95,9 +95,9 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 		catch (Exception e)
 		{
 			LOGGER.error("Failed to encode message", e);
-			LOGGER.error("Message:", message);
+			LOGGER.error("Message: {}", message);
 			
-			message.getSession().tryHandleMessage(new ProtocolErrorEvent(e, message));
+			message.getSession().tryHandleMessage(new ProtocolErrorEvent(e, message, false));
 			
 			// Encode close reason message instead
 			out.resetWriterIndex();

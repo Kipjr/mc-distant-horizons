@@ -44,6 +44,7 @@ import java.util.function.Supplier;
 
 import static com.mojang.brigadier.arguments.DoubleArgumentType.doubleArg;
 import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
+import static com.seibel.distanthorizons.core.network.messages.MessageRegistry.DEBUG_ENABLE_CODEC_CRASH_MESSAGE;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
@@ -292,9 +293,8 @@ public abstract class AbstractModInitializer
 		this.commandDispatcher.register(builder);
 		
 		//noinspection ConstantValue
-		if (true)
+		if (DEBUG_ENABLE_CODEC_CRASH_MESSAGE)
 		{
-			MessageRegistry.INSTANCE.registerMessage(CodecCrashMessage.class, CodecCrashMessage::new);
 			LiteralArgumentBuilder<CommandSourceStack> dhcrash = literal("dhcrash")
 					.requires(source -> source.hasPermission(4))
 					.then(literal("encode")
