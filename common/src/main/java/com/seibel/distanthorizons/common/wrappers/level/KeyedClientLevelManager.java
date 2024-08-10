@@ -61,7 +61,6 @@ public class KeyedClientLevelManager implements IKeyedClientLevelManager
 	@Override
 	public void disable()
 	{
-		this.clearServerKeyedLevel();
 		this.enabled = false;
 	}
 	

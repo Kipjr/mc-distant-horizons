@@ -2,7 +2,7 @@ package com.seibel.distanthorizons.common;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
-import com.seibel.distanthorizons.core.network.event.ProtocolErrorEvent;
+import com.seibel.distanthorizons.core.network.event.internal.ProtocolErrorEvent;
 import com.seibel.distanthorizons.core.network.messages.MessageRegistry;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
 import com.seibel.distanthorizons.core.network.messages.base.CloseReasonMessage;
