@@ -21,6 +21,9 @@ package com.seibel.distanthorizons.forge;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.seibel.distanthorizons.common.AbstractModInitializer;
+import com.seibel.distanthorizons.common.wrappers.gui.GetConfigScreen;
+import com.seibel.distanthorizons.core.api.internal.ClientApi;
+import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.common.wrappers.gui.GetConfigScreen;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
@@ -110,6 +113,20 @@ public class ForgeMain extends AbstractModInitializer
 		ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
 				() -> new ConfigScreenHandler.ConfigScreenFactory((client, parent) -> GetConfigScreen.getScreen(parent)));
 		#endif
+		
+		
+		if (Config.Client.Advanced.Logging.showModCompatibilityWarningsOnStartup.get())
+		{
+			IModChecker modChecker = SingletonInjector.INSTANCE.get(IModChecker.class);
+			if (modChecker.isModLoaded("alexscaves"))
+			{
+				String message =
+						// orange text
+						"\u00A76" + "Distant Horizons: Alex's Cave detected." + "\u00A7r\n" +
+						"You may have to change Alex's config for DH to render. ";
+				ClientApi.INSTANCE.showChatMessageNextFrame(message);
+			}
+		}
 	}
 	
 	@Override

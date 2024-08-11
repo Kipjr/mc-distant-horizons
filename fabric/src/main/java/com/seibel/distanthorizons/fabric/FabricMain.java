@@ -147,7 +147,7 @@ public class FabricMain extends AbstractModInitializer implements ClientModIniti
 		#if MC_VER >= MC_1_20_1
 		if (SingletonInjector.INSTANCE.get(IModChecker.class).isModLoaded("sodium"))
 		{
-			ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class).setFogOcclusion(false); // FIXME: This is a tmp fix for sodium 0.5.0, and 0.5.1. This is fixed in sodium 0.5.2
+			ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class).setFogOcclusion(false);
 		}
 		#endif
 		

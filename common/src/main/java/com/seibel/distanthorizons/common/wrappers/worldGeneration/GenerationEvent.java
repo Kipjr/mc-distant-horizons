@@ -43,6 +43,7 @@ public final class GenerationEvent
 	public final int id;
 	public final ThreadedParameters threadedParam;
 	public final DhChunkPos minPos;
+	/** the number of chunks wide this event is */
 	public final int size;
 	public final EDhApiWorldGenerationStep targetGenerationStep;
 	public EventTimer timer = null;
@@ -73,10 +74,10 @@ public final class GenerationEvent
 			EDhApiWorldGenerationStep target, Consumer<IChunkWrapper> resultConsumer,
 			ExecutorService worldGeneratorThreadPool)
 	{
-		if (size % 2 == 0)
-		{
-			size += 1; // size must be odd for vanilla world gen regions to work
-		}
+		//if (size % 2 == 0)
+		//{
+		//	size += 1; // size must be odd for vanilla world gen regions to work
+		//}
 		
 		
 		GenerationEvent generationEvent = new GenerationEvent(minPos, size, genEnvironment, target, resultConsumer);
@@ -93,9 +94,7 @@ public final class GenerationEvent
 				//LOGGER.info("generating [{}]", event.minPos);
 				genEnvironment.generateLodFromList(generationEvent);
 			}
-			catch (InterruptedException ignored)
-			{
-			}
+			catch (InterruptedException ignored) { }
 			finally
 			{
 				BatchGenerationEnvironment.isDistantGeneratorThread.remove();
@@ -124,21 +123,6 @@ public final class GenerationEvent
 		ThreadPoolUtil.WORLD_GEN_THREAD_FACTORY.dumpAllThreadStacks();
 		this.future.cancel(true);
 		return this.future.isCancelled();
-	}
-	
-	public boolean tooClose(int minX, int minZ, int width)
-	{
-		int aMinX = this.minPos.x;
-		int aMinZ = this.minPos.z;
-		int aSize = this.size;
-		// Account for required empty chunks in the border
-		aSize += 1;
-		width += 1;
-		// Do a AABB to AABB intersection test
-		return (aMinX + aSize >= minX &&
-				aMinX <= minX + width &&
-				aMinZ + aSize >= minZ &&
-				aMinZ <= minZ + width);
 	}
 	
 	public void refreshTimeout()

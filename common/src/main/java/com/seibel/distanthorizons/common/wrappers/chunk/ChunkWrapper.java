@@ -394,6 +394,8 @@ public class ChunkWrapper implements IChunkWrapper
 		return this.blockLightStorage;
 	}
 	public void setBlockLightStorage(ChunkLightStorage lightStorage) { this.blockLightStorage = lightStorage; }
+	@Override
+	public void clearDhBlockLighting() { this.getBlockLightStorage().clear(); }
 	
 	
 	@Override
@@ -408,6 +410,8 @@ public class ChunkWrapper implements IChunkWrapper
 		this.throwIndexOutOfBoundsIfRelativePosOutsideChunkBounds(relX, y, relZ);
 		this.getSkyLightStorage().set(relX, y, relZ, lightValue);
 	}
+	@Override
+	public void clearDhSkyLighting() { this.getSkyLightStorage().clear(); }
 	
 	private ChunkLightStorage getSkyLightStorage()
 	{

@@ -224,8 +224,8 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 	// constructors //
 	//==============//
 	
-	public static ImmutableMap<EDhApiWorldGenerationStep, Integer> BorderNeeded;
-	public static int MaxBorderNeeded;
+	public static final ImmutableMap<EDhApiWorldGenerationStep, Integer> WORLD_GEN_CHUNK_BORDER_NEEDED_BY_GEN_STEP;
+	public static final int MAX_WORLD_GEN_CHUNK_BORDER_NEEDED;
 	
 	static
 	{
@@ -253,8 +253,13 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		builder.put(EDhApiWorldGenerationStep.LIQUID_CARVERS, 0);
 		builder.put(EDhApiWorldGenerationStep.FEATURES, 0);
 		builder.put(EDhApiWorldGenerationStep.LIGHT, 0);
-		BorderNeeded = builder.build();
-		MaxBorderNeeded = BorderNeeded.values().stream().mapToInt(Integer::intValue).max().getAsInt();
+		WORLD_GEN_CHUNK_BORDER_NEEDED_BY_GEN_STEP = builder.build();
+		
+		// TODO this is a test to see if the additional boarder is actually necessary or not.
+		//  If world generators end up having infinite loops or other unexplained issues,
+		//  this should be set back to the commented out logic below
+		MAX_WORLD_GEN_CHUNK_BORDER_NEEDED = 0;
+		//MAX_WORLD_GEN_CHUNK_BORDER_NEEDED = WORLD_GEN_CHUNK_BORDER_NEEDED_BY_GEN_STEP.values().stream().mapToInt(Integer::intValue).max().getAsInt();
 	}
 	
 	public BatchGenerationEnvironment(IDhServerLevel serverlevel)
@@ -383,171 +388,177 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 	{
 		EVENT_LOGGER.debug("Lod Generate Event: " + genEvent.minPos);
 		
-		ArrayGridList<ChunkWrapper> chunkWrapperList;
-		DhLitWorldGenRegion region;
-		DummyLightEngine dummyLightEngine;
-		LightGetterAdaptor adaptor;
+		// Minecraft's generation events expect odd chunk width areas (3x3, 7x7, or 11x11),
+		// but DH submits square generation events (4x4).
+		// We handle this later, although that handling would need to change if the gen size ever changed.
+		LodUtil.assertTrue(genEvent.size % 2 == 0, "Generation events are expected to be an evan number of chunks wide.");
 		
-		int borderSize = MaxBorderNeeded;
-		int refSize = genEvent.size + borderSize * 2;
+		
+		
+		int borderSize = MAX_WORLD_GEN_CHUNK_BORDER_NEEDED;
+		// genEvent.size - 1 converts the even width size to an odd number for MC compatability
+		int refSize = (genEvent.size - 1) + (borderSize * 2);
 		int refPosX = genEvent.minPos.x - borderSize;
 		int refPosZ = genEvent.minPos.z - borderSize;
 		
-		try
+		LightGetterAdaptor lightGetterAdaptor = new LightGetterAdaptor(this.params.level);
+		DummyLightEngine dummyLightEngine = new DummyLightEngine(lightGetterAdaptor);
+		
+		
+		
+		//====================================//
+		// offset and generate odd width area //
+		//====================================//
+		
+		// reused data between each offset
+		HashMap<DhChunkPos, ChunkLightStorage> chunkSkyLightingByDhPos = new HashMap<>();
+		HashMap<DhChunkPos, ChunkLightStorage> chunkBlockLightingByDhPos = new HashMap<>();
+		HashMap<DhChunkPos, ChunkAccess> generatedChunkByDhPos = new HashMap<>();
+		HashMap<DhChunkPos, ChunkWrapper> chunkWrappersByDhPos = new HashMap<>();
+		
+		// offset 1 chunk in both X and Z direction so we can generate an even number of chunks wide
+		// while still submitting odd numbers to MC's internal generators
+		for (int xOffset = 0; xOffset < 2; xOffset++)
 		{
-			ArrayGridList<ChunkAccess> totalChunks;
-			
-			adaptor = new LightGetterAdaptor(this.params.level);
-			dummyLightEngine = new DummyLightEngine(adaptor);
-			
-			
-			
-			//=============================//
-			// try getting existing chunks //
-			//=============================//
-			
-			HashMap<DhChunkPos, ChunkLightStorage> chunkSkyLightingByDhPos = new HashMap<>();
-			HashMap<DhChunkPos, ChunkLightStorage> chunkBlockLightingByDhPos = new HashMap<>();
-			IEmptyChunkGeneratorFunc emptyChunkGeneratorFunc = (int x, int z) ->
+			// final is so the offset can be used in lambdas
+			final int xOffsetFinal = xOffset;
+			for (int zOffset = 0; zOffset < 2; zOffset++)
 			{
-				ChunkPos chunkPos = new ChunkPos(x, z);
-				DhChunkPos dhChunkPos = new DhChunkPos(x, z);
-				ChunkAccess newChunk = null;
-				try
-				{
-					// get the chunk
-					CompoundTag chunkData = this.getChunkNbtData(chunkPos);
-					newChunk = this.loadOrMakeChunk(chunkPos, chunkData);
-					
-					if (Config.Client.Advanced.LodBuilding.pullLightingForPregeneratedChunks.get())
-					{
-						// attempt to get chunk lighting
-						ChunkLoader.CombinedChunkLightStorage combinedLights = ChunkLoader.readLight(newChunk, chunkData);
-						if (combinedLights != null)
-						{
-							chunkSkyLightingByDhPos.put(dhChunkPos, combinedLights.skyLightStorage);
-							chunkBlockLightingByDhPos.put(dhChunkPos, combinedLights.blockLightStorage);
-						}
-					}
-				}
-				catch (RuntimeException loadChunkError)
-				{
-					// Continue...
-				}
+				final int zOffsetFinal = zOffset;
 				
-				if (newChunk == null)
+				
+				
+				//================//
+				// variable setup //
+				//================//
+				
+				int radius = refSize / 2; 
+				int centerX = refPosX + radius + xOffset;
+				int centerZ = refPosZ + radius + zOffset;
+				
+				// get/create the list of chunks we're going to generate
+				ArrayGridList<ChunkAccess> regionChunks = new ArrayGridList<>(
+						refSize, 
+						(x, z) -> this.generateEmptyChunk(
+								x + refPosX + xOffsetFinal, 
+								z + refPosZ + zOffsetFinal, 
+								chunkSkyLightingByDhPos, chunkBlockLightingByDhPos, generatedChunkByDhPos));
+				ChunkAccess centerChunk = regionChunks.stream().filter(chunk -> chunk.getPos().x == centerX && chunk.getPos().z == centerZ).findFirst().get();
+				
+				genEvent.refreshTimeout();
+				DhLitWorldGenRegion region = new DhLitWorldGenRegion(
+						centerX, centerZ,
+						centerChunk,
+						this.params.level, dummyLightEngine, regionChunks,
+						ChunkStatus.STRUCTURE_STARTS, radius,
+						// this method shouldn't be necessary since we're passing in a pre-populated
+						// list of chunks, but just in case
+						(x, z) -> this.generateEmptyChunk(x, z, chunkSkyLightingByDhPos, chunkBlockLightingByDhPos, generatedChunkByDhPos)
+				);
+				lightGetterAdaptor.setRegion(region);
+				genEvent.threadedParam.makeStructFeat(region, this.params);
+				
+				
+				
+				//=========================//
+				// create chunk wrappers   //
+				// and get existing chunks //
+				//=========================//
+				
+				ArrayGridList<ChunkWrapper> chunkWrapperList = new ArrayGridList<>(regionChunks.gridSize);
+				regionChunks.forEachPos((relX, relZ) ->
 				{
-					newChunk = new ProtoChunk(chunkPos, UpgradeData.EMPTY
-							#if MC_VER >= MC_1_17_1 , this.params.level #endif
-							#if MC_VER >= MC_1_18_2 , this.params.biomes, null #endif
-					);
-				}
-				return newChunk;
-			};
-			totalChunks = new ArrayGridList<>(refSize, (x, z) -> emptyChunkGeneratorFunc.generate(x + refPosX, z + refPosZ));
-			
-			int radius = refSize / 2;
-			int centerX = refPosX + radius;
-			int centerZ = refPosZ + radius;
-			
-			ChunkAccess centerChunk = totalChunks.stream().filter(chunk -> chunk.getPos().x == centerX && chunk.getPos().z == centerZ).findFirst().get();
-			
-			genEvent.refreshTimeout();
-			region = new DhLitWorldGenRegion(
-					centerX, centerZ,
-					centerChunk,
-					this.params.level, dummyLightEngine, totalChunks,
-					ChunkStatus.STRUCTURE_STARTS, radius, emptyChunkGeneratorFunc);
-			adaptor.setRegion(region);
-			genEvent.threadedParam.makeStructFeat(region, this.params);
-			
-			
-			
-			//=======================//
-			// create chunk wrappers //
-			//=======================//
-			
-			chunkWrapperList = new ArrayGridList<>(totalChunks.gridSize);
-			totalChunks.forEachPos((x, z) ->
-			{
-				ChunkAccess chunk = totalChunks.get(x, z);
-				if (chunk != null)
-				{
-					// wrap the chunk
-					ChunkWrapper chunkWrapper = new ChunkWrapper(chunk, region, this.serverlevel.getLevelWrapper());
-					chunkWrapperList.set(x, z, chunkWrapper);
+					// ArrayGridList's use relative positions and don't have a center position
+					// so we need to use the offsetFinal to select the correct position
+					DhChunkPos chunkPos = new DhChunkPos(relX + xOffsetFinal, relZ + zOffsetFinal);
+					ChunkAccess chunk = regionChunks.get(relX, relZ);
 					
-					// try setting the wrapper's lighting
-					if (chunkBlockLightingByDhPos.containsKey(chunkWrapper.getChunkPos()))
+					if (chunkWrappersByDhPos.containsKey(chunkPos))
 					{
-						chunkWrapper.setBlockLightStorage(chunkBlockLightingByDhPos.get(chunkWrapper.getChunkPos()));
-						chunkWrapper.setSkyLightStorage(chunkSkyLightingByDhPos.get(chunkWrapper.getChunkPos()));
-						chunkWrapper.setUseDhLighting(true);
-						chunkWrapper.setIsDhLightCorrect(true);
+						chunkWrapperList.set(relX, relZ, chunkWrappersByDhPos.get(chunkPos));
 					}
-				}
-			});
-			
-			
-			
-			//=================//
-			// generate chunks //
-			//=================//
-			
-			this.generateDirect(genEvent, chunkWrapperList, borderSize, genEvent.targetGenerationStep, region);
-			genEvent.timer.nextEvent("cleanup");
-		}
-		catch (StepStructureStart.StructStartCorruptedException f)
-		{
-			genEvent.threadedParam.markAsInvalid();
-			throw (RuntimeException) f.getCause();
+					else if (chunk != null)
+					{
+						// wrap the chunk
+						ChunkWrapper chunkWrapper = new ChunkWrapper(chunk, region, this.serverlevel.getLevelWrapper());
+						chunkWrapperList.set(relX, relZ, chunkWrapper);
+						
+						// try setting the wrapper's lighting
+						if (chunkBlockLightingByDhPos.containsKey(chunkWrapper.getChunkPos()))
+						{
+							chunkWrapper.setBlockLightStorage(chunkBlockLightingByDhPos.get(chunkWrapper.getChunkPos()));
+							chunkWrapper.setSkyLightStorage(chunkSkyLightingByDhPos.get(chunkWrapper.getChunkPos()));
+							chunkWrapper.setUseDhLighting(true);
+							chunkWrapper.setIsDhLightCorrect(true);
+						}
+						
+						chunkWrappersByDhPos.put(chunkPos, chunkWrapper);
+					}
+					else //if (chunk == null)
+					{
+						LodUtil.assertNotReach("Programmer Error: No chunk found in grid list, position offset is likely wrong.");
+					}
+				});
+				
+				
+				
+				//=================//
+				// generate chunks //
+				//=================//
+				
+				this.generateDirect(genEvent, chunkWrapperList, borderSize, genEvent.targetGenerationStep, region);
+				
+				genEvent.timer.nextEvent("cleanup");
+			}	
 		}
 		
-		ArrayGridList<ChunkWrapper> finalGenChunks = GetCutoutFrom(chunkWrapperList, borderSize);
-		for (int offsetY = 0; offsetY < finalGenChunks.gridSize; offsetY++)
+		
+		
+		//=========================//
+		// submit generated chunks //
+		//=========================//
+		
+		for (DhChunkPos dhChunkPos : chunkWrappersByDhPos.keySet())
 		{
-			for (int offsetX = 0; offsetX < finalGenChunks.gridSize; offsetX++)
+			ChunkWrapper wrappedChunk = chunkWrappersByDhPos.get(dhChunkPos);
+			ChunkAccess target = wrappedChunk.getChunk();
+			if (target instanceof LevelChunk)
 			{
-				ChunkWrapper wrappedChunk = finalGenChunks.get(offsetX, offsetY);
-				ChunkAccess target = wrappedChunk.getChunk();
-				if (target instanceof LevelChunk)
-				{
-					#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
-					((LevelChunk) target).setLoaded(true);
-					#else
-					((LevelChunk) target).loaded = true;
-					#endif
-				}
-				
-				if (!wrappedChunk.isLightCorrect())
-				{
-					throw new RuntimeException("The generated chunk somehow has isLightCorrect() returning false");
-				}
-				
-				boolean isFull = ChunkWrapper.getStatus(target) == ChunkStatus.FULL || target instanceof LevelChunk;
-				#if MC_VER >= MC_1_18_2
-				boolean isPartial = target.isOldNoiseGeneration();
+				#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
+				((LevelChunk) target).setLoaded(true);
+				#else
+				((LevelChunk) target).loaded = true;
 				#endif
-				if (isFull)
-				{
-					LOAD_LOGGER.info("Detected full existing chunk at {}", target.getPos());
-					genEvent.resultConsumer.accept(wrappedChunk);
-				}
-				#if MC_VER >= MC_1_18_2
-				else if (isPartial)
-				{
-					LOAD_LOGGER.info("Detected old existing chunk at {}", target.getPos());
-					genEvent.resultConsumer.accept(wrappedChunk);
-				}
-				#endif
-				else if (ChunkWrapper.getStatus(target) == ChunkStatus.EMPTY)
-				{
-					genEvent.resultConsumer.accept(wrappedChunk);
-				}
-				else
-				{
-					genEvent.resultConsumer.accept(wrappedChunk);
-				}
+			}
+			
+			if (!wrappedChunk.isLightCorrect())
+			{
+				throw new RuntimeException("The generated chunk somehow has isLightCorrect() returning false");
+			}
+			
+			boolean isFull = ChunkWrapper.getStatus(target) == ChunkStatus.FULL || target instanceof LevelChunk;
+			#if MC_VER >= MC_1_18_2
+			boolean isPartial = target.isOldNoiseGeneration();
+			#endif
+			if (isFull)
+			{
+				LOAD_LOGGER.debug("Detected full existing chunk at {}", target.getPos());
+				genEvent.resultConsumer.accept(wrappedChunk);
+			}
+			#if MC_VER >= MC_1_18_2
+			else if (isPartial)
+			{
+				LOAD_LOGGER.debug("Detected old existing chunk at {}", target.getPos());
+				genEvent.resultConsumer.accept(wrappedChunk);
+			}
+			#endif
+			else if (ChunkWrapper.getStatus(target) == ChunkStatus.EMPTY)
+			{
+				genEvent.resultConsumer.accept(wrappedChunk);
+			}
+			else
+			{
+				genEvent.resultConsumer.accept(wrappedChunk);
 			}
 		}
 		
@@ -556,8 +567,57 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		if (PREF_LOGGER.canMaybeLog())
 		{
 			genEvent.threadedParam.perf.recordEvent(genEvent.timer);
-			PREF_LOGGER.infoInc("{}", genEvent.timer);
+			PREF_LOGGER.debugInc("{}", genEvent.timer);
 		}
+	}
+	private ChunkAccess generateEmptyChunk(
+			int x, int z,
+			HashMap<DhChunkPos, ChunkLightStorage> chunkSkyLightingByDhPos,
+			HashMap<DhChunkPos, ChunkLightStorage> chunkBlockLightingByDhPos,
+			HashMap<DhChunkPos, ChunkAccess> generatedChunkByDhPos)
+	{
+		ChunkPos chunkPos = new ChunkPos(x, z);
+		DhChunkPos dhChunkPos = new DhChunkPos(x, z);
+		
+		if (generatedChunkByDhPos.containsKey(dhChunkPos))
+		{
+			return generatedChunkByDhPos.get(dhChunkPos);
+		}
+		
+		
+		ChunkAccess newChunk = null;
+		try
+		{
+			// get the chunk
+			CompoundTag chunkData = this.getChunkNbtData(chunkPos);
+			newChunk = this.loadOrMakeChunk(chunkPos, chunkData);
+			
+			if (Config.Client.Advanced.LodBuilding.pullLightingForPregeneratedChunks.get())
+			{
+				// attempt to get chunk lighting
+				ChunkLoader.CombinedChunkLightStorage combinedLights = ChunkLoader.readLight(newChunk, chunkData);
+				if (combinedLights != null)
+				{
+					chunkSkyLightingByDhPos.put(dhChunkPos, combinedLights.skyLightStorage);
+					chunkBlockLightingByDhPos.put(dhChunkPos, combinedLights.blockLightStorage);
+				}
+			}
+		}
+		catch (RuntimeException loadChunkError)
+		{
+			// Continue...
+		}
+		
+		if (newChunk == null)
+		{
+			newChunk = new ProtoChunk(chunkPos, UpgradeData.EMPTY
+							#if MC_VER >= MC_1_17_1 , this.params.level #endif
+							#if MC_VER >= MC_1_18_2 , this.params.biomes, null #endif
+			);
+		}
+		
+		generatedChunkByDhPos.put(dhChunkPos, newChunk);
+		return newChunk;
 	}
 	private CompoundTag getChunkNbtData(ChunkPos chunkPos)
 	{
@@ -609,7 +669,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		{
 			try
 			{
-				LOAD_LOGGER.info("DistantHorizons: Loading chunk [" + chunkPos + "] from disk.");
+				LOAD_LOGGER.debug("DistantHorizons: Loading chunk [" + chunkPos + "] from disk.");
 				return ChunkLoader.read(level, chunkPos, chunkData);
 			}
 			catch (Exception e)
@@ -638,6 +698,9 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		), null #endif
 		);
 	}
+	
+	
+	
 	
 	public void generateDirect(
 			GenerationEvent genEvent, ArrayGridList<ChunkWrapper> chunksToGenerate, int border,
@@ -770,7 +833,8 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		}
 	}
 	private static <T> ArrayGridList<T> GetCutoutFrom(ArrayGridList<T> total, int border) { return new ArrayGridList<>(total, border, total.gridSize - border); }
-	private static <T> ArrayGridList<T> GetCutoutFrom(ArrayGridList<T> total, EDhApiWorldGenerationStep step) { return GetCutoutFrom(total, MaxBorderNeeded - BorderNeeded.get(step)); }
+	//private static <T> ArrayGridList<T> GetCutoutFrom(ArrayGridList<T> total, EDhApiWorldGenerationStep step) { return GetCutoutFrom(total, MaxBorderNeeded - WORLD_GEN_CHUNK_BORDER_NEEDED_BY_GEN_STEP.get(step)); }
+	private static <T> ArrayGridList<T> GetCutoutFrom(ArrayGridList<T> total, EDhApiWorldGenerationStep step) { return GetCutoutFrom(total, 0); }
 	
 	
 	@Override

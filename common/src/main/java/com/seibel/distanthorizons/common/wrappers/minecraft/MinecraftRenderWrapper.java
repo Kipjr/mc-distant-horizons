@@ -121,14 +121,6 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	}
 	
 	@Override
-	public DhBlockPos getCameraBlockPosition()
-	{
-		Camera camera = MC.gameRenderer.getMainCamera();
-		BlockPos blockPos = camera.getBlockPosition();
-		return new DhBlockPos(blockPos.getX(), blockPos.getY(), blockPos.getZ());
-	}
-	
-	@Override
 	/** Unless you really need to know if the player is blind, use {@link MinecraftRenderWrapper#isFogStateSpecial()}/{@link IMinecraftRenderWrapper#isFogStateSpecial()} instead */
 	public boolean playerHasBlindingEffect()
 	{
@@ -146,43 +138,6 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 		Vec3 projectedView = camera.getPosition();
 		
 		return new Vec3d(projectedView.x, projectedView.y, projectedView.z);
-	}
-	
-	@Override
-	public Mat4f getWorldViewMatrix()
-	{
-		Camera camera = MC.gameRenderer.getMainCamera();
-		Vector3f cameraVec3 = new Vector3f(
-				(float)camera.getPosition().x,
-				(float)camera.getPosition().y,
-				(float)camera.getPosition().z);
-		cameraVec3 = cameraVec3.negate();
-		
-		Matrix4f matWorldView = new Matrix4f()
-				.rotateX((float)Math.toRadians(camera.getXRot()))
-				.rotateY((float)Math.toRadians(camera.getYRot() + 180f))
-				.translate(cameraVec3);
-		return new Mat4f(matWorldView);
-	}
-	
-	@Override
-	public Mat4f getDefaultProjectionMatrix(float partialTicks)
-	{
-		#if MC_VER < MC_1_17_1
-		return McObjectConverter.Convert(Minecraft.getInstance().gameRenderer.getProjectionMatrix(Minecraft.getInstance().gameRenderer.getMainCamera(), partialTicks, true));
-		#else
-		return McObjectConverter.Convert(MC.gameRenderer.getProjectionMatrix(MC.gameRenderer.getFov(MC.gameRenderer.getMainCamera(), partialTicks, true)));
-		#endif
-	}
-	
-	@Override
-	public double getGamma()
-	{
-		#if MC_VER < MC_1_19_2
-		return MC.options.gamma;
-		#else
-		return MC.options.gamma().get();
-		#endif
 	}
 	
 	@Override
@@ -312,77 +267,6 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	public int getTargetFrameBufferViewportHeight()
 	{
 		return getRenderTarget().viewHeight;
-	}
-	
-	/**
-	 * This method returns the ChunkPos of all chunks that Minecraft
-	 * is going to render this frame. <br><br>
-	 * <p>
-	 */
-	
-	public boolean usingBackupGetVanillaRenderedChunks = false;
-	@Override
-	public HashSet<DhChunkPos> getVanillaRenderedChunks()
-	{
-		ISodiumAccessor sodium = ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class);
-		if (sodium != null)
-		{
-			return sodium.getNormalRenderedChunks();
-		}
-		IOptifineAccessor optifine = ModAccessorInjector.INSTANCE.get(IOptifineAccessor.class);
-		if (optifine != null)
-		{
-			HashSet<DhChunkPos> pos = optifine.getNormalRenderedChunks();
-			if (pos == null)
-				pos = getMaximumRenderedChunks();
-			return pos;
-		}
-		if (!usingBackupGetVanillaRenderedChunks)
-		{
-			try
-			{
-				#if MC_VER < MC_1_20_2
-				LevelRenderer levelRenderer = MC.levelRenderer;
-				Collection<LevelRenderer.RenderChunkInfo> chunks =
-					#if MC_VER < MC_1_18_2 levelRenderer.renderChunks;
-					#else levelRenderer.renderChunkStorage.get().renderChunks; #endif
-				
-				return (chunks.stream().map((chunk) -> {
-					AABB chunkBoundingBox =
-						#if MC_VER < MC_1_18_2 chunk.chunk.bb;
-						#else chunk.chunk.getBoundingBox(); #endif
-					return new DhChunkPos(Math.floorDiv((int) chunkBoundingBox.minX, 16),
-							Math.floorDiv((int) chunkBoundingBox.minZ, 16));
-				}).collect(Collectors.toCollection(HashSet::new)));
-				#else
-				LevelRenderer levelRenderer = MC.levelRenderer;
-				Collection<SectionRenderDispatcher.RenderSection> chunks = levelRenderer.visibleSections;
-				
-				return (chunks.stream().map((chunk) -> {
-					AABB chunkBoundingBox = chunk.getBoundingBox();
-					return new DhChunkPos(Math.floorDiv((int) chunkBoundingBox.minX, 16),
-							Math.floorDiv((int) chunkBoundingBox.minZ, 16));
-				}).collect(Collectors.toCollection(HashSet::new)));
-				#endif
-			}
-			catch (LinkageError e)
-			{
-				try
-				{
-					MinecraftClientWrapper.INSTANCE.sendChatMessage(
-							"\u00A7e\u00A7l\u00A7uWARNING: Distant Horizons: getVanillaRenderedChunks method failed."
-									+ " Using Backup Method.");
-					MinecraftClientWrapper.INSTANCE.sendChatMessage(
-							"\u00A7eOverdraw prevention will be worse than normal.");
-				}
-				catch (Exception e2)
-				{
-				}
-				LOGGER.error("getVanillaRenderedChunks Error: ", e);
-				usingBackupGetVanillaRenderedChunks = true;
-			}
-		}
-		return getMaximumRenderedChunks();
 	}
 	
 	@Override
