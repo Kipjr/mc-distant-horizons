@@ -30,6 +30,9 @@ import org.apache.logging.log4j.Logger;
 #if MC_VER >= MC_1_20_6
 import com.seibel.distanthorizons.common.CommonPacketPayload;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+#else
+import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
+import com.seibel.distanthorizons.common.AbstractPluginPacketSender;
 #endif
 
 import java.util.function.Supplier;
