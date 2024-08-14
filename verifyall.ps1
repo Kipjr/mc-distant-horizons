@@ -7,7 +7,7 @@ param (
 # Clear the screen
 Clear-Host
 
-# Define an array to hold completed builds
+# Define an array to hold completed builds with color information
 $completedBuilds = @()
 
 # Get all version properties files
@@ -16,34 +16,29 @@ $versionFiles = Get-ChildItem -Path "./versionProperties/" -Filter "*.properties
 foreach ($versionFile in $versionFiles) {
     $version = [System.IO.Path]::GetFileNameWithoutExtension($versionFile.Name)
 
-    # Initialize result variable
-    $result = ""
-
     # Run the gradle command
     $gradleCommand = ".\gradlew $($prefix)classes -PmcVer=$version"
     $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $gradleCommand" -NoNewWindow -PassThru -Wait
 
+    # Determine the result color
     if ($process.ExitCode -eq 0) {
-        $result += "`e[1;32m"
+        $color = "Green"
     } else {
-        $result += "`e[1;31m"
+        $color = "Red"
     }
     
-    $result += $version
-    $result += "`e[0m"
-
     # Print the result with formatting
     $versionLength = $version.Length
     $topChars = ("^" * $versionLength)
     $bottomChars = ("=" * $versionLength)
 
-    Write-Host "# $topChars"
-    Write-Host "# $version"
-    Write-Host "# $bottomChars"
-    Write-Host "`e[0m"
+    Write-Host "# $topChars" -ForegroundColor $color
+    Write-Host "# $version" -ForegroundColor $color
+    Write-Host "# $bottomChars" -ForegroundColor $color
+    Write-Host
 
-    # Add result to completed builds
-    $completedBuilds += $result
+    # Add result to completed builds with color
+    $completedBuilds += @{ Version = $version; Color = $color }
 }
 
 # Run clean and classes gradle tasks
@@ -52,5 +47,11 @@ Start-Process -FilePath "cmd.exe" -ArgumentList "/c .\gradlew classes" -NoNewWin
 
 # Print build results
 Write-Host
-Write-Host "`e[1mBuild results:`e[0m"
-Write-Host ($completedBuilds -join " ")
+Write-Host "Build results:"
+
+foreach ($build in $completedBuilds) {
+    Write-Host $build.Version -ForegroundColor $build.Color -NoNewline
+    Write-Host " " -NoNewline  # Add a space between versions
+}
+
+Write-Host  # End the line after all versions are printed
