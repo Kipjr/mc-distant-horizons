@@ -269,7 +269,7 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 			ClientApi.INSTANCE.pluginMessageReceived(payload.message());
 		});
 		#else
-		ClientPlayNetworking.registerGlobalReceiver(AbstractPluginPacketSender.PLUGIN_CHANNEL_RESOURCE, (client, handler, buffer, packetSender) ->
+		ClientPlayNetworking.registerGlobalReceiver(AbstractPluginPacketSender.WRAPPER_PACKET_RESOURCE, (client, handler, buffer, packetSender) ->
 		{
 			NetworkMessage message = AbstractPluginPacketSender.decodeMessage(buffer);
 			if (message != null)
