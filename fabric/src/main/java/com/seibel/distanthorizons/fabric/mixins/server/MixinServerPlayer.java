@@ -31,7 +31,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-#if MC_VER >= MC_1_21
+#if MC_VER >= MC_1_21_1
 import net.minecraft.world.level.portal.DimensionTransition;
 #endif
 
@@ -51,7 +51,7 @@ public class MixinServerPlayer implements IMixinServerPlayer
 	}
 	
 	@Inject(at = @At("HEAD"), method = "changeDimension")
-	#if MC_VER >= MC_1_21
+	#if MC_VER >= MC_1_21_1
 	public void changeDimension(DimensionTransition dimensionTransition, CallbackInfoReturnable<Entity> cir)
 	{
 		this.dimensionChangeDestination = dimensionTransition.newLevel();

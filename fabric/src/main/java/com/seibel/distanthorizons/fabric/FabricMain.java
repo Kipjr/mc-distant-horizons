@@ -58,7 +58,7 @@ import java.util.function.Consumer;
  */
 public class FabricMain extends AbstractModInitializer implements ClientModInitializer, DedicatedServerModInitializer
 {
-	#if MC_VER >= MC_1_21
+	#if MC_VER >= MC_1_21_1
 	private static final ResourceLocation INITIAL_PHASE = ResourceLocation.fromNamespaceAndPath(ModInfo.RESOURCE_NAMESPACE, ModInfo.DEDICATED_SERVER_INITIAL_PATH);
 	#else
 	private static final ResourceLocation INITIAL_PHASE = new ResourceLocation(ModInfo.RESOURCE_NAMESPACE, ModInfo.DEDICATED_SERVER_INITIAL_PATH);

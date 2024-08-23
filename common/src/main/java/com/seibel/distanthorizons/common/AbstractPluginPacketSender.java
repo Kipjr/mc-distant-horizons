@@ -24,7 +24,7 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 	private static final ConfigBasedLogger LOGGER = new ConfigBasedLogger(LogManager.getLogger(),
 			() -> Config.Client.Advanced.Logging.logNetworkEvent.get());
 	
-	#if MC_VER >= MC_1_21
+	#if MC_VER >= MC_1_21_1
 	public static final ResourceLocation WRAPPER_PACKET_RESOURCE = ResourceLocation.fromNamespaceAndPath(ModInfo.RESOURCE_NAMESPACE, ModInfo.WRAPPER_PACKET_PATH);
 	#else
 	public static final ResourceLocation WRAPPER_PACKET_RESOURCE = new ResourceLocation(ModInfo.RESOURCE_NAMESPACE, ModInfo.WRAPPER_PACKET_PATH);
