@@ -22,6 +22,8 @@ public class FabricPluginPacketSender extends AbstractPluginPacketSender
 		ClientPlayNetworking.send(new CommonPacketPayload(message));
 		#else // < 1.20.6
 		FriendlyByteBuf buffer = PacketByteBufs.create();
+		// Forge packet ID
+		buffer.writeByte(0);
 		AbstractPluginPacketSender.encodeMessage(buffer, message);
 		ClientPlayNetworking.send(WRAPPER_PACKET_RESOURCE, buffer);
 		#endif
@@ -34,6 +36,8 @@ public class FabricPluginPacketSender extends AbstractPluginPacketSender
 		ServerPlayNetworking.send(serverPlayer, new CommonPacketPayload(message));
 		#else // < 1.20.6
 		FriendlyByteBuf buffer = PacketByteBufs.create();
+		// Forge packet ID
+		buffer.writeByte(0);
 		AbstractPluginPacketSender.encodeMessage(buffer, message);
 		ServerPlayNetworking.send(serverPlayer, WRAPPER_PACKET_RESOURCE, buffer);
 		#endif

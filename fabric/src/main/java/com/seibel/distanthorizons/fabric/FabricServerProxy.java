@@ -187,6 +187,8 @@ public class FabricServerProxy implements AbstractModInitializer.IEventProxy
 			#else
 			ServerPlayNetworking.registerGlobalReceiver(AbstractPluginPacketSender.WRAPPER_PACKET_RESOURCE, (server, serverPlayer, handler, buffer, packetSender) ->
 			{
+				// Forge packet ID
+				buffer.readByte();
 				NetworkMessage message = AbstractPluginPacketSender.decodeMessage(buffer);
 				if (message != null)
 				{
