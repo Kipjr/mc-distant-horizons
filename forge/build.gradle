@@ -39,14 +39,15 @@ loom {
             setConfigName("Forge Client")
             ideConfigGenerated(false)
             runDir("../run/client")
-//            vmArgs("-XX:-OmitStackTraceInFastThrow", minecraftMemoryJavaArg)
-            programArgs("--username", "NoNick")
+            vmArgs("-Dio.netty.leakDetection.level=advanced")
+            programArgs("--username", "Dev")
         }
         server {
             server()
             setConfigName("Forge Server")
             ideConfigGenerated(false)
             runDir("../run/server")
+            vmArgs("-Dio.netty.leakDetection.level=advanced")
         }
     }
 }

@@ -31,13 +31,15 @@ loom {
             setConfigName("NeoForge Client")
             ideConfigGenerated(false)
             runDir("../run/client")
-            //vmArgs("-XX:-OmitStackTraceInFastThrow", minecraftMemoryJavaArg)
+            vmArgs("-Dio.netty.leakDetection.level=advanced")
+            programArgs("--username", "Dev")
         }
         server {
             server()
             setConfigName("NeoForge Server")
             ideConfigGenerated(false)
             runDir("../run/server")
+            vmArgs("-Dio.netty.leakDetection.level=advanced")
         }
     }
 }
