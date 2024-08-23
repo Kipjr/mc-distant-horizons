@@ -116,7 +116,7 @@ public class MixinLevelRenderer
 		    ClientApi.INSTANCE.renderDeferredLods(ClientLevelWrapper.getWrapper(this.level),
 				    mcModelViewMatrix,
 				    mcProjectionMatrix,
-					#if MC_VER < MC_1_21
+					#if MC_VER < MC_1_21_1
 					Minecraft.getInstance().getFrameTime()
 					#else
 				    Minecraft.getInstance().getTimer().getRealtimeDeltaTicks()

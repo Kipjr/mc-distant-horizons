@@ -60,6 +60,8 @@ import org.lwjgl.opengl.GL32;
 import net.neoforged.neoforge.event.TickEvent;
 #else
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+
+import java.util.concurrent.ThreadPoolExecutor;
 #endif
 
 
@@ -160,71 +162,61 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	@SubscribeEvent
 	public void rightClickBlockEvent(PlayerInteractEvent.RightClickBlock event)
 	{
-		if (SharedApi.isChunkAtBlockPosAlreadyUpdating(event.getPos().getX(), event.getPos().getZ()))
+		if (MC.clientConnectedToDedicatedServer())
 		{
-			return;
-		}
-		
-		// executor to prevent locking up the render/event thread
-		// if the getChunk() takes longer than expected 
-		// (which can be caused by certain mods) 
-		var executor = ThreadPoolUtil.getFileHandlerExecutor();
-		if (executor != null)
-		{
-			executor.execute(() ->
+			if (SharedApi.isChunkAtBlockPosAlreadyUpdating(event.getPos().getX(), event.getPos().getZ()))
 			{
-				//LOGGER.trace("interact or block place event at blockPos: " + event.getPos());
-				
-				LevelAccessor level = event.getLevel();
-				ChunkAccess chunk = level.getChunk(event.getPos());
-				this.onBlockChangeEvent(level, chunk);
-			});
+				return;
+			}
+			
+			// executor to prevent locking up the render/event thread
+			// if the getChunk() takes longer than expected 
+			// (which can be caused by certain mods) 
+			ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+			if (executor != null)
+			{
+				executor.execute(() ->
+				{
+					//LOGGER.trace("interact or block place event at blockPos: " + event.getPos());
+					
+					LevelAccessor level = event.getLevel();
+					ChunkAccess chunk = level.getChunk(event.getPos());
+					this.onBlockChangeEvent(level, chunk);
+				});
+			}
 		}
 	}
 	@SubscribeEvent
 	public void leftClickBlockEvent(PlayerInteractEvent.LeftClickBlock event)
 	{
-		if (SharedApi.isChunkAtBlockPosAlreadyUpdating(event.getPos().getX(), event.getPos().getZ()))
+		if (MC.clientConnectedToDedicatedServer())
 		{
-			return;
-		}
-		
-		// executor to prevent locking up the render/event thread
-		// if the getChunk() takes longer than expected 
-		// (which can be caused by certain mods) 
-		var executor = ThreadPoolUtil.getFileHandlerExecutor();
-		if (executor != null)
-		{
-			executor.execute(() ->
+			if (SharedApi.isChunkAtBlockPosAlreadyUpdating(event.getPos().getX(), event.getPos().getZ()))
 			{
-				//LOGGER.trace("break or block attack at blockPos: " + event.getPos());
-				
-				LevelAccessor level = event.getLevel();
-				ChunkAccess chunk = level.getChunk(event.getPos());
-				this.onBlockChangeEvent(level, chunk);
-			});
+				return;
+			}
+			
+			// executor to prevent locking up the render/event thread
+			// if the getChunk() takes longer than expected 
+			// (which can be caused by certain mods) 
+			ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+			if (executor != null)
+			{
+				executor.execute(() ->
+				{
+					//LOGGER.trace("break or block attack at blockPos: " + event.getPos());
+					
+					LevelAccessor level = event.getLevel();
+					ChunkAccess chunk = level.getChunk(event.getPos());
+					this.onBlockChangeEvent(level, chunk);
+				});
+			}
 		}
 	}
 	private void onBlockChangeEvent(LevelAccessor level, ChunkAccess chunk)
 	{
 		ILevelWrapper wrappedLevel = ProxyUtil.getLevelWrapper(level);
 		SharedApi.INSTANCE.chunkBlockChangedEvent(new ChunkWrapper(chunk, level, wrappedLevel), wrappedLevel);
-	}
-	
-	
-	@SubscribeEvent
-	public void clientChunkLoadEvent(ChunkEvent.Load event)
-	{
-		ILevelWrapper wrappedLevel = ProxyUtil.getLevelWrapper(GetEventLevel(event));
-		IChunkWrapper chunk = new ChunkWrapper(event.getChunk(), GetEventLevel(event), wrappedLevel);
-		SharedApi.INSTANCE.chunkLoadEvent(chunk, wrappedLevel);
-	}
-	@SubscribeEvent
-	public void clientChunkUnloadEvent(ChunkEvent.Unload event)
-	{
-		ILevelWrapper wrappedLevel = ProxyUtil.getLevelWrapper(GetEventLevel(event));
-		IChunkWrapper chunk = new ChunkWrapper(event.getChunk(), GetEventLevel(event), wrappedLevel);
-		SharedApi.INSTANCE.chunkUnloadEvent(chunk, wrappedLevel);
 	}
 	
 	

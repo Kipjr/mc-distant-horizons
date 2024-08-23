@@ -63,7 +63,7 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.status.*;
 #endif
 
-#if MC_VER == MC_1_21
+#if MC_VER >= MC_1_21_1
 import net.minecraft.util.StaticCache2D;
 import com.google.common.collect.ImmutableList;
 import net.minecraft.server.level.GenerationChunkHolder;
@@ -127,7 +127,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 	{
 		#if MC_VER == MC_1_16_5
 		super(serverLevel, chunkList);
-		#elif MC_VER < MC_1_21
+		#elif MC_VER < MC_1_21_1
 		super(serverLevel, chunkList, chunkStatus, writeRadius);
 		#else
 		super(serverLevel, 

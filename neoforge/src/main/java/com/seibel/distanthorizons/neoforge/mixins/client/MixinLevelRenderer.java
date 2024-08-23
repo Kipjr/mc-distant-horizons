@@ -120,7 +120,7 @@ public class MixinLevelRenderer
 		
 		
 		float frameTime;
-		#if MC_VER < MC_1_21
+		#if MC_VER < MC_1_21_1
 		frameTime = Minecraft.getInstance().getFrameTime();
 		#else
 		frameTime = Minecraft.getInstance().getTimer().getRealtimeDeltaTicks();

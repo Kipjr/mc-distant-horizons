@@ -259,7 +259,7 @@ public class ClassicConfigGUI
 						0, 0,
 						// Some textuary stuff
 						0, 
-						#if MC_VER < MC_1_21 
+						#if MC_VER < MC_1_21_1
 						new ResourceLocation(ModInfo.ID, "textures/gui/changelog.png"),
 						#else
 						ResourceLocation.fromNamespaceAndPath(ModInfo.ID, "textures/gui/changelog.png"),

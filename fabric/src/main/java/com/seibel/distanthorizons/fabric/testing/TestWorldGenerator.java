@@ -11,16 +11,24 @@ import com.seibel.distanthorizons.api.objects.data.DhApiChunk;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
+import com.seibel.distanthorizons.core.config.Config;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.ChunkAccess;
 
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestWorldGenerator extends AbstractDhApiChunkWorldGenerator
 {
 	private final ServerLevel level;
 	private final IDhApiLevelWrapper levelWrapper;
+	
+	
+	
+	//=============//
+	// constructor //
+	//=============//
 	
 	public TestWorldGenerator(ServerLevel level)
 	{
@@ -29,12 +37,22 @@ public class TestWorldGenerator extends AbstractDhApiChunkWorldGenerator
 	}
 	
 	
+	
+	//============//
+	// properties //
+	//============//
+	
 	@Override
 	public EDhApiWorldGeneratorReturnType getReturnType() { return EDhApiWorldGeneratorReturnType.API_CHUNKS; }
 	
-	@Override
-	public boolean isBusy() { return false; }
+	@Override 
+	public boolean runApiChunkValidation() { return true; }
 	
+	
+	
+	//==================//
+	// chunk generation //
+	//==================//
 	
 	@Override
 	public Object[] generateChunk(int chunkX, int chunkZ, EDhApiDistantGeneratorMode eDhApiDistantGeneratorMode)
@@ -50,10 +68,10 @@ public class TestWorldGenerator extends AbstractDhApiChunkWorldGenerator
 		// (and it is only needed when testing world gen overrides/API chunks, so it isn't normally needed)
 		#if MC_VER >= MC_1_18_2
 		ChunkAccess chunk = this.level.getChunk(chunkPosX, chunkPosZ);
-		ChunkWrapper chunkWrapper = new ChunkWrapper(chunk, null, null);
 		
-		int minBuildHeight = chunkWrapper.getMinBuildHeight();
-		int maxBuildHeight = chunkWrapper.getMaxBuildHeight();
+		
+		int minBuildHeight = this.level.getMinBuildHeight();
+		int maxBuildHeight = this.level.getMaxBuildHeight();
 		
 		DhApiChunk apiChunk = DhApiChunk.create(chunkPosX, chunkPosZ, minBuildHeight, maxBuildHeight);
 		for (int x = 0; x < 16; x++)
@@ -83,6 +101,12 @@ public class TestWorldGenerator extends AbstractDhApiChunkWorldGenerator
 	
 	@Override
 	public void preGeneratorTaskStart() { /* do nothing */ }
+	
+	
+	
+	//=========//
+	// cleanup //
+	//=========//
 	
 	@Override
 	public void close() { /* do nothing */ }

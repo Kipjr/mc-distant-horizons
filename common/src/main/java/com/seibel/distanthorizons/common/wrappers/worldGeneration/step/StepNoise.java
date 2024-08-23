@@ -68,7 +68,7 @@ public final class StepNoise
 				continue;
 			}
 			
-			#if MC_VER < MC_1_21
+			#if MC_VER < MC_1_21_1
 			((ProtoChunk) chunk).setStatus(STATUS);
 			#else
 			((ProtoChunk) chunk).setPersistedStatus(STATUS);
@@ -87,7 +87,7 @@ public final class StepNoise
 			#elif MC_VER < MC_1_19_2
 			chunk = this.environment.joinSync(this.environment.params.generator.fillFromNoise(Runnable::run, Blender.of(worldGenRegion),
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
-			#elif MC_VER < MC_1_21
+			#elif MC_VER < MC_1_21_1
 			chunk = this.environment.joinSync(this.environment.params.generator.fillFromNoise(Runnable::run, Blender.of(worldGenRegion), this.environment.params.randomState,
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
 			#else

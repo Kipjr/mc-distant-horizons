@@ -85,7 +85,7 @@ import net.minecraft.world.level.material.Fluids;
 #if MC_VER == MC_1_20_6
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.chunk.status.ChunkType;
-#elif MC_VER == MC_1_21
+#elif MC_VER >= MC_1_21_1
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.chunk.status.ChunkType;
 #endif
@@ -325,7 +325,7 @@ public class ChunkLoader
 	}
 	private static 
 		#if MC_VER < MC_1_20_6 ChunkStatus.ChunkType
-		#elif MC_VER < MC_1_21 ChunkType
+		#elif MC_VER < MC_1_21_1 ChunkType
 		#else ChunkType #endif 
 	readChunkType(CompoundTag tagLevel)
 	{

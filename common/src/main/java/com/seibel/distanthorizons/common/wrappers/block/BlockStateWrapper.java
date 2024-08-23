@@ -497,7 +497,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 			ResourceLocation resourceLocation;
 			try
 			{
-				#if MC_VER < MC_1_21
+				#if MC_VER < MC_1_21_1
 				resourceLocation = new ResourceLocation(resourceStateString.substring(0, separatorIndex), resourceStateString.substring(separatorIndex + 1));
 				#else
 				resourceLocation = ResourceLocation.fromNamespaceAndPath(resourceStateString.substring(0, separatorIndex), resourceStateString.substring(separatorIndex + 1));

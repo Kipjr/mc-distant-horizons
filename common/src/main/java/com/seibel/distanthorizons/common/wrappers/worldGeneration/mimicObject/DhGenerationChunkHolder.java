@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.common.wrappers.worldGeneration.mimicObject;
 
-#if MC_VER >= MC_1_21
+#if MC_VER >= MC_1_21_1
 
 import net.minecraft.server.level.GenerationChunkHolder;
 import net.minecraft.world.level.ChunkPos;

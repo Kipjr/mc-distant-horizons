@@ -127,14 +127,6 @@ public class NeoforgeServerProxy implements AbstractModInitializer.IEventProxy
 		IChunkWrapper chunk = new ChunkWrapper(event.getChunk(), GetEventLevel(event), levelWrapper);
 		this.serverApi.serverChunkLoadEvent(chunk, levelWrapper);
 	}
-	@SubscribeEvent
-	public void serverChunkSaveEvent(ChunkEvent.Unload event)
-	{
-		ILevelWrapper levelWrapper = ProxyUtil.getLevelWrapper(GetEventLevel(event));
-		
-		IChunkWrapper chunk = new ChunkWrapper(event.getChunk(), GetEventLevel(event), levelWrapper);
-		this.serverApi.serverChunkSaveEvent(chunk, levelWrapper);
-	}
 	
 	@SubscribeEvent
 	public void playerLoggedInEvent(PlayerEvent.PlayerLoggedInEvent event)

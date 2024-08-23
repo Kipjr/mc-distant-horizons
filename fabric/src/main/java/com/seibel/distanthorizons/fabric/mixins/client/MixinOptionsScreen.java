@@ -45,7 +45,7 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Shadow;
 #endif
 
-#if MC_VER < MC_1_21
+#if MC_VER < MC_1_21_1
 import net.minecraft.client.gui.screens.OptionsScreen;
 #else
 import net.minecraft.client.gui.screens.options.OptionsScreen;
@@ -64,7 +64,7 @@ public class MixinOptionsScreen extends Screen
 	/** Texture used for the config opening button */
 	@Unique
 	private static final ResourceLocation ICON_TEXTURE =
-		#if MC_VER < MC_1_21
+		#if MC_VER < MC_1_21_1
 		new ResourceLocation(ModInfo.ID, "textures/gui/button.png");
 		#else
 		ResourceLocation.fromNamespaceAndPath(ModInfo.ID, "textures/gui/button.png");

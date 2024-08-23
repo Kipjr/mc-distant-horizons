@@ -65,7 +65,7 @@ public final class StepSurface
 			}
 			else if (chunk instanceof ProtoChunk)
 			{
-				#if MC_VER < MC_1_21
+				#if MC_VER < MC_1_21_1
 				((ProtoChunk) chunk).setStatus(STATUS);
 				#else
 				((ProtoChunk) chunk).setPersistedStatus(STATUS);

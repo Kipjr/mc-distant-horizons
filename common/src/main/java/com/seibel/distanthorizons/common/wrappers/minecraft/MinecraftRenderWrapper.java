@@ -165,7 +165,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 		if (MC.level.dimensionType().hasSkyLight())
 		{
 			float frameTime;
-			#if MC_VER < MC_1_21
+			#if MC_VER < MC_1_21_1
 			frameTime = MC.getFrameTime();
 			#else
 			frameTime = MC.getTimer().getRealtimeDeltaTicks();

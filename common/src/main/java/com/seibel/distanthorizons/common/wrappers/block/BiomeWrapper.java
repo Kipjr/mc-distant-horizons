@@ -293,7 +293,7 @@ public class BiomeWrapper implements IBiomeWrapper
 			ResourceLocation resourceLocation;
 			try
 			{
-				#if MC_VER < MC_1_21
+				#if MC_VER < MC_1_21_1
 				resourceLocation = new ResourceLocation(resourceLocationString.substring(0, separatorIndex), resourceLocationString.substring(separatorIndex + 1));
 				#else
 				resourceLocation = ResourceLocation.fromNamespaceAndPath(resourceLocationString.substring(0, separatorIndex), resourceLocationString.substring(separatorIndex + 1));

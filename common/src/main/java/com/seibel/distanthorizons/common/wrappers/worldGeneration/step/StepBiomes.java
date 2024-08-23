@@ -68,7 +68,7 @@ public final class StepBiomes
 			}
 			else if (chunk instanceof ProtoChunk)
 			{
-				#if MC_VER < MC_1_21
+				#if MC_VER < MC_1_21_1
 				((ProtoChunk) chunk).setStatus(STATUS);
 				#else
 				((ProtoChunk) chunk).setPersistedStatus(STATUS);
@@ -89,7 +89,7 @@ public final class StepBiomes
 			#elif MC_VER < MC_1_19_4
 			chunk = this.environment.joinSync(this.environment.params.generator.createBiomes(this.environment.params.biomes, Runnable::run, this.environment.params.randomState, Blender.of(worldGenRegion),
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
-			#elif MC_VER < MC_1_21
+			#elif MC_VER < MC_1_21_1
 			chunk = this.environment.joinSync(this.environment.params.generator.createBiomes(Runnable::run, this.environment.params.randomState, Blender.of(worldGenRegion),
 					tParams.structFeat.forWorldGenRegion(worldGenRegion), chunk));
 			#else

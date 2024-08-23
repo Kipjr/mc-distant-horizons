@@ -5,7 +5,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IBCLibAcces
 #elif MC_VER == MC_1_18_2
 import ru.bclib.config.ClientConfig;
 import ru.bclib.config.Configs;
-#elif MC_VER < MC_1_21
+#elif MC_VER < MC_1_21_1
 import org.betterx.bclib.config.ClientConfig;
 import org.betterx.bclib.config.Configs;
 #endif

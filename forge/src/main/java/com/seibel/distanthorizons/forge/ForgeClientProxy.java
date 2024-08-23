@@ -170,53 +170,59 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 	@SubscribeEvent
 	public void rightClickBlockEvent(PlayerInteractEvent.RightClickBlock event)
 	{
-		if (SharedApi.isChunkAtBlockPosAlreadyUpdating(event.getPos().getX(), event.getPos().getZ()))
+		if (MC.clientConnectedToDedicatedServer())
 		{
-			return;
-		}
-		
-		//LOGGER.trace("interact or block place event at blockPos: " + event.getPos());
-		
-		#if MC_VER < MC_1_19_2
-		LevelAccessor level = event.getWorld();
-		#else
-		LevelAccessor level = event.getLevel();
-		#endif
-		
-		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
-		if (executor != null)
-		{
-			executor.execute(() ->
+			if (SharedApi.isChunkAtBlockPosAlreadyUpdating(event.getPos().getX(), event.getPos().getZ()))
 			{
-				ChunkAccess chunk = level.getChunk(event.getPos());
-				this.onBlockChangeEvent(level, chunk);
-			});
+				return;
+			}
+			
+			//LOGGER.trace("interact or block place event at blockPos: " + event.getPos());
+			
+			#if MC_VER < MC_1_19_2
+			LevelAccessor level = event.getWorld();
+			#else
+			LevelAccessor level = event.getLevel();
+			#endif
+			
+			ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+			if (executor != null)
+			{
+				executor.execute(() ->
+				{
+					ChunkAccess chunk = level.getChunk(event.getPos());
+					this.onBlockChangeEvent(level, chunk);
+				});
+			}
 		}
 	}
 	@SubscribeEvent
 	public void leftClickBlockEvent(PlayerInteractEvent.LeftClickBlock event)
 	{
-		if (SharedApi.isChunkAtBlockPosAlreadyUpdating(event.getPos().getX(), event.getPos().getZ()))
+		if (MC.clientConnectedToDedicatedServer())
 		{
-			return;
-		}
-		
-		//LOGGER.trace("break or block attack at blockPos: " + event.getPos());
-		
-		#if MC_VER < MC_1_19_2
-		LevelAccessor level = event.getWorld();
-		#else
-		LevelAccessor level = event.getLevel();
-		#endif
-		
-		ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
-		if (executor != null)
-		{
-			executor.execute(() ->
+			if (SharedApi.isChunkAtBlockPosAlreadyUpdating(event.getPos().getX(), event.getPos().getZ()))
 			{
-				ChunkAccess chunk = level.getChunk(event.getPos());
-				this.onBlockChangeEvent(level, chunk);
-			});
+				return;
+			}
+			
+			//LOGGER.trace("break or block attack at blockPos: " + event.getPos());
+			
+			#if MC_VER < MC_1_19_2
+			LevelAccessor level = event.getWorld();
+			#else
+			LevelAccessor level = event.getLevel();
+			#endif
+			
+			ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+			if (executor != null)
+			{
+				executor.execute(() ->
+				{
+					ChunkAccess chunk = level.getChunk(event.getPos());
+					this.onBlockChangeEvent(level, chunk);
+				});
+			}
 		}
 	}
 	private void onBlockChangeEvent(LevelAccessor level, ChunkAccess chunk)
@@ -224,21 +230,16 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 		ILevelWrapper wrappedLevel = ProxyUtil.getLevelWrapper(level);
 		SharedApi.INSTANCE.chunkBlockChangedEvent(new ChunkWrapper(chunk, level, wrappedLevel), wrappedLevel);
 	}
-	
-	
+
 	@SubscribeEvent
 	public void clientChunkLoadEvent(ChunkEvent.Load event)
 	{
-		ILevelWrapper wrappedLevel = ProxyUtil.getLevelWrapper(GetEventLevel(event));
-		IChunkWrapper chunk = new ChunkWrapper(event.getChunk(), GetEventLevel(event), wrappedLevel);
-		SharedApi.INSTANCE.chunkLoadEvent(chunk, wrappedLevel);
-	}
-	@SubscribeEvent
-	public void clientChunkUnloadEvent(ChunkEvent.Unload event)
-	{
-		ILevelWrapper wrappedLevel = ProxyUtil.getLevelWrapper(GetEventLevel(event));
-		IChunkWrapper chunk = new ChunkWrapper(event.getChunk(), GetEventLevel(event), wrappedLevel);
-		SharedApi.INSTANCE.chunkUnloadEvent(chunk, wrappedLevel);
+		if (MC.clientConnectedToDedicatedServer())
+		{
+			ILevelWrapper wrappedLevel = ProxyUtil.getLevelWrapper(GetEventLevel(event));
+			IChunkWrapper chunk = new ChunkWrapper(event.getChunk(), GetEventLevel(event), wrappedLevel);
+			SharedApi.INSTANCE.chunkLoadEvent(chunk, wrappedLevel);
+		}
 	}
 	
 	

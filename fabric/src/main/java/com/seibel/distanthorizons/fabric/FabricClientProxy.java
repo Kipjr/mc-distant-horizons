@@ -123,8 +123,11 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		// ClientChunkLoadEvent
 		ClientChunkEvents.CHUNK_LOAD.register((level, chunk) ->
 		{
-			IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper(level);
-			SharedApi.INSTANCE.chunkLoadEvent(new ChunkWrapper(chunk, level, wrappedLevel), wrappedLevel);
+			if (MC.clientConnectedToDedicatedServer())
+			{
+				IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper(level);
+				SharedApi.INSTANCE.chunkLoadEvent(new ChunkWrapper(chunk, level, wrappedLevel), wrappedLevel);
+			}
 		});
 		
 		// (kinda) block break event
@@ -206,14 +209,6 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		});
 		
 		
-		// Client Chunk Save
-		ClientChunkEvents.CHUNK_UNLOAD.register((level, chunk) ->
-		{
-			IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper(level);
-			SharedApi.INSTANCE.chunkUnloadEvent(new ChunkWrapper(chunk, level, wrappedLevel), wrappedLevel);
-		});
-		
-		
 		
 		//==============//
 		// render event //
@@ -233,14 +228,14 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 			this.clientApi.renderLods(ClientLevelWrapper.getWrapper(renderContext.world()),
 					modelViewMatrix,
 					projectionMatrix,
-					#if MC_VER < MC_1_21
+					#if MC_VER < MC_1_21_1
 					renderContext.tickDelta()
 					#else
 					renderContext.tickCounter().getGameTimeDeltaTicks()
 					#endif
 					);
 		});
-
+		
 		// Debug keyboard event
 		// FIXME: Use better hooks so it doesn't trigger key press events in text boxes
 		ClientTickEvents.END_CLIENT_TICK.register(client -> 
