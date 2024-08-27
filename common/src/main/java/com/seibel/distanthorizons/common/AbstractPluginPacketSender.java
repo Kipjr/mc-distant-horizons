@@ -2,6 +2,7 @@ package com.seibel.distanthorizons.common;
 
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
+import com.seibel.distanthorizons.core.network.event.internal.IncompatibleMessageEvent;
 import com.seibel.distanthorizons.core.network.event.internal.ProtocolErrorEvent;
 import com.seibel.distanthorizons.core.network.messages.MessageRegistry;
 import com.seibel.distanthorizons.core.network.messages.NetworkMessage;
@@ -48,9 +49,10 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 		
 		try
 		{
-			if (in.readShort() != ModInfo.PROTOCOL_VERSION)
+			int protocolVersion = in.readShort();
+			if (protocolVersion != ModInfo.PROTOCOL_VERSION)
 			{
-				return null;
+				return new IncompatibleMessageEvent(protocolVersion);
 			}
 			
 			message = MessageRegistry.INSTANCE.createMessage(in.readUnsignedShort());
