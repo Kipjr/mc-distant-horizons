@@ -49,6 +49,8 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 		
 		try
 		{
+			in.markReaderIndex();
+			
 			int protocolVersion = in.readShort();
 			if (protocolVersion != ModInfo.PROTOCOL_VERSION)
 			{
@@ -67,6 +69,8 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 		}
 		catch (Exception e)
 		{
+			in.resetReaderIndex();
+			
 			LOGGER.error("Failed to decode message", e);
 			LOGGER.error("Buffer: {}", in);
 			LOGGER.error("Buffer contents: [{}]", ByteBufUtil.hexDump(in));
