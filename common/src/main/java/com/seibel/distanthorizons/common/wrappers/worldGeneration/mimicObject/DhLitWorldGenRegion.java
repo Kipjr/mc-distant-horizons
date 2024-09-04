@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.common.wrappers.worldGeneration.mimicObject;
 
 import java.lang.invoke.MethodHandles;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
@@ -233,6 +232,22 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 			return ((EntityBlock) blockState.getBlock()).newBlockEntity(this);
 		} else return null;
 		#endif
+	}
+	
+	/**
+	 * This needs to be manually overridden to make sure Lithium 0.11.2 and lower
+	 * don't try to get null chunks. <br><br>
+	 *
+	 * Problematic Lithium code was removed in 0.13.0 (MC 1.21.1) and higher: <br>
+	 * https://github.com/CaffeineMC/lithium-fabric/commit/b7cfd53a1ed0197e1d13dea2799b898eb52ecab3
+	 */
+	@NotNull
+	@Override
+	public BlockState getBlockState(BlockPos blockPos)
+	{
+		int chunkX = SectionPos.blockToSectionCoord(blockPos.getX());
+		int chunkZ = SectionPos.blockToSectionCoord(blockPos.getZ());
+		return this.getChunk(chunkX, chunkZ).getBlockState(blockPos);
 	}
 	
 	/** Skip BlockEntity stuff. They aren't needed for our use case. */

@@ -20,11 +20,9 @@
 package com.seibel.distanthorizons.common.wrappers;
 
 import java.nio.FloatBuffer;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import com.seibel.distanthorizons.core.enums.EDhDirection;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 
@@ -137,41 +135,10 @@ public class McObjectConverter
 		}
 	}
 	
-	public static BlockPos Convert(DhBlockPos wrappedPos)
-	{
-		return new BlockPos(wrappedPos.x, wrappedPos.y, wrappedPos.z);
-	}
-	public static ChunkPos Convert(DhChunkPos wrappedPos)
-	{
-		return new ChunkPos(wrappedPos.x, wrappedPos.z);
-	}
+	public static BlockPos Convert(DhBlockPos wrappedPos) { return new BlockPos(wrappedPos.getX(), wrappedPos.getY(), wrappedPos.getZ()); }
+	public static ChunkPos Convert(DhChunkPos wrappedPos) { return new ChunkPos(wrappedPos.getX(), wrappedPos.getZ()); }
 	
-	public static Direction Convert(EDhDirection lodDirection)
-	{
-		return directions[lodDirection.ordinal()];
-	}
-	public static EDhDirection Convert(Direction direction)
-	{
-		return lodDirections[direction.ordinal()];
-	}
-	public static void DebugCheckAllPackers()
-	{
-		BiConsumer<Integer, Integer> func = (x, z) -> DhChunkPos._DebugCheckPacker(x, z, ChunkPos.asLong(x, z));
-		func.accept(0, 0);
-		func.accept(12345, 134);
-		func.accept(-12345, -134);
-		func.accept(-30000000 / 16, 30000000 / 16);
-		func.accept(30000000 / 16, -30000000 / 16);
-		func.accept(30000000 / 16, 30000000 / 16);
-		func.accept(-30000000 / 16, -30000000 / 16);
-		Consumer<BlockPos> func2 = (p) -> DhBlockPos._DebugCheckPacker(p.getX(), p.getY(), p.getZ(), p.asLong());
-		func2.accept(new BlockPos(0, 0, 0));
-		func2.accept(new BlockPos(12345, 134, 123));
-		func2.accept(new BlockPos(-12345, -134, -80));
-		func2.accept(new BlockPos(-30000000, 2047, 30000000));
-		func2.accept(new BlockPos(30000000, -2048, -30000000));
-		func2.accept(new BlockPos(30000000, 2047, 30000000));
-		func2.accept(new BlockPos(-30000000, -2048, -30000000));
-	}
+	public static Direction Convert(EDhDirection lodDirection) { return directions[lodDirection.ordinal()]; }
+	public static EDhDirection Convert(Direction direction) { return lodDirections[direction.ordinal()]; }
 	
 }

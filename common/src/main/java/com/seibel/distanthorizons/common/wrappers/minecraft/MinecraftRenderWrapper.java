@@ -21,29 +21,26 @@ package com.seibel.distanthorizons.common.wrappers.minecraft;
 
 import java.awt.Color;
 import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.NativeImage;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.WrapperFactory;
 import com.seibel.distanthorizons.common.wrappers.misc.LightMapWrapper;
-import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 
+#if MC_VER >= MC_1_17_1
+import net.minecraft.client.renderer.FogRenderer;
+import com.mojang.blaze3d.systems.RenderSystem;
+#endif
+
 #if MC_VER < MC_1_19_4
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 #else
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
 #endif
 #if MC_VER >= MC_1_20_2
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
@@ -53,20 +50,14 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOpt
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IDimensionTypeWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
-import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.math.Vec3d;
 import com.seibel.distanthorizons.core.util.math.Vec3f;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IWrapperFactory;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IOptifineAccessor;
-import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
 
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.FogRenderer;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.effect.MobEffects;
 #if MC_VER < MC_1_17_1
 import net.minecraft.tags.FluidTags;
@@ -76,7 +67,6 @@ import org.lwjgl.opengl.GL15;
 #else
 import net.minecraft.world.level.material.FogType;
 #endif
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.Logger;
 

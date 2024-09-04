@@ -80,7 +80,7 @@ public final class StepFeatures
 				worldGenRegion.setOverrideCenter(chunk.getPos());
 				environment.params.generator.applyBiomeDecoration(worldGenRegion, tParams.structFeat);
 				#else
-				if (worldGenRegion.hasChunk(chunkWrapper.getChunkPos().x, chunkWrapper.getChunkPos().z))
+				if (worldGenRegion.hasChunk(chunkWrapper.getChunkPos().getX(), chunkWrapper.getChunkPos().getZ()))
 				{
 					this.environment.params.generator.applyBiomeDecoration(worldGenRegion, chunk, tParams.structFeat.forWorldGenRegion(worldGenRegion));
 				}

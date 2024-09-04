@@ -30,6 +30,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrappe
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.block.BeaconBeamBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SoundType;
@@ -101,8 +102,9 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	private byte blockMaterialId = 0;
 	
 	private final boolean isBeaconBlock; 
-	private final boolean isBeaconBaseBlock; 
-	private final boolean isGlassBlock; 
+	private final boolean isBeaconBaseBlock;
+	/** null if this block can't tint beacons */
+	private final Color beaconTintColor; 
 	private final Color mapColor;
 	
 	
@@ -138,6 +140,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		this.hashCode = Objects.hash(this.serialString);
 		this.blockMaterialId = this.calculateEDhApiBlockMaterialId().index;
 		
+		// beacon blocks
 		String lowercaseSerial = this.serialString.toLowerCase();
 		boolean isBeaconBaseBlock = false;
 		for (int i = 0; i < LodUtil.BEACON_BASE_BLOCK_NAME_LIST.size(); i++)
@@ -151,7 +154,28 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		}
 		this.isBeaconBaseBlock = isBeaconBaseBlock;
 		this.isBeaconBlock = lowercaseSerial.contains("minecraft:beacon");
-		this.isGlassBlock = lowercaseSerial.contains("glass");
+		
+		// beacon tint color
+		Color beaconTintColor = null;
+		if (this.blockState != null
+			// beacon blocks also show up here, but since they block the beacon beam we don't want their color		
+			&& !this.isBeaconBlock)
+		{
+			Block block = this.blockState.getBlock();
+			if (block instanceof BeaconBeamBlock)
+			{
+				int colorInt;
+				#if MC_VER <= MC_1_19_4
+				colorInt = ((BeaconBeamBlock) block).getColor().getMaterialColor().col;
+				#else 
+				colorInt = ((BeaconBeamBlock) block).getColor().getMapColor().col;
+				#endif
+				
+				beaconTintColor = ColorUtil.toColorObjRGB(colorInt);
+			}
+		}
+		this.beaconTintColor = beaconTintColor;
+		
 		
 		int mcColor = 0;
 		if (this.blockState != null)
@@ -398,10 +422,12 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	@Override
 	public boolean isBeaconBaseBlock() { return this.isBeaconBaseBlock; }
 	@Override
-	public boolean isGlassBlock() { return this.isGlassBlock; }
+	public boolean isBeaconTintBlock() { return this.beaconTintColor != null; }
 	
 	@Override
 	public Color getMapColor() { return this.mapColor; }
+	@Override
+	public Color getBeaconTintColor() { return this.beaconTintColor; }
 	
 	@Override
 	public byte getMaterialId() { return this.blockMaterialId; }

@@ -19,13 +19,9 @@
 
 package com.seibel.distanthorizons.common.wrappers.block;
 
-import com.seibel.distanthorizons.common.wrappers.block.BiomeWrapper;
-import com.seibel.distanthorizons.common.wrappers.block.TextureAtlasSpriteWrapper;
-import com.seibel.distanthorizons.common.wrappers.block.TintWithoutLevelOverrider;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
-import com.seibel.distanthorizons.common.wrappers.block.*;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import net.minecraft.client.Minecraft;

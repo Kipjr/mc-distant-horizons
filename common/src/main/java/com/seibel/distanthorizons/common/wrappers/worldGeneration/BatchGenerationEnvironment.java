@@ -398,8 +398,8 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		int borderSize = MAX_WORLD_GEN_CHUNK_BORDER_NEEDED;
 		// genEvent.size - 1 converts the even width size to an odd number for MC compatability
 		int refSize = (genEvent.size - 1) + (borderSize * 2);
-		int refPosX = genEvent.minPos.x - borderSize;
-		int refPosZ = genEvent.minPos.z - borderSize;
+		int refPosX = genEvent.minPos.getX() - borderSize;
+		int refPosZ = genEvent.minPos.getZ() - borderSize;
 		
 		LightGetterAdaptor lightGetterAdaptor = new LightGetterAdaptor(this.params.level);
 		DummyLightEngine dummyLightEngine = new DummyLightEngine(lightGetterAdaptor);

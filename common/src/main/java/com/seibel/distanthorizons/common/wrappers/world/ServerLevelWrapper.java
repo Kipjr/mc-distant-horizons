@@ -30,7 +30,7 @@ import com.seibel.distanthorizons.common.wrappers.block.BlockStateWrapper;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.core.level.IDhLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
@@ -137,11 +137,11 @@ public class ServerLevelWrapper implements IServerLevelWrapper
 	@Override
 	public IChunkWrapper tryGetChunk(DhChunkPos pos)
 	{
-		if (!this.level.hasChunk(pos.x, pos.z))
+		if (!this.level.hasChunk(pos.getX(), pos.getZ()))
 		{
 			return null;
 		}
-		ChunkAccess chunk = this.level.getChunk(pos.x, pos.z, ChunkStatus.FULL, false);
+		ChunkAccess chunk = this.level.getChunk(pos.getX(), pos.getZ(), ChunkStatus.FULL, false);
 		if (chunk == null)
 		{
 			return null;

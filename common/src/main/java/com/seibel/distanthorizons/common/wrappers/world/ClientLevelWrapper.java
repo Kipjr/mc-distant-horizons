@@ -7,14 +7,12 @@ import com.seibel.distanthorizons.common.wrappers.block.BiomeWrapper;
 import com.seibel.distanthorizons.common.wrappers.block.BlockStateWrapper;
 import com.seibel.distanthorizons.common.wrappers.block.ClientBlockStateColorCache;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
-import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.*;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.block.IBlockStateWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
@@ -27,10 +25,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkSource;
+import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.awt.*;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -221,12 +221,12 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	@Override
 	public IChunkWrapper tryGetChunk(DhChunkPos pos)
 	{
-		if (!this.level.hasChunk(pos.x, pos.z))
+		if (!this.level.hasChunk(pos.getX(), pos.getZ()))
 		{
 			return null;
 		}
 		
-		ChunkAccess chunk = this.level.getChunk(pos.x, pos.z, ChunkStatus.EMPTY, false);
+		ChunkAccess chunk = this.level.getChunk(pos.getX(), pos.getZ(), ChunkStatus.EMPTY, false);
 		if (chunk == null)
 		{
 			return null;
@@ -279,6 +279,13 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 		}
 		
 		return this.parentDhLevel.getGenericRenderer();
+	}
+	
+	@Override
+	public Color getCloudColor(float tickDelta)
+	{
+		Vec3 colorVec3 = this.level.getCloudColor(tickDelta);
+		return new Color((float)colorVec3.x, (float)colorVec3.y, (float)colorVec3.z);
 	}
 	
 	

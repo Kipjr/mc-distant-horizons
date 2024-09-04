@@ -24,7 +24,7 @@ import com.seibel.distanthorizons.common.wrappers.block.BlockStateWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.mimicObject.DhLitWorldGenRegion;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.pos.DhBlockPos;
+import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.world.EWorldEnvironment;
@@ -467,7 +467,7 @@ public class ChunkWrapper implements IChunkWrapper
 	 *  before the list has finished populating.
 	 */
 	@Override
-	public synchronized ArrayList<DhBlockPos> getBlockLightPosList()
+	public synchronized ArrayList<DhBlockPos> getWorldBlockLightPosList()
 	{
 		// only populate the list once
 		if (this.blockLightPosList == null)
@@ -483,7 +483,13 @@ public class ChunkWrapper implements IChunkWrapper
 			#else
 			this.chunk.findBlockLightSources((blockPos, blockState) ->
 			{
-				this.blockLightPosList.add(new DhBlockPos(blockPos.getX(), blockPos.getY(), blockPos.getZ()));
+				DhBlockPos pos = new DhBlockPos(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+				
+				// this can be uncommented if MC decides to return relative block positions in the future instead of world positions
+				//pos.mutateToChunkRelativePos(pos);
+				//pos.mutateOffset(this.chunkPos.getMinBlockX(), 0, this.chunkPos.getMinBlockZ(), pos);
+				
+				this.blockLightPosList.add(pos);
 			});
 			#endif
 		}
