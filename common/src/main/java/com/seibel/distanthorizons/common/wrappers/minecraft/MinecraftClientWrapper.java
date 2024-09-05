@@ -322,7 +322,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Override
 	public boolean isWorldInitialized()
 	{
-		throw new NotImplementedException();
+		throw new NotImplementedException("TODO");
 	}
 	
 }
