@@ -28,4 +28,10 @@ public class MinecraftDedicatedServerWrapper implements IMinecraftSharedWrapper
 		#endif
 	}
 	
+	@Override
+	public boolean isWorldInitialized()
+	{
+		return this.dedicatedServer.getWorldData().overworldData().isInitialized();
+	}
+	
 }

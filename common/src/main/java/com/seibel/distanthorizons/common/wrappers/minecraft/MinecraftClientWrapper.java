@@ -54,6 +54,7 @@ import net.minecraft.network.chat.TextComponent;
 #endif
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -275,7 +276,10 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	public void sendChatMessage(String string)
 	{
 		LocalPlayer player = this.getPlayer();
-		if (player == null) return;
+		if (player == null)
+		{
+			return;
+		}
         #if MC_VER < MC_1_19_2
 		player.sendMessage(new TextComponent(string), getPlayer().getUUID());
         #else
@@ -314,5 +318,11 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	
 	@Override
 	public void executeOnRenderThread(Runnable runnable) { MINECRAFT.execute(runnable); }
+	
+	@Override
+	public boolean isWorldInitialized()
+	{
+		throw new NotImplementedException();
+	}
 	
 }
