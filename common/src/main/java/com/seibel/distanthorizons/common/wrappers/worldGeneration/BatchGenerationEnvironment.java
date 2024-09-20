@@ -134,7 +134,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		{
 			for (int i = 0; i < 11; i++)
 			{
-				times.add(new Rolling(SIZE));
+				this.times.add(new Rolling(SIZE));
 			}
 		}
 		
@@ -144,19 +144,25 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 			{
 				String name = e.name;
 				int index = Arrays.asList(TIME_NAMES).indexOf(name);
-				if (index == -1) continue;
-				times.get(index).add(e.timeNs);
+				if (index == -1)
+				{
+					continue;
+				}
+				this.times.get(index).add(e.timeNs);
 			}
-			times.get(0).add(event.getTotalTimeNs());
+			this.times.get(0).add(event.getTotalTimeNs());
 		}
 		
-		public String toString()
+		@Override public String toString()
 		{
 			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < times.size(); i++)
+			for (int i = 0; i < this.times.size(); i++)
 			{
-				if (times.get(i).getAverage() == 0) continue;
-				sb.append(TIME_NAMES[i]).append(": ").append(times.get(i).getAverage()).append("\n");
+				if (this.times.get(i).getAverage() == 0)
+				{
+					continue;
+				}
+				sb.append(TIME_NAMES[i]).append(": ").append(this.times.get(i).getAverage()).append("\n");
 			}
 			return sb.toString();
 		}
@@ -186,13 +192,13 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 	
 	public RegionFileStorageExternalCache getOrCreateRegionFileCache(RegionFileStorage storage)
 	{
-		RegionFileStorageExternalCache cache = regionFileStorageCacheRef.get();
+		RegionFileStorageExternalCache cache = this.regionFileStorageCacheRef.get();
 		if (cache == null)
 		{
 			cache = new RegionFileStorageExternalCache(storage);
-			if (!regionFileStorageCacheRef.compareAndSet(null, cache))
+			if (!this.regionFileStorageCacheRef.compareAndSet(null, cache))
 			{
-				cache = regionFileStorageCacheRef.get();
+				cache = this.regionFileStorageCacheRef.get();
 			}
 		}
 		return cache;
@@ -304,17 +310,17 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 	
 	public <T> T joinSync(CompletableFuture<T> future)
 	{
-		if (!unsafeThreadingRecorded && !future.isDone())
+		if (!this.unsafeThreadingRecorded && !future.isDone())
 		{
 			EVENT_LOGGER.error("Unsafe MultiThreading in Chunk Generator: ", new RuntimeException("Concurrent future"));
 			EVENT_LOGGER.error("To increase stability, it is recommended to set world generation threads count to 1.");
-			unsafeThreadingRecorded = true;
+			this.unsafeThreadingRecorded = true;
 		}
 		
 		return future.join();
 	}
 	
-	public void updateAllFutures()
+	@Override public void updateAllFutures()
 	{
 		if (this.unknownExceptionCount > 0)
 		{
