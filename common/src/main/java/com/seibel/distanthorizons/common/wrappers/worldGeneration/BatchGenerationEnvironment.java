@@ -56,12 +56,10 @@ import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepStruc
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepStructureStart;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepSurface;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ProtoChunk;
@@ -73,7 +71,6 @@ import net.minecraft.world.level.levelgen.FlatLevelSource;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.level.lighting.LayerLightEventListener;
 import org.apache.logging.log4j.LogManager;
 
 #if MC_VER >= MC_1_19_4
@@ -89,6 +86,10 @@ import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 
 import javax.annotation.Nullable;
+#endif
+
+#if MC_VER > MC_1_19_4
+import net.minecraft.server.level.ChunkLevel;
 #endif
 
 /*
@@ -385,9 +386,11 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 			genEvent.timer.nextEvent("requestFromServer");
 			LinkedBlockingQueue<Runnable> taskQueue = new LinkedBlockingQueue<>();
 			
+			Map<DhChunkPos, ChunkWrapper> chunkWrappersByDhPos = Collections.synchronizedMap(new HashMap<>());
+			
 			CompletableFuture<?>[] requestFutures = getChunkPosToGenerateStream(genEvent.minPos.getX(), genEvent.minPos.getZ(), genEvent.size, 0)
 					.map(chunkPos -> {
-						return requestChunkFromServer(this.params.level, chunkPos)
+						return requestChunkFromServer(this.params.level, chunkPos, true)
 								.whenCompleteAsync((chunk, throwable) -> {
 									// unwrap the CompletionException if necessary
 									Throwable actualThrowable = throwable;
@@ -401,41 +404,11 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 										LOAD_LOGGER.warn("DistantHorizons: Couldn't load chunk [" + chunkPos + "] from server, error: [" + actualThrowable.getMessage() + "].", actualThrowable);
 									}
 									
-									try {
-										if (chunk != null)
-										{
-											ChunkWrapper chunkWrapper = new ChunkWrapper(chunk, null, this.serverlevel.getLevelWrapper());
-											
-											// import lighting data from server
-											int inclusiveMinBuildHeight = ChunkWrapper.getInclusiveMinBuildHeight(chunk);
-											int exclusiveMaxBuildHeight = ChunkWrapper.getExclusiveMaxBuildHeight(chunk);
-											LayerLightEventListener blockLight = this.params.level.getLightEngine().getLayerListener(LightLayer.BLOCK);
-											LayerLightEventListener skyLight = this.params.level.getLightEngine().getLayerListener(LightLayer.SKY);
-											ChunkLoader.CombinedChunkLightStorage combinedStorage = new ChunkLoader.CombinedChunkLightStorage(inclusiveMinBuildHeight, exclusiveMaxBuildHeight);
-											BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
-											for (int y = inclusiveMinBuildHeight; y < exclusiveMaxBuildHeight; y++)
-											{
-												for (int relX = 0; relX < LodUtil.CHUNK_WIDTH; relX++)
-												{
-													for (int relZ = 0; relZ < LodUtil.CHUNK_WIDTH; relZ++)
-													{
-														mutable.set(chunkWrapper.getMinBlockX() + relX, y, chunkWrapper.getMinBlockZ() + relZ);
-														combinedStorage.blockLightStorage.set(relX, y, relZ, blockLight.getLightValue(mutable));
-														combinedStorage.skyLightStorage.set(relX, y, relZ, skyLight.getLightValue(mutable));
-													}
-												}
-											}
-											
-											chunkWrapper.setBlockLightStorage(combinedStorage.blockLightStorage);
-											chunkWrapper.setSkyLightStorage(combinedStorage.skyLightStorage);
-											chunkWrapper.setIsDhBlockLightCorrect(true);
-											chunkWrapper.setIsDhSkyLightCorrect(true);
-											
-											genEvent.resultConsumer.accept(chunkWrapper);
-										}
-									} finally
+									if (chunk != null)
 									{
-										releaseChunkToServer(this.params.level, chunkPos);
+										ChunkWrapper chunkWrapper = new ChunkWrapper(chunk, null, this.serverlevel.getLevelWrapper());
+										
+										chunkWrappersByDhPos.put(new DhChunkPos(chunkPos.x, chunkPos.z), chunkWrapper);
 									}
 									
 								}, taskQueue::add);
@@ -443,6 +416,36 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 					.toArray(CompletableFuture[]::new);
 			CompletableFuture<Void> future = CompletableFuture.allOf(requestFutures)
 					.whenCompleteAsync((unused, throwable) -> {
+						
+						genEvent.timer.nextEvent("light");
+						// generate lighting using DH's lighting engine
+						int maxSkyLight = this.serverlevel.getServerLevelWrapper().hasSkyLight() ? 15 : 0;
+						
+						ArrayList<IChunkWrapper> chunksToLight = new ArrayList<>(chunkWrappersByDhPos.values());
+						for (IChunkWrapper iChunkWrapper : chunksToLight)
+						{
+							((ChunkWrapper) iChunkWrapper).recalculateDhHeightMaps();
+							
+							// pre-generated chunks should have lighting but new ones won't
+							if (!iChunkWrapper.isDhBlockLightingCorrect())
+							{
+								DhLightingEngine.INSTANCE.bakeChunkBlockLighting(iChunkWrapper, chunksToLight, maxSkyLight);
+							}
+						}
+						
+						genEvent.timer.nextEvent("cleanup");
+						for (IChunkWrapper iChunkWrapper : chunksToLight)
+						{
+							genEvent.resultConsumer.accept(iChunkWrapper);
+						}
+					}, taskQueue::add)
+					.whenCompleteAsync((unused, throwable) -> {
+						Iterator<ChunkPos> iterator = getChunkPosToGenerateStream(genEvent.minPos.getX(), genEvent.minPos.getZ(), genEvent.size, 0).iterator();
+						while (iterator.hasNext()) {
+							ChunkPos chunkPos = iterator.next();
+							releaseChunkToServer(this.params.level, chunkPos, true);
+						}
+						
 						genEvent.timer.complete();
 						genEvent.refreshTimeout();
 						if (PREF_LOGGER.canMaybeLog())
@@ -450,7 +453,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 							genEvent.threadedParam.perf.recordEvent(genEvent.timer);
 							PREF_LOGGER.debugInc(genEvent.timer.toString());
 						}
-					}, taskQueue::add);
+					});
 			
 			future.whenCompleteAsync((unused, throwable) -> {}, taskQueue::add); // trigger wakeup
 			
@@ -466,7 +469,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 					Iterator<ChunkPos> iterator = getChunkPosToGenerateStream(genEvent.minPos.getX(), genEvent.minPos.getZ(), genEvent.size, 0).iterator();
 					while (iterator.hasNext()) {
 						ChunkPos chunkPos = iterator.next();
-						releaseChunkToServer(this.params.level, chunkPos);
+						releaseChunkToServer(this.params.level, chunkPos, true);
 					}
 					
 					throw e;
@@ -812,10 +815,15 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 	
 	
 	private static final TicketType<ChunkPos> DH_SERVER_GEN_TICKET = TicketType.create("dh_server_gen_ticket", Comparator.comparingLong(ChunkPos::toLong));
-	private static CompletableFuture<ChunkAccess> requestChunkFromServer(ServerLevel level, ChunkPos pos)
+	private static CompletableFuture<ChunkAccess> requestChunkFromServer(ServerLevel level, ChunkPos pos, boolean upToFeatures)
 	{
 		return CompletableFuture.supplyAsync(() -> {
-			level.getChunkSource().distanceManager.addTicket(DH_SERVER_GEN_TICKET, pos, 33, pos); // 33 is border chunk
+			#if MC_VER <= MC_1_19_4
+			int chunkLevel = upToFeatures ? 33 + ChunkStatus.getDistance(ChunkStatus.FEATURES) : 33;
+			#else
+			int chunkLevel = upToFeatures ? ChunkLevel.byStatus(ChunkStatus.FEATURES) : 33;
+			#endif
+			level.getChunkSource().distanceManager.addTicket(DH_SERVER_GEN_TICKET, pos, chunkLevel, pos);
 			level.getChunkSource().distanceManager.runAllUpdates(level.getChunkSource().chunkMap); // probably not the most optimal to run updates here, but fast enough
 			ChunkHolder holder = level.getChunkSource().chunkMap.getUpdatingChunkIfPresent(pos.toLong());
 			if (holder == null)
@@ -824,9 +832,9 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 			}
 			return
 					#if MC_VER <= MC_1_20_6
-					holder.getOrScheduleFuture(ChunkStatus.FULL, level.getChunkSource().chunkMap)
+					holder.getOrScheduleFuture(ChunkStatus.FEATURES, level.getChunkSource().chunkMap)
 					#else
-					holder.scheduleChunkGenerationTask(ChunkStatus.FULL, level.getChunkSource().chunkMap)
+					holder.scheduleChunkGenerationTask(ChunkStatus.FEATURES, level.getChunkSource().chunkMap)
 					#endif
 							#if MC_VER <= MC_1_20_4
 							.thenApply(result -> result.left().orElseThrow(() -> new RuntimeException(result.right().get().toString()))); // can throw if the server is shutting down
@@ -835,10 +843,15 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 							#endif
 		}, level.getChunkSource().chunkMap.mainThreadExecutor).thenCompose(Function.identity());
 	}
-	private static void releaseChunkToServer(ServerLevel level, ChunkPos pos)
+	private static void releaseChunkToServer(ServerLevel level, ChunkPos pos, boolean upToFeatures)
 	{
 		level.getChunkSource().chunkMap.mainThreadExecutor.execute(() -> {
-			level.getChunkSource().distanceManager.removeTicket(DH_SERVER_GEN_TICKET, pos, 33, pos);
+			#if MC_VER <= MC_1_19_4
+			int chunkLevel = upToFeatures ? 33 + ChunkStatus.getDistance(ChunkStatus.FEATURES) : 33;
+			#else
+			int chunkLevel = upToFeatures ? ChunkLevel.byStatus(ChunkStatus.FEATURES) : 33;
+			#endif
+			level.getChunkSource().distanceManager.removeTicket(DH_SERVER_GEN_TICKET, pos, chunkLevel, pos);
 			
 			// mitigate OOM issues in vanilla chunk system: see https://github.com/pop4959/Chunky/pull/383
 			level.getChunkSource().chunkMap.tick(() -> false);
