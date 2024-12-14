@@ -829,11 +829,11 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 					holder.scheduleChunkGenerationTask(ChunkStatus.FULL, level.getChunkSource().chunkMap)
 							#endif
 							.thenApply(result -> result.orElseThrow(() -> { throw new RuntimeException(result.getError()); })); // can throw if the server is shutting down
-		}, level.getServer()).thenCompose(Function.identity());
+		}, level.getChunkSource().chunkMap.mainThreadExecutor).thenCompose(Function.identity());
 	}
 	private static void releaseChunkToServer(ServerLevel level, ChunkPos pos)
 	{
-		level.getServer().execute(() -> {
+		level.getChunkSource().chunkMap.mainThreadExecutor.execute(() -> {
 			level.getChunkSource().distanceManager.removeTicket(DH_SERVER_GEN_TICKET, pos, 33, pos);
 			
 			// mitigate OOM issues in vanilla chunk system: see https://github.com/pop4959/Chunky/pull/383
