@@ -827,8 +827,12 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 					holder.getOrScheduleFuture(ChunkStatus.FULL, level.getChunkSource().chunkMap)
 					#else
 					holder.scheduleChunkGenerationTask(ChunkStatus.FULL, level.getChunkSource().chunkMap)
+					#endif
+							#if MC_VER <= MC_1_20_4
+							.thenApply(result -> result.left().orElseThrow(() -> new RuntimeException(result.right().get().toString()))); // can throw if the server is shutting down
+							#else
+							.thenApply(result -> result.orElseThrow(() -> new RuntimeException(result.getError()))); // can throw if the server is shutting down
 							#endif
-							.thenApply(result -> result.orElseThrow(() -> { throw new RuntimeException(result.getError()); })); // can throw if the server is shutting down
 		}, level.getChunkSource().chunkMap.mainThreadExecutor).thenCompose(Function.identity());
 	}
 	private static void releaseChunkToServer(ServerLevel level, ChunkPos pos)
