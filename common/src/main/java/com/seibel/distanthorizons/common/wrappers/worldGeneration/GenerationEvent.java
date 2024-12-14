@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.common.wrappers.worldGeneration;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import com.seibel.distanthorizons.api.enums.worldGeneration.EDhApiWorldGenerationStep;
 import com.seibel.distanthorizons.core.util.objects.UncheckedInterruptedException;
@@ -84,7 +85,7 @@ public final class GenerationEvent
 			
 			try
 			{
-				genEnvironment.generateLodFromListAsync(generationEvent, (runnable) -> 
+				return genEnvironment.generateLodFromListAsync(generationEvent, (runnable) -> 
 				{
 					worldGeneratorThreadPool.execute(() ->
 					{
@@ -115,14 +116,13 @@ public final class GenerationEvent
 			catch (Throwable initialThrowable)
 			{
 				handleWorldGenThrowable(generationEvent, initialThrowable);
+				return CompletableFuture.completedFuture((Void) null);
 			}
 			finally
 			{
 				BatchGenerationEnvironment.isDistantGeneratorThread.remove();
 			}
-			
-			return null;
-		}, worldGeneratorThreadPool);
+		}, worldGeneratorThreadPool).thenCompose(Function.identity());
 		return generationEvent;
 	}
 	/** There's probably a better way to handle this, but it'll work for now */
