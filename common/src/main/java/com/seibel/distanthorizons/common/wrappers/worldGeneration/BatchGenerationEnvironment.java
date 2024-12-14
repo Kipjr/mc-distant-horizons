@@ -371,7 +371,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 	//==================//
 	
 	/** @throws RejectedExecutionException if the given {@link Executor} is cancelled. */
-	public CompletableFuture<Void> generateLodFromListAsync(GenerationEvent genEvent, Executor executor) throws RejectedExecutionException
+	public CompletableFuture<Void> generateLodFromListAsync(GenerationEvent genEvent, Executor executor) throws RejectedExecutionException, InterruptedException
 	{
 		EVENT_LOGGER.debug("Lod Generate Event: " + genEvent.minPos);
 		
@@ -383,6 +383,8 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		if (genEvent.targetGenerationStep == EDhApiWorldGenerationStep.LIGHT) // TODO using something other than LIGHT would be good for clarity
 		{
 			genEvent.timer.nextEvent("requestFromServer");
+			LinkedBlockingQueue<Runnable> taskQueue = new LinkedBlockingQueue<>();
+			
 			CompletableFuture<?>[] requestFutures = getChunkPosToGenerateStream(genEvent.minPos.getX(), genEvent.minPos.getZ(), genEvent.size, 0)
 					.map(chunkPos -> {
 						return requestChunkFromServer(this.params.level, chunkPos)
@@ -436,14 +438,11 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 										releaseChunkToServer(this.params.level, chunkPos);
 									}
 									
-								}, executor);
+								}, taskQueue::add);
 					})
 					.toArray(CompletableFuture[]::new);
-			return CompletableFuture.allOf(requestFutures)
+			CompletableFuture<Void> future = CompletableFuture.allOf(requestFutures)
 					.whenCompleteAsync((unused, throwable) -> {
-						if (throwable != null) {
-							throwable.printStackTrace();
-						}
 						genEvent.timer.complete();
 						genEvent.refreshTimeout();
 						if (PREF_LOGGER.canMaybeLog())
@@ -451,7 +450,30 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 							genEvent.threadedParam.perf.recordEvent(genEvent.timer);
 							PREF_LOGGER.debugInc(genEvent.timer.toString());
 						}
-					}, executor);
+					}, taskQueue::add);
+			
+			future.whenCompleteAsync((unused, throwable) -> {}, taskQueue::add); // trigger wakeup
+			
+			while (!future.isDone()) {
+				try {
+					Runnable command = taskQueue.poll(1, TimeUnit.SECONDS);
+					if (command != null) {
+						command.run();
+					}
+				} catch (InterruptedException e) {
+					
+					// interrupted, release chunk to server
+					Iterator<ChunkPos> iterator = getChunkPosToGenerateStream(genEvent.minPos.getX(), genEvent.minPos.getZ(), genEvent.size, 0).iterator();
+					while (iterator.hasNext()) {
+						ChunkPos chunkPos = iterator.next();
+						releaseChunkToServer(this.params.level, chunkPos);
+					}
+					
+					throw e;
+				}
+			}
+			
+			return future;
 		}
 		
 		int borderSize = MAX_WORLD_GEN_CHUNK_BORDER_NEEDED;
