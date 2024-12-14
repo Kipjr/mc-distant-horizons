@@ -824,7 +824,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 			}
 			return
 					#if MC_VER <= MC_1_20_6
-					holder.getChunkAt(ChunkStatus.FULL, level.getChunkSource().chunkMap)
+					holder.getOrScheduleFuture(ChunkStatus.FULL, level.getChunkSource().chunkMap)
 					#else
 					holder.scheduleChunkGenerationTask(ChunkStatus.FULL, level.getChunkSource().chunkMap)
 							#endif
