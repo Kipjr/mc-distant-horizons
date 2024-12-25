@@ -1,0 +1,40 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mc_ver: [1.21.4]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: 21
+
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle
+            cache/
+          key: gradle-cache-${{ matrix.mc_ver }}-${{ github.sha }}
+
+      - name: Build and Test
+        run: |
+          ./gradlew clean -PmcVer="${{ matrix.mc_ver }}" -PinfoGitCommit="${{ github.sha }}" -PinfoGitBranch="${{ github.ref_name }}" -PinfoBuildSource="GitHub Actions (${GITHUB_RUN_ID})" --gradle-user-home cache/
+          ./gradlew build -PmcVer="${{ matrix.mc_ver }}" -PinfoGitCommit="${{ github.sha }}" -PinfoGitBranch="${{ github.ref_name }}" -PinfoBuildSource="GitHub Actions (${GITHUB_RUN_ID})" --gradle-user-home cache/
+          ./gradlew mergeJars -PmcVer="${{ matrix.mc_ver }}" -PinfoGitCommit="${
