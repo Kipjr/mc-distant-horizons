@@ -18,14 +18,17 @@ pluginManagement {
             name "NeoForge Snapshot"
             url "https://maven.neoforged.net/snapshots/"
         }
+        */
         maven {
             name "Architectury (Better Forge because regular Forge is annoying)" // TODO: Once we switch to NeoForge, would it's gradle work better? or will it have Forge's problems in it
             url "https://maven.architectury.dev/"
         }
+        /*
         maven {
             name "Quilt"
             url "https://maven.quiltmc.org/repository/release"
         }
+        */
         maven { // Used for Vanilla Minecraft's libraries
             name "Sponge"
             url "https://repo.spongepowered.org/repository/maven-public/"
@@ -34,7 +37,6 @@ pluginManagement {
             name "ParchmentMC"
             url "https://maven.parchmentmc.org"
         }
-        */
         mavenCentral()
         gradlePluginPortal()
         
