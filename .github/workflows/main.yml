@@ -17,6 +17,14 @@ jobs:
       matrix:
         mc_ver: [1.21.4]
     steps:
+      - name: Get Latest Version
+        shell: pwsh
+        run: |
+          $ResponseVersions = Invoke-RestMethod -Method Get -Uri https://launchermeta.mojang.com/mc/game/version_manifest.json
+          $LatestVersion = $ResponseVersions.latest.release
+          Write-Host "Latest Version: $LatestVersion"
+          echo "LATEST_VERSION=$LatestVersion" >> $env:GITHUB_ENV
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
