@@ -23,7 +23,16 @@ jobs:
           $ResponseVersions = Invoke-RestMethod -Method Get -Uri https://launchermeta.mojang.com/mc/game/version_manifest.json
           $LatestVersion = $ResponseVersions.latest.release
           Write-Host "Latest Version: $LatestVersion"
-          echo "LATEST_VERSION=$LatestVersion" >> $env:GITHUB_ENV
+          $ExistingVersions = @('1.21.4') # Current versions in the matrix
+          $UpdatedVersions = $ExistingVersions + $LatestVersion
+          $UniqueVersions = $UpdatedVersions | Sort-Object -Unique
+          Write-Host "Unique Versions: $($UniqueVersions -join ',')"
+          echo "mc_ver=[$($UniqueVersions -join ',')]" >> $env:GITHUB_ENV
+
+      - name: Set Matrix
+        shell: bash
+        run: |
+          echo "strategy.matrix.mc_ver=$mc_ver" >> $GITHUB_OUTPUT
 
       - name: Checkout code
         uses: actions/checkout@v3
