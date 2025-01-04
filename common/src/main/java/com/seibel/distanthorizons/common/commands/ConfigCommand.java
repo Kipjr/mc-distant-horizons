@@ -51,17 +51,24 @@ public class ConfigCommand extends AbstractCommand
 			
 			//noinspection PatternVariableCanBeUsed
 			ConfigEntry configEntry = (ConfigEntry) type;
-			if (configEntry.getServersideShortName() == null)
+			if (configEntry.getChatCommandName() == null)
 			{
 				continue;
 			}
 			
-			LiteralArgumentBuilder<CommandSourceStack> subcommand = literal(configEntry.getServersideShortName())
-					.executes(commandContext -> this.sendSuccessResponse(commandContext, "Current value of ["+configEntry.getServersideShortName()+"] is ["+configEntry.get()+"]"));
+			LiteralArgumentBuilder<CommandSourceStack> subcommand = literal(configEntry.getChatCommandName())
+					.executes(commandContext -> this.sendSuccessResponse(commandContext,
+							"\n" +
+									"Description of §l" + configEntry.getChatCommandName() + "§r:\n" +
+									"§o" + configEntry.getComment().trim() + "§r\n" +
+									"§7Config file name: §f" + configEntry.name + "§7, category: §f" + configEntry.category + "\n" +
+									"\n" +
+									"Current value of " + configEntry.getChatCommandName() + " is §n" + configEntry.get() + "§r"
+					));
 			
 			ToIntBiFunction<CommandContext<CommandSourceStack>, Object> updateConfigValue = (commandContext, value) -> {
 				configEntry.set(value);
-				return this.sendSuccessResponse(commandContext, "Changed the value of ["+configEntry.getServersideShortName()+"] to ["+value+"]");
+				return this.sendSuccessResponse(commandContext, "Changed the value of ["+configEntry.getChatCommandName()+"] to ["+value+"]");
 			};
 			
 			// Enum type needs a special case since enums aren't represented by existing argument type

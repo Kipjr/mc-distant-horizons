@@ -91,6 +91,16 @@ public class ServerLevelWrapper implements IServerLevelWrapper
 	}
 	
 	@Override
+	public String getWorldFolderName()
+	{
+		#if MC_VER >= MC_1_17_1
+		return this.level.getServer().getWorldScreenshotFile().get().getParent().getFileName().toString();
+		#else // <= 1.16.5
+		return this.level.getServer().getWorldScreenshotFile().getParentFile().getName();
+		#endif
+	}
+	
+	@Override
 	public DimensionTypeWrapper getDimensionType() { return DimensionTypeWrapper.getDimensionTypeWrapper(this.level.dimensionType()); }
 
 	@Override

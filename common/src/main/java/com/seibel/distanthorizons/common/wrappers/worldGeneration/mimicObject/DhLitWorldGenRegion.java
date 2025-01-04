@@ -76,6 +76,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 	private static ChunkStatus debugTriggeredForStatus = null;
 	
 	
+	public final ServerLevel serverLevel;
 	public final DummyLightEngine lightEngine;
 	public final BatchGenerationEnvironment.IEmptyChunkRetrievalFunc generator;
 	public final int writeRadius;
@@ -139,9 +140,10 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 						new ChunkDependencies(ImmutableList.copyOf(ChunkStatus.getStatusList()).reverse()),
 						writeRadius, (WorldGenContext var1, ChunkStep var2, StaticCache2D<GenerationChunkHolder> var3, ChunkAccess var4) -> null),
 				centerChunk);
-		
 		#endif
+		
 		this.firstPos = chunkList.get(0).getPos();
+		this.serverLevel = serverLevel;
 		this.generator = generator;
 		this.lightEngine = lightEngine;
 		this.writeRadius = writeRadius;
@@ -205,7 +207,7 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 		ChunkAccess chunkAccess = this.getChunk(blockPos);
 		if (chunkAccess instanceof LevelChunk)
 			return true;
-		chunkAccess.setBlockState(blockPos, blockState, false);
+		chunkAccess.setBlockState(blockPos, blockState, /*isBlockMoving*/false);
 		// This is for post ticking for water on gen and stuff like that. Not enabled
 		// for now.
 		// if (blockState.hasPostProcess(this, blockPos))

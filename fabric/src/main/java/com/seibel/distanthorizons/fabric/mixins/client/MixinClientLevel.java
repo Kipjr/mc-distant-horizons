@@ -41,15 +41,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ClientLevel.class)
 public class MixinClientLevel
 {
-//    //Moved to MixinClientPacketListener
-//    @Inject(method = "<init>", at = @At("TAIL"))
-//    private void loadWorldEvent(ClientPacketListener clientPacketListener, ClientLevel.ClientLevelData clientLevelData, ResourceKey resourceKey,
-//            #if MC_VER >= MC_1_18_2 Holder holder, #else DimensionType dimensionType, #endif int i,
-//            #if MC_VER >= MC_1_18_2 int j, #endif Supplier supplier, LevelRenderer levelRenderer, boolean bl, long l, CallbackInfo ci)
-//	{
-//        ClientApi.INSTANCE.clientLevelLoadEvent(WorldWrapper.getWorldWrapper((ClientLevel)(Object)this));
-//    }
-	
 	// Moved to overriding the enableChunkLight(...) method over at ClientPacketListener for 1.20+
 	#if MC_VER >= MC_1_18_2 && MC_VER < MC_1_20_1 // Only the setLightReady is only available after 1.18. This ensures the light data is ready.
 	@Inject(method = "setLightReady", at = @At("HEAD"))
@@ -60,7 +51,9 @@ public class MixinClientLevel
 		
 		if (chunk != null && !chunk.isClientLightReady())
 		{
-			SharedApi.INSTANCE.chunkLoadEvent(new ChunkWrapper(chunk, clientLevel, ClientLevelWrapper.getWrapper(clientLevel)), ClientLevelWrapper.getWrapper(clientLevel));
+			SharedApi.INSTANCE.chunkLoadEvent(
+					new ChunkWrapper(chunk, ClientLevelWrapper.getWrapper(clientLevel)), 
+					ClientLevelWrapper.getWrapper(clientLevel));
 		}
 	}
 	#endif

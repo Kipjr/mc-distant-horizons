@@ -8,7 +8,8 @@
     "server.MixinServerPlayer",
     "server.MixinTFChunkGenerator",
     "server.MixinTracingExecutor",
-    "server.MixinUtilBackgroundThread"
+    "server.MixinUtilBackgroundThread",
+    "server.MixinLevelTicks"
   ],
   "client": [
     "client.MixinClientPacketListener",
