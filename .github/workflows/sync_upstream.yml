@@ -15,19 +15,20 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive
           ref: main
+          fetch-depth: 0
 
       # Add the upstream remote
       - name: Add Upstream Remote
-        run: git remote add upstream https://gitlab.com/distant-horizons-team/distant-horizons.git
+        run: git remote add gitlab_upstream https://gitlab.com/distant-horizons-team/distant-horizons.git
 
       # Fetch and merge upstream changes
       - name: Fetch and Merge Upstream
         run: |
           git fetch upstream
           git checkout main
-          git merge upstream/main
+          git merge gitlab_upstream/main
 
       # Push changes to your fork
       - name: Push Changes to Fork
