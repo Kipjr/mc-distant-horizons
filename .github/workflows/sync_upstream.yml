@@ -64,10 +64,10 @@ jobs:
           git merge --no-commit --no-ff origin/main
           if [[ $(git diff --cached --summary --ignore-submodules | wc -l) -lt 1 ]]; then
             echo "No new commits to sync."
-            git merge --abort
             exit 0
+          else
+            git merge --abort       
           fi
-          git merge --abort
 
       # Configure Git identity
       - name: Configure Git Identity
