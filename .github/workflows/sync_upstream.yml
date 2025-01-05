@@ -42,17 +42,17 @@ jobs:
       - name: Checkout Target Branch
         run: |
           git fetch origin
-          git checkout kipjr-main
+          git checkout Kipjr-main
 
       # Merge `main` into `OTHERBRANCH`
-      - name: Merge Main into kipjr-main
+      - name: Merge Main into Kipjr-main
         run: git merge main
 
       # Push merged changes to OTHERBRANCH
       - name: Push to Target Branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: git push origin kipjr-main
+        run: git push origin Kipjr-main
 
       # Create a Pull Request
       - name: Create Pull Request
@@ -60,4 +60,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh auth setup-git
-          gh pr create --base kipjr-main --head main --title "Sync with Upstream" --body "This PR syncs changes from 'main' to 'kipjr-main'."
+          gh pr create --base kipjr-main --head main --title "Sync with Upstream" --body "This PR syncs changes from 'main' to 'Kipjr-main'."
