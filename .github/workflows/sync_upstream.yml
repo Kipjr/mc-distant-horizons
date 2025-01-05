@@ -57,6 +57,15 @@ jobs:
           ref: Kipjr-main
           fetch-depth: 0
 
+      - name: Check if there are new commits
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet main kipjr-main; then
+            echo "No new commits to sync."
+            exit 0
+          fi
+
       # Configure Git identity
       - name: Configure Git Identity
         run: |
@@ -70,3 +79,4 @@ jobs:
         run: |
           gh auth setup-git
           gh pr create --base kipjr-main --head main --title "Sync with Upstream" --body "This PR syncs changes from 'main' to 'Kipjr-main'."
+
