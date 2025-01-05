@@ -61,10 +61,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if git diff --quiet main kipjr-main; then
+          git merge --no-commit --no-ff main
+          if ((git diff --cached  --summary --ignore-submodules | wc --lines) == 0); then
             echo "No new commits to sync."
             exit 0
           fi
+          git merge --abort
 
       # Configure Git identity
       - name: Configure Git Identity
