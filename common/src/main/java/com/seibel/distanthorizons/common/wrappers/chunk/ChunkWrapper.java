@@ -369,6 +369,7 @@ public class ChunkWrapper implements IChunkWrapper
 		blockPos.setY(relY);
 		blockPos.setZ(relZ);
 		
+		// TODO copy into pooled array, this isn't thread safe and can cause MC to throw errors if the chunk is loaded
 		return BlockStateWrapper.fromBlockState(this.chunk.getBlockState(blockPos), this.wrappedLevel);
 	}
 	
