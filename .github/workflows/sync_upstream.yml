@@ -19,6 +19,12 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      # Configure Git identity
+      - name: Configure Git Identity
+        run: |
+          git config --global user.email "actions.kipjr.mc-distant-horizons@github.com"
+          git config --global user.name "GitHub Actions Bot"
+
       # Add the upstream remote
       - name: Add Upstream Remote
         run: git remote add gitlab_upstream https://gitlab.com/distant-horizons-team/distant-horizons.git
