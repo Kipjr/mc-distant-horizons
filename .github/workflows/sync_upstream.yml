@@ -35,3 +35,29 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: git push origin main
+###
+### PR
+###
+      # Checkout the target branch (kipjr-main)
+      - name: Checkout Target Branch
+        run: |
+          git fetch origin
+          git checkout kipjr-main
+
+      # Merge `main` into `OTHERBRANCH`
+      - name: Merge Main into kipjr-main
+        run: git merge main
+
+      # Push merged changes to OTHERBRANCH
+      - name: Push to Target Branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: git push origin kipjr-main
+
+      # Create a Pull Request
+      - name: Create Pull Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh auth setup-git
+          gh pr create --base kipjr-main --head main --title "Sync with Upstream" --body "This PR syncs changes from 'main' to 'kipjr-main'."
