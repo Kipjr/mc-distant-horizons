@@ -61,22 +61,27 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "merge_status=-1" >> $GITHUB_ENV
           git merge --no-commit --no-ff origin/main
           if [[ $(git diff --cached --summary --ignore-submodules | wc -l) -lt 1 ]]; then
+            echo "merge_status=0" >> $GITHUB_ENV
             echo "No new commits to sync."
             exit 0
           else
+            echo "merge_status=1" >> $GITHUB_ENV
             git merge --abort       
           fi
 
       # Configure Git identity
       - name: Configure Git Identity
+        if: ${{ env.lint_success == '1' }}
         run: |
           git config --global user.email "actions.kipjr.mc-distant-horizons@github.com"
           git config --global user.name "GitHub Actions Bot"
 
       # Create a Pull Request
       - name: Create Pull Request
+        if: ${{ env.lint_success == '1' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
