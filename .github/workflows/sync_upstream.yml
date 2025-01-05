@@ -61,9 +61,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git merge --no-commit --no-ff main
+          git merge --no-commit --no-ff origin/main
           if ((git diff --cached  --summary --ignore-submodules | wc --lines) == 0); then
             echo "No new commits to sync."
+            git merge --abort
             exit 0
           fi
           git merge --abort
