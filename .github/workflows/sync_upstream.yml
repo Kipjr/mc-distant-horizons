@@ -57,6 +57,13 @@ jobs:
           ref: Kipjr-main
           fetch-depth: 0
 
+      # Configure Git identity
+      - name: Configure Git Identity
+        if: ${{ env.lint_success == '1' }}
+        run: |
+          git config --global user.email "actions.kipjr.mc-distant-horizons@github.com"
+          git config --global user.name "GitHub Actions Bot"
+
       - name: Check if there are new commits
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -71,13 +78,6 @@ jobs:
             echo "merge_status=1" >> $GITHUB_ENV
             git merge --abort       
           fi
-
-      # Configure Git identity
-      - name: Configure Git Identity
-        if: ${{ env.lint_success == '1' }}
-        run: |
-          git config --global user.email "actions.kipjr.mc-distant-horizons@github.com"
-          git config --global user.name "GitHub Actions Bot"
 
       # Create a Pull Request
       - name: Create Pull Request
