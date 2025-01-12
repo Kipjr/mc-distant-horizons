@@ -76,10 +76,12 @@ public class MixinMinecraft
 	)
 	private void buildInitialScreens(Runnable runnable)
 	{
+		boolean showUpdater = SelfUpdater.onStart();  // always needs to be called, otherwise auto update setup won't be completed
+	
 		// TODO merge logic for forge, neo, and fabric
 		if (
-				Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get() // Don't do anything if the user doesn't want it
-				&& SelfUpdater.onStart()
+				showUpdater
+				&& Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get() // Don't do anything if the user doesn't want it
 			)
 		{
 			runnable = () -> 

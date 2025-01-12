@@ -293,12 +293,27 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 		{
 			return;
 		}
+		
         #if MC_VER < MC_1_19_2
 		player.sendMessage(new TextComponent(string), getPlayer().getUUID());
-		#elif MC_VER < MC_1_21_3
-		player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(string));
         #else
 		player.displayClientMessage(net.minecraft.network.chat.Component.translatable(string), /*isOverlay*/false);
+        #endif
+	}
+	
+	@Override
+	public void sendOverlayMessage(String string)
+	{
+		LocalPlayer player = this.getPlayer();
+		if (player == null)
+		{
+			return;
+		}
+		
+        #if MC_VER < MC_1_19_2
+		player.displayClientMessage(new TextComponent(string), /*isOverlay*/true);
+        #else
+		player.displayClientMessage(net.minecraft.network.chat.Component.translatable(string), /*isOverlay*/true);
         #endif
 	}
 	

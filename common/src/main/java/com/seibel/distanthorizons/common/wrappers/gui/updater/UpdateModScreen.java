@@ -4,6 +4,7 @@ import com.seibel.distanthorizons.api.enums.config.EDhApiUpdateBranch;
 import com.seibel.distanthorizons.common.wrappers.gui.DhScreen;
 import com.seibel.distanthorizons.common.wrappers.gui.TexturedButtonWidget;
 import com.seibel.distanthorizons.core.jar.ModJarInfo;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.jar.installer.ModrinthGetter;
@@ -15,6 +16,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 #endif
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
+import org.apache.logging.log4j.Logger;
 
 import static com.seibel.distanthorizons.common.wrappers.gui.GuiHelper.*;
 
@@ -29,6 +31,9 @@ import java.util.*;
 // and also maybe add this suggestion https://discord.com/channels/881614130614767666/1035863487110467625/1035949054485594192
 public class UpdateModScreen extends DhScreen
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	
 	private Screen parent;
 	private String newVersionID;
 	
@@ -100,7 +105,7 @@ public class UpdateModScreen extends DhScreen
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			LOGGER.error("Failed to setup update mod screen, error: ["+e.getMessage()+"].", e);
 		}
 		
 		if (!ModInfo.IS_DEV_BUILD)

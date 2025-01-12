@@ -279,8 +279,8 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 					"Unsafe MultiThreading in Distant Horizons Chunk Generator. \n" +
 					"This can happen if world generation is run on one of Minecraft's thread pools " +
 					"instead of the thread DH provided. \n" +
-					"This can likely be ignored, however if world generator crashes occur" +
-					"to increase stability, set DH's world generation thread count to 1.", 
+					"This can likely be ignored, however if world generator crashes occur " +
+					"setting DH's world generation thread count to 1 may improve stability. ", 
 					new RuntimeException("Incorrect thread pool use"));
 			this.unsafeThreadingRecorded = true;
 		}

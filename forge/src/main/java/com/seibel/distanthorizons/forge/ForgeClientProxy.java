@@ -62,6 +62,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.lwjgl.opengl.GL32;
 
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -185,7 +186,7 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 			LevelAccessor level = event.getLevel();
 			#endif
 			
-			ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+			AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 			if (executor != null)
 			{
 				executor.execute(() ->
@@ -214,7 +215,7 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 			LevelAccessor level = event.getLevel();
 			#endif
 			
-			ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+			AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 			if (executor != null)
 			{
 				executor.execute(() ->

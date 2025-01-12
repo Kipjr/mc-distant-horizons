@@ -36,6 +36,7 @@ public class CommandInitializer
 		
 		builder.then(new ConfigCommand().buildCommand());
 		builder.then(new DebugCommand().buildCommand());
+		builder.then(new PregenCommand().buildCommand());
 		
 		if (DEBUG_CODEC_CRASH_MESSAGE)
 		{

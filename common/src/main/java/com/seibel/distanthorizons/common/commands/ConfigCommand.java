@@ -63,12 +63,13 @@ public class ConfigCommand extends AbstractCommand
 									"§o" + configEntry.getComment().trim() + "§r\n" +
 									"§7Config file name: §f" + configEntry.name + "§7, category: §f" + configEntry.category + "\n" +
 									"\n" +
-									"Current value of " + configEntry.getChatCommandName() + " is §n" + configEntry.get() + "§r"
+									"Current value of " + configEntry.getChatCommandName() + " is §n" + configEntry.get() + "§r",
+							false
 					));
 			
 			ToIntBiFunction<CommandContext<CommandSourceStack>, Object> updateConfigValue = (commandContext, value) -> {
 				configEntry.set(value);
-				return this.sendSuccessResponse(commandContext, "Changed the value of ["+configEntry.getChatCommandName()+"] to ["+value+"]");
+				return this.sendSuccessResponse(commandContext, "Changed the value of [" + configEntry.getChatCommandName() + "] to [" + value + "]", true);
 			};
 			
 			// Enum type needs a special case since enums aren't represented by existing argument type

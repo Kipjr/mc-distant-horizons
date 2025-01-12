@@ -1,8 +1,8 @@
 package com.seibel.distanthorizons.common.wrappers.gui.updater;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.seibel.distanthorizons.common.wrappers.gui.DhScreen;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.jar.installer.MarkdownFormatter;
@@ -14,6 +14,7 @@ import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import org.apache.logging.log4j.Logger;
 
 #if MC_VER >= MC_1_17_1
 import net.minecraft.client.gui.narration.NarratableEntry;
@@ -21,6 +22,7 @@ import net.minecraft.client.gui.narration.NarratableEntry;
 
 #if MC_VER < MC_1_20_1
 import net.minecraft.client.gui.GuiComponent;
+import com.mojang.blaze3d.vertex.PoseStack;
 #else
 import net.minecraft.client.gui.GuiGraphics;
 #endif
@@ -39,6 +41,9 @@ import java.util.*;
 // TODO: Make this
 public class ChangelogScreen extends DhScreen
 {
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	
 	private Screen parent;
 	private String versionID;
 	private List<String> changelog;
@@ -51,24 +56,32 @@ public class ChangelogScreen extends DhScreen
 		this(parent, null);
 		
 		if (!ModrinthGetter.initted) // Make sure the modrinth stuff is initted
+		{
 			ModrinthGetter.init();
+		}
 		if (!ModrinthGetter.initted) // If its not initted, then this isnt usable
+		{
 			return;
+		}
 		
 		if (!ModrinthGetter.mcVersions.contains(SingletonInjector.INSTANCE.get(IVersionConstants.class).getMinecraftVersion()))
+		{
 			return;
+		}
 		
 		String versionID = ModrinthGetter.getLatestIDForVersion(SingletonInjector.INSTANCE.get(IVersionConstants.class).getMinecraftVersion());
 		if (versionID == null)
+		{
 			return;
+		}
 		try
 		{
-			setupChangelog(versionID);
-			usable = true;
+			this.setupChangelog(versionID);
+			this.usable = true;
 		}
 		catch (Exception e)
 		{
-			e.printStackTrace();
+			LOGGER.error("failed to setup changelog, error: ["+e.getMessage()+"].", e);
 		}
 	}
 	
@@ -80,11 +93,13 @@ public class ChangelogScreen extends DhScreen
 		
 		
 		if (versionID == null)
+		{
 			return;
+		}
 		try
 		{
-			setupChangelog(versionID);
-			usable = true;
+			this.setupChangelog(versionID);
+			this.usable = true;
 		}
 		catch (Exception e)
 		{
@@ -129,8 +144,10 @@ public class ChangelogScreen extends DhScreen
 	protected void init()
 	{
 		super.init();
-		if (!usable)
+		if (!this.usable)
+		{
 			return;
+		}
 		
 		
 		this.addBtn( // Close
@@ -141,9 +158,9 @@ public class ChangelogScreen extends DhScreen
 		
 		
 		this.changelogArea = new TextArea(this.minecraft, this.width * 2, this.height, 32, 32, 10);
-		for (int i = 0; i < changelog.size(); i++)
+		for (int i = 0; i < this.changelog.size(); i++)
 		{
-			this.changelogArea.addButton(TextOrLiteral(changelog.get(i)));
+			this.changelogArea.addButton(TextOrLiteral(this.changelog.get(i)));
 //            drawString(matrices, this.font, changelog.get(i), this.width / 2 - 175, this.height / 2 - 100 + i*10, 0xFFFFFF);
 		}
 		
@@ -189,13 +206,13 @@ public class ChangelogScreen extends DhScreen
 		// render order matters, otherwise on 1.20.6+ the blurred background will render on top of the text
 		super.render(matrices, mouseX, mouseY, delta); // Render the buttons
 		this.changelogArea.render(matrices, mouseX, mouseY, delta); // Render the changelog
-		DhDrawCenteredString(matrices, font, title, width / 2, 15, 0xFFFFFF); // Render title
+		this.DhDrawCenteredString(matrices, this.font, this.title, this.width / 2, 15, 0xFFFFFF); // Render title
 	}
 	
 	@Override
 	public void onClose()
 	{
-		Objects.requireNonNull(minecraft).setScreen(this.parent); // Goto the parent screen
+		Objects.requireNonNull(this.minecraft).setScreen(this.parent); // Goto the parent screen
 	}
 	
 	public static class TextArea extends ContainerObjectSelectionList<ButtonEntry>
@@ -210,7 +227,7 @@ public class ChangelogScreen extends DhScreen
 			super(minecraftClient, canvasWidth, canvasHeight - (topMargin + botMargin), topMargin, itemSpacing);
 			#endif
 			this.centerListVertically = false;
-			textRenderer = minecraftClient.font;
+			this.textRenderer = minecraftClient.font;
 		}
 		
 		public void addButton(Component text)
@@ -252,20 +269,20 @@ public class ChangelogScreen extends DhScreen
 		@Override
 		public void render(GuiGraphics matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
 		{
-			matrices.drawString(textRenderer, text, 12, y + 5, 0xFFFFFF);
+			matrices.drawString(textRenderer, this.text, 12, y + 5, 0xFFFFFF);
 		}
         #endif
 		
 		@Override
 		public List<? extends GuiEventListener> children()
 		{
-			return children;
+			return this.children;
 		}
 		#if MC_VER >= MC_1_17_1
 		@Override
 		public List<? extends NarratableEntry> narratables()
 		{
-			return children;
+			return this.children;
 		}
 		#endif
 	}

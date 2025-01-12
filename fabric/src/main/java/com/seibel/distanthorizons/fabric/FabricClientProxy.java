@@ -59,6 +59,7 @@ import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
 import java.nio.FloatBuffer;
 #endif
 import java.util.HashSet;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -142,7 +143,7 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 					// executor to prevent locking up the render/event thread
 					// if the getChunk() takes longer than expected 
 					// (which can be caused by certain mods) 
-					ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+					AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 					if (executor != null)
 					{
 						executor.execute(() ->
@@ -182,7 +183,7 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 						// executor to prevent locking up the render/event thread
 						// if the getChunk() takes longer than expected 
 						// (which can be caused by certain mods) 
-						ThreadPoolExecutor executor = ThreadPoolUtil.getFileHandlerExecutor();
+						AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 						if (executor != null)
 						{
 							executor.execute(() ->

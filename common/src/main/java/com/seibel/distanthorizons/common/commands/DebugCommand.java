@@ -18,7 +18,7 @@ public class DebugCommand extends AbstractCommand
 				.executes(c -> {
 					List<String> lines = new ArrayList<>();
 					F3Screen.addStringToDisplay(lines);
-					return this.sendSuccessResponse(c, String.join("\n", lines));
+					return this.sendSuccessResponse(c, String.join("\n", lines), false);
 				});
 	}
 	

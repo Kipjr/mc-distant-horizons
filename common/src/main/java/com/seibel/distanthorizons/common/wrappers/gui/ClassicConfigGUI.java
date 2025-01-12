@@ -317,10 +317,13 @@ public class ClassicConfigGUI
 				}
 				catch (Exception e)
 				{
-					System.out.println("ERROR: Failed to show [" + info.getNameWCategory() + "]");
+					String message = "ERROR: Failed to show [\" + info.getNameWCategory() + \"], error: ["+e.getMessage()+"]";
 					if (info.get() != null)
-						System.out.print(" with the value [" + info.get() + "] with type [" + info.getType() + "]");
-					e.printStackTrace();
+					{
+						message += " with the value [" + info.get() + "] with type [" + info.getType() + "]";
+					}
+					
+					LOGGER.error(message, e);
 				}
 			}
 			
