@@ -9,6 +9,7 @@ import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import net.minecraft.commands.CommandSourceStack;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -40,6 +41,7 @@ public class ConfigCommand extends AbstractCommand
 	public LiteralArgumentBuilder<CommandSourceStack> buildCommand()
 	{
 		LiteralArgumentBuilder<CommandSourceStack> builder = literal("config");
+		HashSet<String> addedCommands = new HashSet<>();
 		
 		for (AbstractConfigType<?, ?> type : ConfigBase.INSTANCE.entries)
 		{
@@ -54,6 +56,11 @@ public class ConfigCommand extends AbstractCommand
 			if (configEntry.getChatCommandName() == null)
 			{
 				continue;
+			}
+			
+			if (!addedCommands.add(configEntry.getChatCommandName()))
+			{
+				throw new IllegalStateException("Duplicate command name: " + configEntry.getChatCommandName());
 			}
 			
 			LiteralArgumentBuilder<CommandSourceStack> subcommand = literal(configEntry.getChatCommandName())

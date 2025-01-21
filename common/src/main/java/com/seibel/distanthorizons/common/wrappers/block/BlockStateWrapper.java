@@ -2,7 +2,7 @@
  *    This file is part of the Distant Horizons mod
  *    licensed under the GNU LGPL v3 License.
  *
- *    Copyright (C) 2020-2023 James Seibel
+ *    Copyright (C) 2020 James Seibel
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU Lesser General Public License as published by
@@ -84,7 +84,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	public static HashSet<IBlockStateWrapper> rendererIgnoredCaveBlocks = null;
 	
 	/** keep track of broken blocks so we don't log every time */
-	private static final HashSet<ResourceLocation> BrokenResourceLocations = new HashSet<>();
+	private static final HashSet<ResourceLocation> BROKEN_RESOURCE_LOCATIONS = new HashSet<>();
 	
 	
 	
@@ -596,9 +596,9 @@ public class BlockStateWrapper implements IBlockStateWrapper
 				if (block == null)
 				{
 					// shouldn't normally happen, but here to make the compiler happy
-					if (!BrokenResourceLocations.contains(resourceLocation))
+					if (!BROKEN_RESOURCE_LOCATIONS.contains(resourceLocation))
 					{
-						BrokenResourceLocations.add(resourceLocation);
+						BROKEN_RESOURCE_LOCATIONS.add(resourceLocation);
 						LOGGER.warn("Unable to find BlockState with the resourceLocation [" + resourceLocation + "] and properties: [" + blockStatePropertiesString + "]. Air will be used instead, some data may be lost.");
 					}
 					
@@ -628,9 +628,9 @@ public class BlockStateWrapper implements IBlockStateWrapper
 					if (blockStatePropertiesString != null)
 					{
 						// we should have found a blockstate, but didn't
-						if (!BrokenResourceLocations.contains(resourceLocation))
+						if (!BROKEN_RESOURCE_LOCATIONS.contains(resourceLocation))
 						{
-							BrokenResourceLocations.add(resourceLocation);
+							BROKEN_RESOURCE_LOCATIONS.add(resourceLocation);
 							LOGGER.warn("Unable to find BlockState for Block [" + resourceLocation + "] with properties: [" + blockStatePropertiesString + "]. Using the default block state.");
 						}
 					}

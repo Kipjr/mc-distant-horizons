@@ -2,7 +2,7 @@
  *    This file is part of the Distant Horizons mod
  *    licensed under the GNU GPL v3 License.
  *
- *    Copyright (C) 2020-2023 James Seibel
+ *    Copyright (C) 2020 James Seibel
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.ChunkLightStorage;
 
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 import it.unimi.dsi.fastutil.shorts.ShortList;
@@ -102,6 +103,8 @@ public class ChunkLoader
 	private static final ConfigBasedLogger LOGGER = BatchGenerationEnvironment.LOAD_LOGGER;
 	
 	private static boolean lightingSectionErrorLogged = false;
+	
+	private static final ConcurrentHashMap<String, Object> LOGGED_ERROR_MESSAGE_MAP = new ConcurrentHashMap<>();
 	
 	
 	
@@ -285,17 +288,18 @@ public class ChunkLoader
 				#endif
 				
 				blockStateContainer = tagSection.contains("block_states", 10)
-						? BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tagSection.getCompound("block_states")).promotePartial(string -> logBlockDeserializationWarning(chunkPos, sectionYPos, string))
+						? BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tagSection.getCompound("block_states"))
+							.promotePartial(string -> logBlockDeserializationWarning(chunkPos, sectionYPos, string))
 						#if MC_VER < MC_1_20_6 
-						.getOrThrow(false, LOGGER::error)
+						.getOrThrow(false, (message) -> logWarningOnce(message))
 						#else
-						.getOrThrow((message) -> (RuntimeException) LOGGER.errorAndThrow(message, null)) 
+						.getOrThrow((message) -> logErrorAndReturnException(message)) 
 						#endif
 						: new PalettedContainer<BlockState>(Block.BLOCK_STATE_REGISTRY, Blocks.AIR.defaultBlockState(), PalettedContainer.Strategy.SECTION_STATES);
 
 				#if MC_VER < MC_1_18_2
 				biomeContainer = tagSection.contains("biomes", 10)
-						? biomeCodec.parse(NbtOps.INSTANCE, tagSection.getCompound("biomes")).promotePartial(string -> logErrors(chunkPos, sectionYPos, string)).getOrThrow(false, LOGGER::error)
+						? biomeCodec.parse(NbtOps.INSTANCE, tagSection.getCompound("biomes")).promotePartial(string -> logErrors(chunkPos, sectionYPos, string)).getOrThrow(false, (message) -> logWarningOnce(message))
 						: new PalettedContainer<Biome>(biomes, biomes.getOrThrow(Biomes.PLAINS), PalettedContainer.Strategy.SECTION_BIOMES);
 				#else
 				
@@ -303,11 +307,12 @@ public class ChunkLoader
 				if (tagSection.contains("biomes", 10))
 				{
 					biomeContainer =
-						biomeCodec.parse(NbtOps.INSTANCE, tagSection.getCompound("biomes")).promotePartial(string -> logBiomeDeserializationWarning(chunkPos, sectionYIndex, (String) string))
+						biomeCodec.parse(NbtOps.INSTANCE, tagSection.getCompound("biomes"))
+								.promotePartial(string -> logBiomeDeserializationWarning(chunkPos, sectionYIndex, (String) string))
 						#if MC_VER < MC_1_20_6 
-						.getOrThrow(false, LOGGER::error);
+						.getOrThrow(false, (message) -> logWarningOnce(message));
 						#else
-						.getOrThrow((message) -> (RuntimeException) LOGGER.errorAndThrow(message, null));
+						.getOrThrow((message) -> logErrorAndReturnException(message));
 						#endif
 				}
 				else
@@ -387,9 +392,9 @@ public class ChunkLoader
 			Dynamic<CompoundTag> blendingDataTag = new Dynamic(NbtOps.INSTANCE, chunkData.getCompound("blending_data"));
 			
 			#if MC_VER < MC_1_21_3
-			blendingData = BlendingData.CODEC.parse(blendingDataTag).resultOrPartial(LOGGER::error).orElse(null);
+			blendingData = BlendingData.CODEC.parse(blendingDataTag).resultOrPartial((message) -> logWarningOnce(message)).orElse(null);
 			#else
-			blendingData = BlendingData.unpack(BlendingData.Packed.CODEC.parse(blendingDataTag).resultOrPartial(LOGGER::error).orElse(null));
+			blendingData = BlendingData.unpack(BlendingData.Packed.CODEC.parse(blendingDataTag).resultOrPartial((message) -> logWarningOnce(message)).orElse(null));
 			#endif
 		}
 		return blendingData;
@@ -515,14 +520,60 @@ public class ChunkLoader
 		}
 	}
 	
+	
+	
+	//=========//
+	// logging //
+	//=========//
+	
 	private static void logBlockDeserializationWarning(ChunkPos chunkPos, int sectionYIndex, String message)
 	{
-		LOGGER.warn("Unable to deserialize blocks for chunk section [" + chunkPos.x + ", " + sectionYIndex + ", " + chunkPos.z + "], error: ["+message+"]. This can probably be ignored, although if your world looks wrong, optimizing it via the single player menu then deleting your DH database(s) should fix the problem.");
+		LOGGED_ERROR_MESSAGE_MAP.computeIfAbsent(message, (newMessage) ->
+		{
+			LOGGER.warn("Unable to deserialize blocks for chunk section [" + chunkPos.x + ", " + sectionYIndex + ", " + chunkPos.z + "], error: ["+newMessage+"]. " +
+					"This can probably be ignored, although if your world looks wrong, optimizing it via the single player menu then deleting your DH database(s) should fix the problem.");
+			
+			return newMessage;
+		});
 	}
 	private static void logBiomeDeserializationWarning(ChunkPos chunkPos, int sectionYIndex, String message)
 	{
-		LOGGER.warn("Unable to deserialize biomes for chunk section [" + chunkPos.x + ", " + sectionYIndex + ", " + chunkPos.z + "], error: ["+message+"]. This can probably be ignored, although if your world looks wrong, optimizing it via the single player menu then deleting your DH database(s) should fix the problem.");
+		LOGGED_ERROR_MESSAGE_MAP.computeIfAbsent(message, (newMessage) -> 
+		{
+			LOGGER.warn("Unable to deserialize biomes for chunk section [" + chunkPos.x + ", " + sectionYIndex + ", " + chunkPos.z + "], error: ["+newMessage+"]. " +
+					"This can probably be ignored, although if your world looks wrong, optimizing it via the single player menu then deleting your DH database(s) should fix the problem.");
+			
+			return newMessage;
+		});
 	}
+	
+	private static void logWarningOnce(String message) { logWarningOnce(message, null); }
+	private static void logWarningOnce(String message, Exception e)
+	{
+		LOGGED_ERROR_MESSAGE_MAP.computeIfAbsent(message, (newMessage) ->
+		{
+			LOGGER.warn("Parsing error: ["+newMessage+"]. " +
+					"This can probably be ignored, although if your world looks wrong, optimizing it via the single player menu then deleting your DH database(s) should fix the problem.",
+					e);
+			
+			return newMessage;
+		});
+	}
+	
+	private static RuntimeException logErrorAndReturnException(String message)
+	{
+		LOGGED_ERROR_MESSAGE_MAP.computeIfAbsent(message, (newMessage) ->
+		{
+			LOGGER.warn("Parsing error: ["+newMessage+"]. " +
+					"This can probably be ignored, although if your world looks wrong, optimizing it via the single player menu then deleting your DH database(s) should fix the problem.");
+			
+			return newMessage;
+		});
+		
+		// Currently we want to ignore these errors, if returning null is a problem, we can change this later
+		return null; //new RuntimeException(message);
+	}
+	
 	
 	
 	
