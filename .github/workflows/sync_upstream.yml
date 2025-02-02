@@ -34,6 +34,8 @@ jobs:
         run: |
           git fetch gitlab_upstream
           git checkout main
+          git submodule init
+          git submodule update --remote
           git merge gitlab_upstream/main
 
       # Push changes to your fork
