@@ -33,7 +33,7 @@ jobs:
       - name: Fetch and Merge Upstream
         run: |
           git fetch gitlab_upstream
-          git checkout main
+          git checkout origin/main
           git submodule init
           git submodule update --remote
           git merge gitlab_upstream/main
