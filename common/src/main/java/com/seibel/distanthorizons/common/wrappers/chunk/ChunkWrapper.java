@@ -278,14 +278,14 @@ public class ChunkWrapper implements IChunkWrapper
 					{
 						// is this block solid?
 						if (solidHeight == minInclusiveBuildHeight
-								&& block.isSolid())
+							&& block.isSolid())
 						{
 							solidHeight = y;
 						}
 						
 						// is this block light blocking?
 						if (lightBlockingHeight == minInclusiveBuildHeight
-								&& block.getOpacity() != LodUtil.BLOCK_FULLY_TRANSPARENT)
+							&& block.getOpacity() != LodUtil.BLOCK_FULLY_TRANSPARENT)
 						{
 							lightBlockingHeight = y;
 						}

@@ -17,6 +17,9 @@ variables:
 # These can be extended so code is a bit less duplicated
 .build_java:
   #image: eclipse-temurin:17
+  before_script:
+    - apt-get update
+    - apt-get install python3 python3-pip python-is-python3 python3-venv -y --no-install-recommends
   cache:
     key: "gradleCache_$CI_JOB_NAME_SLUG"
     policy: pull-push
@@ -41,28 +44,15 @@ build:
     - ./gradlew clean -PmcVer="${MC_VER}" -PinfoGitCommit="${CI_COMMIT_SHA}" -PinfoGitBranch="${CI_COMMIT_BRANCH}" -PinfoBuildSource="GitLab CI (${CI_PIPELINE_ID})" --gradle-user-home cache/;
     - ./gradlew build -PmcVer="${MC_VER}" -PinfoGitCommit="${CI_COMMIT_SHA}" -PinfoGitBranch="${CI_COMMIT_BRANCH}" -PinfoBuildSource="GitLab CI (${CI_PIPELINE_ID})" --gradle-user-home cache/;
     - ./gradlew mergeJars -PmcVer="${MC_VER}" -PinfoGitCommit="${CI_COMMIT_SHA}" -PinfoGitBranch="${CI_COMMIT_BRANCH}" -PinfoBuildSource="GitLab CI (${CI_PIPELINE_ID})" --gradle-user-home cache/;
+    - cp ./fabric/build/libs/* ./forge/build/libs/* ./neoforge/build/libs/* ./Merged/* . || true
   artifacts:
     name: "NightlyBuild_${MC_VER}-${CI_COMMIT_SHORT_SHA}-${CI_COMMIT_TIMESTAMP}"
     paths:
-      - Merged/*.jar
-      - quilt/build/libs/*.jar
-      - fabric/build/libs/*.jar
-      - forge/build/libs/*.jar
-      - neoforge/build/libs/*.jar
+      - ./*.jar
     exclude:
-      # TODO: There is a lot of duplicate stuff here, try to maybe make it smaller
-      - fabric/build/libs/*-all.jar
-      - fabric/build/libs/*-dev.jar
-      - fabric/build/libs/*-sources.jar
-      - quilt/build/libs/*-all.jar
-      - quilt/build/libs/*-dev.jar
-      - quilt/build/libs/*-sources.jar
-      - forge/build/libs/*-all.jar
-      - forge/build/libs/*-dev.jar
-      - forge/build/libs/*-sources.jar
-      - neoforge/build/libs/*-all.jar
-      - neoforge/build/libs/*-dev.jar
-      - neoforge/build/libs/*-sources.jar
+      - ./*-all.jar
+      - ./*-dev.jar
+      - ./*-sources.jar
     expire_in: 14 days
     when: always
   extends: .build_java
@@ -77,15 +67,15 @@ api:
     # this also runs unit tests
     - ./gradlew api:build --gradle-user-home cache/;
     - ./gradlew api:addSourcesToCompiledJar --gradle-user-home cache/;
+    - cp ./coreSubProjects/api/build/libs/merged/* .
   artifacts:
-    name: "Api_NightlyBuild-${CI_COMMIT_SHORT_SHA}-${CI_COMMIT_TIMESTAMP}"
+    name: "NightlyBuild_Api-${CI_COMMIT_SHORT_SHA}-${CI_COMMIT_TIMESTAMP}"
     paths:
-      - coreSubProjects/api/build/libs/merged/*.jar
-      # can be uncommented if we don't want a jar with the source code
-      # - coreSubProjects/api/build/libs/*.jar
+      - ./*.jar
     exclude:
-      - coreSubProjects/api/build/libs/merged/*-all.jar
-      - coreSubProjects/api/build/libs/merged/*-sources.jar
+      - ./*-all.jar
+      - ./*-dev.jar
+      - ./*-sources.jar
     expire_in: 1 day
     when: always
   extends: .build_java

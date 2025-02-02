@@ -46,8 +46,8 @@ public class TestGenericWorldGenerator implements IDhApiWorldGenerator
 	public byte getSmallestDataDetailLevel() { return (byte) (EDhApiDetailLevel.BLOCK.detailLevel); }
 	@Override
 	public byte getLargestDataDetailLevel() 
-	//{ return (byte) (EDhApiDetailLevel.BLOCK.detailLevel + 12); }
-	{ return (byte) (EDhApiDetailLevel.BLOCK.detailLevel); }
+	{ return (byte) (EDhApiDetailLevel.BLOCK.detailLevel + 12); }
+	//{ return (byte) (EDhApiDetailLevel.BLOCK.detailLevel); }
 	
 	
 	@Override

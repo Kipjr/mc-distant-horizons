@@ -1,3 +1,11 @@
+import com.github.jengelman.gradle.plugins.shadow.transformers.Transformer
+import com.github.jengelman.gradle.plugins.shadow.transformers.TransformerContext
+import org.apache.tools.zip.ZipEntry
+
+import javax.annotation.Nonnull
+import org.apache.tools.zip.ZipOutputStream
+
+
 plugins {
     id "java"
 
@@ -70,7 +78,7 @@ forgix {
     String loaderHyphenSeparatedList = ((String)gradle.builds_for).replaceAll(",", "-");
     
     group = "com.seibel.distanthorizons"
-    mergedJarName = "DistantHorizons-${rootProject.versionStr}-${loaderHyphenSeparatedList}.jar"
+    mergedJarName = "DistantHorizons-${loaderHyphenSeparatedList}-${rootProject.versionStr}.jar"
 
     if (findProject(":forge"))
         forge {
@@ -94,6 +102,83 @@ forgix {
         }
 
     removeDuplicate "com.seibel.distanthorizons"
+}
+
+
+class NativeTransformer implements Transformer {
+    private boolean enabled = false
+    private final HashMap<String, String> replacements = new HashMap()
+    private final HashMap<String, byte[]> rewrittenFiles = new HashMap()
+    private var nativeRelocator
+
+    public File rootDir
+
+    NativeTransformer() {
+        try {
+            int exitCode = Runtime.getRuntime().exec(new String[]{"python", "--version"}).waitFor()
+            if (exitCode == 0) {
+                enabled = true
+            }
+        } catch (IOException e) {
+            println(e)
+        }
+    }
+
+    void relocateNative(String target, String replacement) {
+        if (replacement.length() > target.length()) {
+            throw new GradleException("Length of value \"${replacement}\" exceeds the length of \"${target}\": ${replacement.length()} > ${target.length()}")
+        }
+
+        replacements.put(target, replacement)
+    }
+
+    void before(Closure closure) {
+        if (enabled)
+            closure.run()
+    }
+
+
+    @Override
+    boolean canTransformResource(@Nonnull FileTreeElement element) {
+        return enabled && replacements.keySet().stream().anyMatch {
+            element.name.startsWith(it as String)
+        }
+    }
+
+    @Override
+    void transform(@Nonnull TransformerContext context) {
+        println("Transforming $context.path...")
+        byte[] content = context.is.readAllBytes()
+
+        if (nativeRelocator == null) {
+            nativeRelocator = new NativeRelocator(rootDir.toPath().resolve("relocate_natives"))
+        }
+
+        try {
+            Map.Entry<String, String> pathReplacement = replacements.entrySet().stream().filter {
+                context.path.startsWith(it.key as String)
+            }.findFirst().orElseThrow()
+
+            String path = context.path.replace(pathReplacement.key as String, pathReplacement.value as String)
+            content = nativeRelocator.processBinary(path, content, replacements)
+
+            rewrittenFiles.put(path, content)
+        }
+        catch (Throwable e) {
+            throw new GradleException("Failed to relocate", e)
+        }
+    }
+
+    @Override
+    boolean hasTransformedResource() { return !rewrittenFiles.isEmpty() }
+
+    @Override
+    void modifyOutputStream(@Nonnull ZipOutputStream os, boolean preserveFileTimestamps) {
+        for (Map.Entry<String, byte[]> rewrittenFile : rewrittenFiles.entrySet()) {
+            os.putNextEntry(new ZipEntry(rewrittenFile.key))
+            os.write(rewrittenFile.value)
+        }
+    }
 }
 
 subprojects { p ->
@@ -306,26 +391,23 @@ subprojects { p ->
         
         // Logging
         relocate "org.slf4j", "${librariesLocation}.slf4j"
-        
-//        // Sqlite Database
-//        // James can't determine how to relocate the library correctly so this is commented out
-//        relocate ("org.sqlite", "${librariesLocation}.sqlite") {
-//            exclude("org/sqlite/core/NativeDB/**")
-//
-//            exclude("org/sqlite/native/FreeBSD/**")
-//            exclude("org/sqlite/native/Linux-Android/**")
-//            exclude("org/sqlite/native/Linux-Musl/**")
-//            exclude("org/sqlite/native/Linux/arm/**")
-//            exclude("org/sqlite/native/Linux/aarch64/**")
-//            exclude("org/sqlite/native/Linux/armv6/**")
-//            exclude("org/sqlite/native/Linux/x86/**")
-//            exclude("org/sqlite/native/Linux/armv7/**")
-//            exclude("org/sqlite/native/Linux/ppc64/**")
-//            exclude("org/sqlite/native/Linux/riscv64/**")
-//            exclude("org/sqlite/native/Windows/armv7/**")
-//            exclude("org/sqlite/native/Windows/aarch64/**")
-//            exclude("org/sqlite/native/Windows/armv7/**")
-//        }
+
+        // Sqlite Database
+        // librariesLocation isn't used because it's too long for replacing paths in native libraries
+        // Allowing strings larger than the original string would require shifting the entire binary's contents
+        transform(NativeTransformer) {
+            rootDir = project.rootDir
+
+            before {
+                relocate "org.sqlite", "dh_sqlite", {
+                    exclude "org/sqlite/native/**"
+                }
+                relocate "jdbc:sqlite", "jdbc:dh_sqlite"
+            }
+
+            relocateNative "org/sqlite", "dh_sqlite"
+            relocateNative "org_sqlite", "dh_1sqlite"
+        }
         
         
         // JOML
