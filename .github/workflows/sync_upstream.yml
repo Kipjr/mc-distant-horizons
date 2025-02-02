@@ -17,7 +17,7 @@ jobs:
         with:
           submodules: recursive
           ref: main
-          fetch-depth: 4
+          fetch-depth: 0
 
       # Configure Git identity
       - name: Configure Git Identity
@@ -55,7 +55,7 @@ jobs:
         with:
           submodules: recursive
           ref: Kipjr-main
-          fetch-depth: 4
+          fetch-depth: 0
 
       # Configure Git identity
       - name: Configure Git Identity
