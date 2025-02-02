@@ -32,11 +32,11 @@ jobs:
       # Fetch and merge upstream changes
       - name: Fetch and Merge Upstream
         run: |
-          git fetch gitlab_upstream
-          git checkout origin/main
-          git submodule init
-          git submodule update --remote
-          git merge gitlab_upstream/main
+          git fetch gitlab_upstream main -v
+          git checkout origin/main -v
+          git submodule init -v
+          git submodule update --remote -v
+          git merge gitlab_upstream/main -v
 
       # Push changes to your fork
       - name: Push Changes to Fork
