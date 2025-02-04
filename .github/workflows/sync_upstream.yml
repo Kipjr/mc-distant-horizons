@@ -33,10 +33,10 @@ jobs:
       - name: Fetch and Merge Upstream
         run: |
           git fetch gitlab_upstream main -v
-          git checkout origin/main -v
-          git submodule init -v
-          git submodule update --remote -v
+          git checkout main -v
           git merge gitlab_upstream/main -v
+          git submodule sync -v
+          git submodule update --init --recursive --remote -v
 
       # Push changes to your fork
       - name: Push Changes to Fork
