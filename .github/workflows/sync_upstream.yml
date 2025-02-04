@@ -30,7 +30,7 @@ jobs:
         run: git remote add gitlab_upstream https://gitlab.com/distant-horizons-team/distant-horizons.git
 
       - name: Fetch GitLab main branch
-        run: git fetch gitlab_upstream main -v
+        run: git fetch gitlab_upstream main -v --recurse-submodules=yes
 
       - name: Checkout local main branch
         run: git checkout main -v
