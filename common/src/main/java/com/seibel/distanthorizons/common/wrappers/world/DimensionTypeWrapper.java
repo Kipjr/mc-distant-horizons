@@ -63,7 +63,8 @@ public class DimensionTypeWrapper implements IDimensionTypeWrapper
 	}
 	
 	
-	private String getDimensionName()
+	@Override
+	public String getName()
 	{
 		#if MC_VER <= MC_1_16_5
 		// effectsLocation() is marked as client only, so using the backing field directly
@@ -93,7 +94,7 @@ public class DimensionTypeWrapper implements IDimensionTypeWrapper
 	
 	// there's definitely a better way of doing this, but it should work well enough for now
 	@Override
-	public boolean isTheEnd() { return this.getDimensionName().equalsIgnoreCase("the_end"); }
+	public boolean isTheEnd() { return this.getName().equalsIgnoreCase("the_end"); }
 	
 	@Override
 	public boolean equals(Object obj)
@@ -105,7 +106,7 @@ public class DimensionTypeWrapper implements IDimensionTypeWrapper
 		else
 		{
 			DimensionTypeWrapper other = (DimensionTypeWrapper) obj;
-			return other.getDimensionName().equals(this.getDimensionName());
+			return other.getName().equals(this.getName());
 		}
 	}
 	
