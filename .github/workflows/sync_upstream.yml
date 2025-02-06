@@ -33,7 +33,7 @@ jobs:
         run: git fetch gitlab_upstream main -v --recurse-submodules=yes
 
       - name: Checkout local main branch
-        run: git checkout main -v
+        run: git checkout main
 
       - name: Merge GitLab main into local main
         run: |
@@ -41,7 +41,7 @@ jobs:
 
       - name: Sync and update submodules
         run: |
-          git submodule sync -v
+          git submodule sync
           git submodule update --init --recursive --remote -v
 
       # Push changes to your fork
