@@ -77,7 +77,7 @@ jobs:
         run: |
           echo "merge_status=-1" >> $GITHUB_ENV
           git merge --no-commit --no-ff origin/main
-          if [[ $(git diff --cached --summary --ignore-submodules | wc -l) -lt 1 ]]; then
+          if [[ $(git diff --cached --stat --ignore-submodules | wc -l) -lt 1 ]]; then
             echo "merge_status=0" >> $GITHUB_ENV
             echo "No new commits to sync."
             exit 0
