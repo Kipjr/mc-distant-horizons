@@ -39,24 +39,6 @@ public class VersionConstants implements IVersionConstants
 	
 	
 	@Override
-	public int getMinimumWorldHeight()
-	{
-		return 0;
-	}
-	
-	@Override
-	public int getWorldGenerationCountPerThread()
-	{
-		return 1;
-	}
-	
-	@Override
-	public boolean isVanillaRenderedChunkSquare()
-	{
-		return false;
-	}
-	
-	@Override
 	public String getMinecraftVersion()
 	{
 		#if MC_VER < MC_1_19_2

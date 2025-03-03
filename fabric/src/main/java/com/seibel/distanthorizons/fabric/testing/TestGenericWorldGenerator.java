@@ -105,43 +105,43 @@ public class TestGenericWorldGenerator implements IDhApiWorldGenerator
 			{
 				case 0:
 					blockResourceLocation = "minecraft:red_wool";
-					maxHeight = 60;
+					maxHeight = 20;
 					break;
 				case 1:
 					blockResourceLocation = "minecraft:orange_wool";
-					maxHeight = 70;
+					maxHeight = 30;
 					break;
 				case 2:
 					blockResourceLocation = "minecraft:yellow_wool";
-					maxHeight = 80;
+					maxHeight = 40;
 					break;
 				case 3:
 					blockResourceLocation = "minecraft:lime_wool";
-					maxHeight = 90;
+					maxHeight = 50;
 					break;
 				case 4:
 					blockResourceLocation = "minecraft:cyan_wool";
-					maxHeight = 100;
+					maxHeight = 60;
 					break;
 				case 5:
 					blockResourceLocation = "minecraft:blue_wool";
-					maxHeight = 100;
+					maxHeight = 70;
 					break;
 				case 6:
 					blockResourceLocation = "minecraft:magenta_wool";
-					maxHeight = 110;
+					maxHeight = 80;
 					break;
 				case 7:
 					blockResourceLocation = "minecraft:white_wool";
-					maxHeight = 120;
+					maxHeight = 90;
 					break;
 				case 8:
 					blockResourceLocation = "minecraft:gray_wool";
-					maxHeight = 120;
+					maxHeight = 100;
 					break;
 				default:
 					blockResourceLocation = "minecraft:black_wool";
-					maxHeight = 140;
+					maxHeight = 110;
 					break;
 			}
 			

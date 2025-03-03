@@ -28,73 +28,80 @@ import net.minecraft.world.level.dimension.DimensionType;
 
 /**
  * @author James Seibel
- * @version 2022-9-16
  */
 public class DimensionTypeWrapper implements IDimensionTypeWrapper
 {
-	private static final ConcurrentMap<DimensionType, DimensionTypeWrapper> dimensionTypeWrapperMap = new ConcurrentHashMap<>();
+	private static final ConcurrentMap<String, DimensionTypeWrapper> DIMENSION_WRAPPER_BY_NAME = new ConcurrentHashMap<>();
 	private final DimensionType dimensionType;
 	
-	public DimensionTypeWrapper(DimensionType dimensionType)
-	{
-		this.dimensionType = dimensionType;
-	}
+	
+	
+	//=============//
+	// Constructor //
+	//=============//
+	
+	public DimensionTypeWrapper(DimensionType dimensionType) { this.dimensionType = dimensionType; }
 	
 	public static DimensionTypeWrapper getDimensionTypeWrapper(DimensionType dimensionType)
 	{
-		//first we check if the biome has already been wrapped
-		if (dimensionTypeWrapperMap.containsKey(dimensionType) && dimensionTypeWrapperMap.get(dimensionType) != null)
+		String dimName = getName(dimensionType);
+		
+		// check if the dimension has already been wrapped
+		if (DIMENSION_WRAPPER_BY_NAME.containsKey(dimName) 
+			&& DIMENSION_WRAPPER_BY_NAME.get(dimName) != null)
 		{
-			return dimensionTypeWrapperMap.get(dimensionType);
+			return DIMENSION_WRAPPER_BY_NAME.get(dimName);
 		}
 		
 		
-		//if it hasn't been created yet, we create it and save it in the map
+		// create the missing wrapper
 		DimensionTypeWrapper dimensionTypeWrapper = new DimensionTypeWrapper(dimensionType);
-		dimensionTypeWrapperMap.put(dimensionType, dimensionTypeWrapper);
-		
-		//we return the newly created wrapper
+		DIMENSION_WRAPPER_BY_NAME.put(dimName, dimensionTypeWrapper);
 		return dimensionTypeWrapper;
 	}
 	
-	public static void clearMap()
-	{
-		dimensionTypeWrapperMap.clear();
-	}
+	public static void clearMap() { DIMENSION_WRAPPER_BY_NAME.clear(); }
 	
+	
+	
+	//=================//
+	// wrapper methods //
+	//=================//
 	
 	@Override
-	public String getName()
+	public String getName() { return getName(this.dimensionType); }
+	public static String getName(DimensionType dimensionType)
 	{
 		#if MC_VER <= MC_1_16_5
 		// effectsLocation() is marked as client only, so using the backing field directly
 		return dimensionType.effectsLocation.getPath();
 		#else
-		return this.dimensionType.effectsLocation().getPath();
+		return dimensionType.effectsLocation().getPath();
 		#endif
 	}
 	
 	@Override
-	public boolean hasCeiling()
-	{
-		return this.dimensionType.hasCeiling();
-	}
+	public boolean hasCeiling() { return this.dimensionType.hasCeiling(); }
 	
 	@Override
-	public boolean hasSkyLight()
-	{
-		return this.dimensionType.hasSkyLight();
-	}
+	public boolean hasSkyLight() { return this.dimensionType.hasSkyLight(); }
 	
 	@Override
-	public Object getWrappedMcObject()
-	{
-		return this.dimensionType;
-	}
+	public Object getWrappedMcObject() { return this.dimensionType; }
 	
 	// there's definitely a better way of doing this, but it should work well enough for now
 	@Override
 	public boolean isTheEnd() { return this.getName().equalsIgnoreCase("the_end"); }
+	
+	@Override
+	public double getCoordinateScale() { return this.dimensionType.coordinateScale(); }
+	
+	
+	
+	
+	//================//
+	// base overrides //
+	//================//
 	
 	@Override
 	public boolean equals(Object obj)
@@ -109,6 +116,7 @@ public class DimensionTypeWrapper implements IDimensionTypeWrapper
 			return other.getName().equals(this.getName());
 		}
 	}
+	
 	
 	
 }

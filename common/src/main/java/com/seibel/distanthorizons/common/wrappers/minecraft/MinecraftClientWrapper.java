@@ -214,17 +214,29 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Override
 	public DhBlockPos getPlayerBlockPos()
 	{
-		BlockPos playerPos = this.getPlayer().blockPosition();
+		LocalPlayer player = this.getPlayer();
+		if (player == null)
+		{
+			return new DhBlockPos(0, 0, 0);	
+		}
+		
+		BlockPos playerPos = player.blockPosition();
 		return new DhBlockPos(playerPos.getX(), playerPos.getY(), playerPos.getZ());
 	}
 	
 	@Override
 	public DhChunkPos getPlayerChunkPos()
 	{
+		LocalPlayer player = this.getPlayer();
+		if (player == null)
+		{
+			return new DhChunkPos(0, 0);
+		}
+		
         #if MC_VER < MC_1_17_1
-        ChunkPos playerPos = new ChunkPos(this.getPlayer().blockPosition());
+        ChunkPos playerPos = new ChunkPos(player.blockPosition());
         #else
-		ChunkPos playerPos = this.getPlayer().chunkPosition();
+		ChunkPos playerPos = player.chunkPosition();
         #endif
 		return new DhChunkPos(playerPos.x, playerPos.z);
 	}

@@ -76,14 +76,13 @@ public class MixinMinecraft
 				{
 					try
 					{
-						
 						Minecraft.getInstance().setScreen(new UpdateModScreen(
 								// TODO: Change to runnable, instead of tittle screen
 								new TitleScreen(false), // We don't want to use the vanilla title screen as it would fade the buttons
 								versionId
 						));
 					}
-					catch (IllegalArgumentException e)
+					catch (Exception e)
 					{
 						// info instead of error since this can be ignored and probably just means
 						// there isn't a new DH version available
