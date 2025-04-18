@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        mc_ver: [1.21.4]
+        mc_ver: [1.21.5]
     steps:
       - name: Get Latest Version
         shell: pwsh
