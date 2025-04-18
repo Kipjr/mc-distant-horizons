@@ -113,7 +113,11 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 			new ConfigBasedLogger(LogManager.getLogger("LodWorldGen"),
 					() -> Config.Common.Logging.logWorldGenLoadEvent.get());
 	
+	#if MC_VER < MC_1_21_5
 	private static final TicketType<ChunkPos> DH_SERVER_GEN_TICKET = TicketType.create("dh_server_gen_ticket", Comparator.comparingLong(ChunkPos::toLong));
+	#else
+	private static final TicketType DH_SERVER_GEN_TICKET = new TicketType(/* timeout, 0 = disabled*/0L, /* persist */ false, TicketType.TicketUse.LOADING);
+	#endif
 	
 	private static final IModChecker MOD_CHECKER = SingletonInjector.INSTANCE.get(IModChecker.class);
 	
@@ -878,7 +882,11 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 			chunkLevel = generateUpToFeatures ? ChunkLevel.byStatus(ChunkStatus.FEATURES) : 33;
 			#endif
 			
+			#if MC_VER < MC_1_21_5
 			level.getChunkSource().distanceManager.addTicket(DH_SERVER_GEN_TICKET, pos, chunkLevel, pos);
+			#else
+			level.getChunkSource().addTicketWithRadius(DH_SERVER_GEN_TICKET, pos, 0);
+			#endif
 			level.getChunkSource().distanceManager.runAllUpdates(level.getChunkSource().chunkMap); // probably not the most optimal to run updates here, but fast enough
 			ChunkHolder holder = level.getChunkSource().chunkMap.getUpdatingChunkIfPresent(pos.toLong());
 			if (holder == null)
@@ -915,7 +923,11 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 				chunkLevel = chunkWasGeneratedUpToFeatures ? ChunkLevel.byStatus(ChunkStatus.FEATURES) : 33;
 				#endif
 				
+				#if MC_VER < MC_1_21_5
 				level.getChunkSource().distanceManager.removeTicket(DH_SERVER_GEN_TICKET, pos, chunkLevel, pos);
+				#else
+				level.getChunkSource().removeTicketWithRadius(DH_SERVER_GEN_TICKET, pos, 0);
+				#endif
 				
 				// mitigate OOM issues in vanilla chunk system: see https://github.com/pop4959/Chunky/pull/383
 				level.getChunkSource().chunkMap.tick(() -> false);

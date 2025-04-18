@@ -26,7 +26,9 @@ import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.api.internal.ServerApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IModChecker;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IOptifineAccessor;
 import com.seibel.distanthorizons.coreapi.ModInfo;
@@ -51,6 +53,7 @@ import java.util.function.Consumer;
 import net.neoforged.neoforge.client.ConfigScreenHandler;
 #else
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import org.jetbrains.annotations.NotNull;
 #endif
 
 /**
@@ -64,11 +67,16 @@ public class NeoforgeMain extends AbstractModInitializer
 {
 	public NeoforgeMain(IEventBus eventBus)
 	{
-		eventBus.addListener((FMLClientSetupEvent e) -> {
+		// handles singleplayer, LAN, and connecting to a server
+		eventBus.addListener((FMLClientSetupEvent e) -> 
+		{
 			this.onInitializeClient();
-			eventBus.addListener(this::registerNetworkingClient);
+			eventBus.addListener(this::registerNetworkingClientServer);
 		});
-		eventBus.addListener((FMLDedicatedServerSetupEvent e) -> {
+		
+		// handles dedicated servers
+		eventBus.addListener((FMLDedicatedServerSetupEvent e) -> 
+		{
 			this.onInitializeServer();
 			eventBus.addListener(this::registerNetworkingServer);
 		});
@@ -79,10 +87,19 @@ public class NeoforgeMain extends AbstractModInitializer
 	//============//
 	// networking //
 	//============//
-	public void registerNetworkingClient(RegisterPayloadHandlersEvent event)
-	{ NeoforgePluginPacketSender.setPacketHandler(event, ClientApi.INSTANCE::pluginMessageReceived); }
+	
+	public void registerNetworkingClientServer(RegisterPayloadHandlersEvent event)
+	{ 
+		NeoforgePluginPacketSender.setPacketHandler(event, (IServerPlayerWrapper player, @NotNull AbstractNetworkMessage message) -> 
+		{
+			ClientApi.INSTANCE.pluginMessageReceived(message);
+			ServerApi.INSTANCE.pluginMessageReceived(player, message);
+		}); 
+	}
 	public void registerNetworkingServer(RegisterPayloadHandlersEvent event)
 	{ NeoforgePluginPacketSender.setPacketHandler(event, ServerApi.INSTANCE::pluginMessageReceived); }
+	
+	
 	
 	
 	

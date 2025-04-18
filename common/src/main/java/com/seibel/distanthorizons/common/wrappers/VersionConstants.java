@@ -20,8 +20,6 @@
 package com.seibel.distanthorizons.common.wrappers;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.IVersionConstants;
-import net.minecraft.SharedConstants;
-import net.minecraft.client.Minecraft;
 
 /**
  * @author James Seibel
@@ -41,11 +39,45 @@ public class VersionConstants implements IVersionConstants
 	@Override
 	public String getMinecraftVersion()
 	{
-		#if MC_VER < MC_1_19_2
-		return Minecraft.getInstance().getGame().getVersion().getId();
+		// these values are hard-coded to prevent an issue with Forge (specifically 1.18.2) where
+		// it can't load client classes when running as a dedicated server,
+		// which was how we were dynamically accessing the MC version string
+		
+		#if MC_VER == MC_1_16_5
+			return "1.16.5";
+		
+		#elif MC_VER == MC_1_17_1
+			return "1.17.1";
+		
+		#elif MC_VER == MC_1_18_2
+			return "1.18.2";
+		
+		#elif MC_VER == MC_1_19_2
+			return "1.19.2";
+		#elif MC_VER == MC_1_19_4
+			return "1.19.4";
+		
+		#elif MC_VER == MC_1_20_1
+			return "1.20.1";
+		#elif MC_VER == MC_1_20_2
+			return "1.20.2";
+		#elif MC_VER == MC_1_20_4
+			return "1.20.4";
+		#elif MC_VER == MC_1_20_6
+			return "1.20.6";
+		
+		#elif MC_VER == MC_1_21_1
+			return "1.21.1";
+		#elif MC_VER == MC_1_21_3
+			return "1.21.3";
+		#elif MC_VER == MC_1_21_4
+			return "1.21.4";
+		#elif MC_VER == MC_1_21_5
+			return "1.21.5";
 		#else
-		return SharedConstants.getCurrentVersion().getId();
+			ERROR MC version constant missing
 		#endif
+		
 	}
 	
 }

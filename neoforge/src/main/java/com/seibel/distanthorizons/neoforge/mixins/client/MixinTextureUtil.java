@@ -1,6 +1,8 @@
 package com.seibel.distanthorizons.neoforge.mixins.client;
 
+#if MC_VER < MC_1_21_5
 import com.mojang.blaze3d.platform.GlStateManager;
+#endif
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.seibel.distanthorizons.core.config.Config;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,6 +17,9 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(TextureUtil.class)
 public class MixinTextureUtil
 {
+	// TODO fix for MC 1.21.5+
+	
+	#if MC_VER < MC_1_21_5
 	@Redirect(method = "prepareImage(Lcom/mojang/blaze3d/platform/NativeImage$InternalGlFormat;IIII)V",
 			at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/GlStateManager;_texParameter(IIF)V"), remap = false)
 	private static void setLodBias(int target, int pname, float param)
@@ -27,5 +32,6 @@ public class MixinTextureUtil
 			GlStateManager._texParameter(target, pname, biasValue);
 		}
 	}
+	#endif
 	
 }

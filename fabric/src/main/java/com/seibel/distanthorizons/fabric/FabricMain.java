@@ -90,8 +90,8 @@ public class FabricMain extends AbstractModInitializer implements ClientModIniti
 		{
 			ModAccessorInjector.INSTANCE.bind(ISodiumAccessor.class, new SodiumAccessor());
 			
-			// If sodium is installed Indium is also necessary in order to use the Fabric rendering API
-			if (!modChecker.isModLoaded("indium"))
+			// If sodium is installed Indium is also necessary for versions 0.5 and less in order to use the Fabric rendering API
+			if (!modChecker.isModLoaded("indium") && SodiumAccessor.isSodiumV5OrLess)
 			{
 				String indiumMissingMessage = ModInfo.READABLE_NAME + " needs Indium to work with Sodium.\nPlease download Indium from https://modrinth.com/mod/indium";
 				LOGGER.fatal(indiumMissingMessage);

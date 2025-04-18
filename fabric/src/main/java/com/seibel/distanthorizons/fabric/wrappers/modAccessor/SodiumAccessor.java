@@ -43,10 +43,21 @@ import net.minecraft.world.phys.AABB;
 
 public class SodiumAccessor implements ISodiumAccessor
 {
+	/**
+	 * True if sodium 0.5 or less is present. <br>
+	 * This field is public because it's also used to check if we need Indium to be present. <br>
+	 * We need Indium if Sodium 0.5 or less is present.
+	 */
+	public static final boolean isSodiumV5OrLess;
+	
 	#if MC_VER >= MC_1_20_1
 	private static MethodHandle setFogOcclusionMethod;
 	private static Object sodiumPerformanceOptions;
 	#endif
+	
+	static {
+		isSodiumV5OrLess = !classPresent("net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer");
+	}
 	
 	
 	
@@ -72,8 +83,7 @@ public class SodiumAccessor implements ISodiumAccessor
 		{
 			if (sodiumPerformanceOptions == null)
 			{
-				boolean sodiumV6 = classPresent("net.caffeinemc.mods.sodium.client.render.SodiumWorldRenderer");
-				if (!sodiumV6)
+				if (isSodiumV5OrLess)
 				{
 					// sodium 0.5
 					

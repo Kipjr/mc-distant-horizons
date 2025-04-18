@@ -24,13 +24,16 @@ import com.seibel.distanthorizons.common.util.ProxyUtil;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftRenderWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
+import com.seibel.distanthorizons.core.api.internal.ServerApi;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import net.minecraft.world.level.LevelAccessor;
@@ -52,6 +55,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 
 import net.minecraftforge.common.MinecraftForge;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
@@ -90,7 +94,13 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 	public void registerEvents()
 	{
 		MinecraftForge.EVENT_BUS.register(this);
-		ForgePluginPacketSender.setPacketHandler(ClientApi.INSTANCE::pluginMessageReceived);
+		
+		// handles singleplayer, LAN, and connecting to a server
+		ForgePluginPacketSender.setPacketHandler((IServerPlayerWrapper player, @NotNull AbstractNetworkMessage message) ->
+		{
+			ClientApi.INSTANCE.pluginMessageReceived(message);
+			ServerApi.INSTANCE.pluginMessageReceived(player, message);
+		});
 	}
 	
 	

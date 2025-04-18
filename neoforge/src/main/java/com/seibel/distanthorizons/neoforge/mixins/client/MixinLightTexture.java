@@ -19,17 +19,12 @@
 
 package com.seibel.distanthorizons.neoforge.mixins.client;
 
-
-import com.mojang.blaze3d.pipeline.TextureTarget;
-import com.mojang.blaze3d.platform.NativeImage;
-
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import net.minecraft.client.renderer.LightTexture;
 
-import org.lwjgl.opengl.GL32;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -37,30 +32,33 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+#if MC_VER < MC_1_21_3
+import com.mojang.blaze3d.platform.NativeImage;
+#elif MC_VER < MC_1_21_5
+import com.mojang.blaze3d.pipeline.TextureTarget;
+#else
+import com.mojang.blaze3d.opengl.GlTexture;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTexture;
+#endif
+
 @Mixin(LightTexture.class)
 public class MixinLightTexture
 {
 	#if MC_VER < MC_1_21_3
-	@Shadow
+	@Shadow 
 	@Final
 	private NativeImage lightPixels;
-	
-	
-	@Inject(method = "updateLightTexture(F)V", at = @At("RETURN"))
-	public void updateLightTexture(float partialTicks, CallbackInfo ci)
-	{
-		IMinecraftClientWrapper mc = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-		if (mc == null || mc.getWrappedClientLevel() == null)
-		{
-			return;
-		}
-		
-		IClientLevelWrapper clientLevel = mc.getWrappedClientLevel();
-		MinecraftRenderWrapper.INSTANCE.updateLightmap(this.lightPixels, clientLevel);
-	}
+	#elif MC_VER < MC_1_21_5
+	@Shadow
+	@Final
+	private TextureTarget target;
 	#else
+	@Shadow
+	@Final
+	private GpuTexture texture;
+	#endif
 	
-	@Shadow @Final private TextureTarget target;
 	@Inject(method = "updateLightTexture(F)V", at = @At("RETURN"))
 	public void updateLightTexture(float partialTicks, CallbackInfo ci)
 	{
@@ -70,9 +68,17 @@ public class MixinLightTexture
 			return;
 		}
 		
+		
 		IClientLevelWrapper clientLevel = mc.getWrappedClientLevel();
+		
+		#if MC_VER < MC_1_21_3
+		MinecraftRenderWrapper.INSTANCE.updateLightmap(this.lightPixels, clientLevel);
+		#elif MC_VER < MC_1_21_5
 		MinecraftRenderWrapper.INSTANCE.setLightmapId(this.target.getColorTextureId(), clientLevel);
+		#else
+		GlTexture glTexture = (GlTexture) this.texture;
+		MinecraftRenderWrapper.INSTANCE.setLightmapId(glTexture.glId(), clientLevel);
+		#endif
 	}
 	
-	#endif
 }

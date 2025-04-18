@@ -14,7 +14,7 @@ for %%f in (versionProperties\*) do (
 
     @rem Clean out the folders, build it, and merge it
     echo ==================== Cleaning workspace to build !version! ====================
-    call .\gradlew.bat clean -PmcVer="!version!"
+    call .\gradlew.bat clean
     echo ==================== Building !version! ====================
     call .\gradlew.bat build -PmcVer="!version!"
     echo ==================== Merging !version! ====================

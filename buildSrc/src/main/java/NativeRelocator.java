@@ -31,7 +31,7 @@ class NativeRelocator
 		String os = System.getProperty("os.name").toLowerCase();
 		if (os.contains("win"))
 		{
-			processBuilder.command("powershell", "./prepare.ps1");
+			processBuilder.command("powershell", "-ExecutionPolicy", "Bypass", "./prepare.ps1");
 		}
 		else if (os.contains("nix") || os.contains("nux") || os.contains("mac"))
 		{

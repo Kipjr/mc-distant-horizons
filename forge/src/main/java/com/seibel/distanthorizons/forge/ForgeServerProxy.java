@@ -78,10 +78,7 @@ public class ForgeServerProxy implements AbstractModInitializer.IEventProxy
 	// constructor //
 	//=============//
 	
-	public ForgeServerProxy(boolean isDedicated)
-	{
-		this.isDedicated = isDedicated;
-	}
+	public ForgeServerProxy(boolean isDedicated) { this.isDedicated = isDedicated; }
 	
 	
 	

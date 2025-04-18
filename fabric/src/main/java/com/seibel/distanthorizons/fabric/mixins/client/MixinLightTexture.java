@@ -34,20 +34,33 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 #if MC_VER < MC_1_21_3
 import com.mojang.blaze3d.platform.NativeImage;
-#else
+#elif MC_VER < MC_1_21_5
 import com.mojang.blaze3d.pipeline.TextureTarget;
+#else
+import com.mojang.blaze3d.opengl.GlTexture;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTexture;
 #endif
 
 @Mixin(LightTexture.class)
 public class MixinLightTexture
 {
-	@Shadow 
-	@Final 
+	 
 	#if MC_VER < MC_1_21_3
+	@Shadow 
+	@Final
 	private NativeImage lightPixels;
-	#else
+	#elif MC_VER < MC_1_21_5
+	@Shadow
+	@Final
 	private TextureTarget target;
+	#else
+	@Shadow
+	@Final
+	private GpuTexture texture;
 	#endif
+	
+	
 	
 	@Inject(method = "updateLightTexture(F)V", at = @At("RETURN"))
 	public void updateLightTexture(float partialTicks, CallbackInfo ci)
@@ -63,8 +76,11 @@ public class MixinLightTexture
 		
 		#if MC_VER < MC_1_21_3
 		MinecraftRenderWrapper.INSTANCE.updateLightmap(this.lightPixels, clientLevel);
-		#else
+		#elif MC_VER < MC_1_21_5
 		MinecraftRenderWrapper.INSTANCE.setLightmapId(this.target.getColorTextureId(), clientLevel);
+		#else
+		GlTexture glTexture = (GlTexture) this.texture;
+		MinecraftRenderWrapper.INSTANCE.setLightmapId(glTexture.glId(), clientLevel);
 		#endif
 	}
 	

@@ -71,6 +71,10 @@ import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.Logger;
 import org.joml.Vector4f;
 
+#if MC_VER >= MC_1_21_5
+import com.mojang.blaze3d.opengl.GlTexture;
+import org.lwjgl.opengl.GL32;
+#endif
 
 /**
  * A singleton that contains everything
@@ -102,7 +106,14 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	 */
 	public int finalLevelFrameBufferId = -1;
 	
+	public boolean colorTextureCastFailLogged = false;
+	public boolean depthTextureCastFailLogged = false;
 	
+	
+	
+	//=========//
+	// methods //
+	//=========//
 	
 	@Override
 	public Vec3f getLookAtVector()
@@ -251,6 +262,26 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	private RenderTarget getRenderTarget() { return MC.getMainRenderTarget(); }
 	
 	@Override
+	public boolean mcRendersToFrameBuffer()
+	{
+		#if MC_VER < MC_1_21_5
+		return true;
+		#else
+		return false;
+		#endif
+	}
+	
+	@Override
+	public boolean runningLegacyOpenGL()
+	{
+		#if MC_VER <= MC_1_16_5
+		return true;
+		#else
+		return false;
+		#endif
+	}
+	
+	@Override
 	public int getTargetFrameBuffer()
 	{
 		// used so we can access the framebuffer shaders end up rendering to
@@ -259,27 +290,87 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 			return this.finalLevelFrameBufferId;
 		}
 		
+		#if MC_VER < MC_1_21_5
 		return this.getRenderTarget().frameBufferId;
+		#else
+		// MC renders to a texture and then directly to the default FBO now
+		// we need to draw to their texture instead of the FBO
+		return 0; // 0 is the ID for the default frame buffer
+		#endif
 	}
 	
 	@Override
 	public void clearTargetFrameBuffer() { this.finalLevelFrameBufferId = -1; }
 	
 	@Override
-	public int getDepthTextureId() { return this.getRenderTarget().getDepthTextureId(); }
+	public int getDepthTextureId()
+	{
+		#if MC_VER < MC_1_21_5
+		return this.getRenderTarget().getDepthTextureId();
+		#else
+		try
+		{
+			GlTexture glTexture = (GlTexture) this.getRenderTarget().getDepthTexture();
+			if (glTexture == null)
+			{
+				// shouldn't happen, but just in case
+				return 0;
+			}
+			
+			return glTexture.glId();
+		}
+		catch (ClassCastException e)
+		{
+			// only log this error once per session
+			if (!this.depthTextureCastFailLogged)
+			{
+				this.depthTextureCastFailLogged = true;
+				LOGGER.error("Unable to cast render Target depth texture to GlTexture. MC or a rendering mod may have changed the object type.", e);
+			}
+			return 0;
+		}
+		#endif
+	}
 	@Override
-	public int getColorTextureId() { return this.getRenderTarget().getColorTextureId(); }
+	public int getColorTextureId() 
+	{
+		#if MC_VER < MC_1_21_5
+		return this.getRenderTarget().getColorTextureId();
+		#else
+		try
+		{
+			GlTexture glTexture = (GlTexture) this.getRenderTarget().getColorTexture();
+			if (glTexture == null)
+			{
+				// shouldn't happen, but just in case
+				return 0;
+			}
+			
+			return glTexture.glId();
+		}
+		catch (ClassCastException e)
+		{
+			// only log this error once per session
+			if (!this.colorTextureCastFailLogged)
+			{
+				this.colorTextureCastFailLogged = true;
+				LOGGER.error("Unable to cast render Target color texture to GlTexture. MC or a rendering mod may have changed the object type.", e);
+			}
+			return 0;
+		}
+		#endif
+	}
 	
 	@Override
 	public int getTargetFrameBufferViewportWidth()
 	{
-		return getRenderTarget().viewWidth;
+		return this.getRenderTarget().viewWidth;
 	}
 	
 	@Override
 	public int getTargetFrameBufferViewportHeight()
 	{
-		return getRenderTarget().viewHeight;
+		return this.getRenderTarget().viewHeight;
 	}
 	
 	@Override

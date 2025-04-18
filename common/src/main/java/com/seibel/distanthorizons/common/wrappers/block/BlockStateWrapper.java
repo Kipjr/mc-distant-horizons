@@ -97,16 +97,14 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	/** technically final, but since it requires a method call to generate it can't be marked as such */
 	private String serialString;
 	private final int hashCode;
-	/** 
-	 * Cached opacity value, -1 if not populated. <br>
-	 * Should be between {@link LodUtil#BLOCK_FULLY_OPAQUE} and {@link LodUtil#BLOCK_FULLY_OPAQUE}
-	 */
-	private int opacity = -1;
+	/** Should be between {@link LodUtil#BLOCK_FULLY_OPAQUE} and {@link LodUtil#BLOCK_FULLY_OPAQUE} */
+	private final int opacity;
 	/** used by the Iris shader mod to determine how each LOD should be rendered */
 	private byte blockMaterialId = 0;
 	
 	private final boolean isBeaconBlock; 
 	private final boolean isBeaconBaseBlock;
+	private final boolean allowsBeaconBeamPassage;
 	/** null if this block can't tint beacons */
 	private final Color beaconTintColor; 
 	private final Color mapColor;
@@ -163,9 +161,12 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		this.serialString = this.serialize(levelWrapper);
 		this.hashCode = Objects.hash(this.serialString);
 		this.blockMaterialId = this.calculateEDhApiBlockMaterialId().index;
+		this.opacity = this.calculateOpacity();
+		
+		String lowercaseSerial = this.serialString.toLowerCase();
+		
 		
 		// beacon blocks
-		String lowercaseSerial = this.serialString.toLowerCase();
 		boolean isBeaconBaseBlock = false;
 		for (int i = 0; i < LodUtil.BEACON_BASE_BLOCK_NAME_LIST.size(); i++)
 		{
@@ -199,6 +200,39 @@ public class BlockStateWrapper implements IBlockStateWrapper
 			}
 		}
 		this.beaconTintColor = beaconTintColor;
+		
+		
+		// allow/deny beacon beam passage 
+		boolean allowsBeaconBeamPassage;
+		if (this.blockState != null)
+		{
+			// get block properties (defaults to the values used by air)
+			boolean canOcclude = this.getCanOcclude();
+			boolean propagatesSkyLightDown = this.getPropagatesSkyLightDown();
+			
+			if (lowercaseSerial.contains("minecraft:bedrock"))
+			{
+				// bedrock is a special case fully opaque block that does allow beacons through
+				allowsBeaconBeamPassage = true;
+			}
+			else if (propagatesSkyLightDown || !canOcclude)
+			{
+				// stairs, cake, fences, etc.
+				allowsBeaconBeamPassage = true;
+			}
+			else
+			{
+				// non-opaque blocks (glass, mob spawners, etc.)
+				// all allow beacons through
+				allowsBeaconBeamPassage = (this.opacity != LodUtil.BLOCK_FULLY_OPAQUE);
+			}
+		}
+		else
+		{
+			// air allows beacons through
+			allowsBeaconBeamPassage = true;
+		}
+		this.allowsBeaconBeamPassage = allowsBeaconBeamPassage;
 		
 		
 		int mcColor = 0;
@@ -344,28 +378,12 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	//=================//
 	
 	@Override
-	public int getOpacity()
+	public int getOpacity() { return this.opacity; }
+	private int calculateOpacity()
 	{
-		// use the cached opacity value if possible
-		if (this.opacity != -1)
-		{
-			return this.opacity;
-		}
-		
-		
-		// get block properties (default to the values used by air)
-		boolean canOcclude = false;
-		boolean propagatesSkyLightDown = true;
-		if (this.blockState != null)
-		{
-			canOcclude = this.blockState.canOcclude();
-			
-			#if MC_VER < MC_1_21_3
-			propagatesSkyLightDown = this.blockState.propagatesSkylightDown(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
-			#else
-			propagatesSkyLightDown = this.blockState.propagatesSkylightDown();
-			#endif
-		}
+		// get block properties (defaults to the values used by air)
+		boolean canOcclude = this.getCanOcclude();
+		boolean propagatesSkyLightDown = this.getPropagatesSkyLightDown();
 		
 		
 		
@@ -398,9 +416,37 @@ public class BlockStateWrapper implements IBlockStateWrapper
 		}
 		
 		
-		this.opacity = opacity;
-		return this.opacity;
+		return opacity;
 	}
+	private boolean getCanOcclude()
+	{
+		// defaults to the value used by air
+		boolean canOcclude = false;
+		if (this.blockState != null)
+		{
+			canOcclude = this.blockState.canOcclude();
+		}
+		
+		return canOcclude;
+	}
+	private boolean getPropagatesSkyLightDown()
+	{
+		// defaults to the value used by air
+		boolean propagatesSkyLightDown = true;
+		if (this.blockState != null)
+		{
+			#if MC_VER < MC_1_21_3
+			propagatesSkyLightDown = this.blockState.propagatesSkylightDown(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
+			#else
+			propagatesSkyLightDown = this.blockState.propagatesSkylightDown();
+			#endif
+		}
+		
+		return propagatesSkyLightDown;
+	}
+	
+	
+	
 	
 	@Override
 	public int getLightEmission() { return (this.blockState != null) ? this.blockState.getLightEmission() : 0; }
@@ -473,6 +519,8 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	public boolean isBeaconBaseBlock() { return this.isBeaconBaseBlock; }
 	@Override
 	public boolean isBeaconTintBlock() { return this.beaconTintColor != null; }
+	@Override
+	public boolean allowsBeaconBeamPassage() { return this.allowsBeaconBeamPassage; }
 	
 	@Override
 	public Color getMapColor() { return this.mapColor; }

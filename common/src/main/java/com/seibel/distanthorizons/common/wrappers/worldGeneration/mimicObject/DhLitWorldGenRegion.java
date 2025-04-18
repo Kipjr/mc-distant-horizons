@@ -229,8 +229,16 @@ public class DhLitWorldGenRegion extends WorldGenRegion
 	{
 		ChunkAccess chunkAccess = this.getChunk(blockPos);
 		if (chunkAccess instanceof LevelChunk)
+		{
 			return true;
+		}
+		
+		#if MC_VER < MC_1_21_5
 		chunkAccess.setBlockState(blockPos, blockState, /*isBlockMoving*/false);
+		#else
+		chunkAccess.setBlockState(blockPos, blockState, /*flags*/0);
+		#endif
+		
 		// This is for post ticking for water on gen and stuff like that. Not enabled
 		// for now.
 		// if (blockState.hasPostProcess(this, blockPos))

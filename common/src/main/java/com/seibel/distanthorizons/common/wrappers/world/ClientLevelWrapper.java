@@ -25,7 +25,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkSource;
-import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,6 +32,10 @@ import org.jetbrains.annotations.Nullable;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 #if MC_VER <= MC_1_20_4
@@ -42,6 +45,7 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 #endif
 
 #if MC_VER < MC_1_21_3
+import net.minecraft.world.phys.Vec3;
 #else
 import com.seibel.distanthorizons.core.util.ColorUtil;
 #endif
@@ -49,7 +53,12 @@ import com.seibel.distanthorizons.core.util.ColorUtil;
 public class ClientLevelWrapper implements IClientLevelWrapper
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger(ClientLevelWrapper.class.getSimpleName());
-	private static final ConcurrentHashMap<ClientLevel, ClientLevelWrapper> LEVEL_WRAPPER_BY_CLIENT_LEVEL = new ConcurrentHashMap<>(); // TODO can leak
+	/**
+	 * weak references are to prevent rare issues
+	 * where, upon world closure, some levels aren't shutdown/removed properly
+	 * and/or for servers were the level object isn't consistent
+	 */
+	private static final Map<ClientLevel, WeakReference<ClientLevelWrapper>> LEVEL_WRAPPER_REF_BY_CLIENT_LEVEL = Collections.synchronizedMap(new WeakHashMap<>());
 	private static final IKeyedClientLevelManager KEYED_CLIENT_LEVEL_MANAGER = SingletonInjector.INSTANCE.get(IKeyedClientLevelManager.class);
 	
 	private static final Minecraft MINECRAFT = Minecraft.getInstance();
@@ -72,9 +81,9 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	
 	
 	
-	//===============//
-	// wrapper logic //
-	//===============//
+	//==================//
+	// instance methods //
+	//==================//
 	
 	public static IClientLevelWrapper getWrapper(@NotNull ClientLevel level) { return getWrapper(level, false); }
 	
@@ -96,7 +105,19 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 			}
 		}
 		
-		return LEVEL_WRAPPER_BY_CLIENT_LEVEL.computeIfAbsent(level, ClientLevelWrapper::new);
+		return LEVEL_WRAPPER_REF_BY_CLIENT_LEVEL.compute(level, (newLevel, levelRef) ->
+		{
+			if (levelRef != null)
+			{
+				ClientLevelWrapper oldLevelWrapper = levelRef.get();
+				if (oldLevelWrapper != null)
+				{
+					return levelRef;
+				}
+			}
+			
+			return new WeakReference<>(new ClientLevelWrapper(newLevel));
+		}).get();
 	}
 	
 	@Nullable
@@ -265,7 +286,7 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	@Override
 	public void onUnload() 
 	{ 
-		LEVEL_WRAPPER_BY_CLIENT_LEVEL.remove(this.level);
+		LEVEL_WRAPPER_REF_BY_CLIENT_LEVEL.remove(this.level);
 		this.parentDhLevel = null;
 	}
 	

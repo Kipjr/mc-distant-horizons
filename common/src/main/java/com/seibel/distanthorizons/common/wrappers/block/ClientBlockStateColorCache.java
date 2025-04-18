@@ -40,10 +40,17 @@ import java.util.Random;
 #endif
 import net.minecraft.world.level.block.state.BlockState;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
+
+#if MC_VER < MC_1_21_5
+#else
+import net.minecraft.client.renderer.block.model.BlockModelPart;
+#endif
 
 /**
  * This stores and calculates the colors
@@ -196,9 +203,7 @@ public class ClientBlockStateColorCache
 				List<BakedQuad> quads = null;
 				for (Direction direction : COLOR_RESOLUTION_DIRECTION_ORDER)
 				{
-					quads = Minecraft.getInstance().getModelManager().getBlockModelShaper().
-							getBlockModel(this.blockState).getQuads(this.blockState, direction, RANDOM);
-					
+					quads = this.getQuadsForDirection(direction);
 					if (quads != null && !quads.isEmpty()
 						&& !(
 							this.blockState.getBlock() instanceof RotatedPillarBlock
@@ -212,19 +217,37 @@ public class ClientBlockStateColorCache
 				
 				if (quads == null || quads.isEmpty())
 				{
-					quads = Minecraft.getInstance().getModelManager().getBlockModelShaper().
-							getBlockModel(this.blockState).getQuads(this.blockState, null, RANDOM);
+					quads = this.getUnculledQuads();
 				}
 				
-				if (quads != null && !quads.isEmpty())
+				if (quads != null 
+					&& !quads.isEmpty() 
+					&& quads.get(0) != null)
 				{
-					this.needPostTinting = quads.get(0).isTinted();
-					this.needShade = quads.get(0).isShade();
-					this.tintIndex = quads.get(0).getTintIndex();
+					BakedQuad firstQuad = quads.get(0);
+					
+					this.needPostTinting = firstQuad.isTinted();
+					#if MC_VER <= MC_1_21_4
+					this.needShade = firstQuad.isShade();
+					this.tintIndex = firstQuad.getTintIndex();
+					#else
+					this.needShade = firstQuad.shade();
+					this.tintIndex = firstQuad.tintIndex();
+					#endif
+					
+					#if MC_VER < MC_1_17_1
 					this.baseColor = calculateColorFromTexture(
-	                        #if MC_VER < MC_1_17_1 quads.get(0).sprite,
-							#else quads.get(0).getSprite(), #endif
-							ColorMode.getColorMode(this.blockState.getBlock()));
+                        firstQuad.sprite,
+						ColorMode.getColorMode(this.blockState.getBlock()));
+					#elif MC_VER < MC_1_21_5
+					this.baseColor = calculateColorFromTexture(
+                        firstQuad.getSprite(),
+						ColorMode.getColorMode(this.blockState.getBlock()));
+					#else
+					this.baseColor = calculateColorFromTexture(
+						firstQuad.sprite(),
+						ColorMode.getColorMode(this.blockState.getBlock()));
+					#endif
 				}
 				else
 				{
@@ -232,8 +255,7 @@ public class ClientBlockStateColorCache
 					this.needPostTinting = false;
 					this.needShade = false;
 					this.tintIndex = 0;
-					this.baseColor = calculateColorFromTexture(Minecraft.getInstance().getModelManager().getBlockModelShaper().getParticleIcon(this.blockState),
-							ColorMode.getColorMode(this.blockState.getBlock()));
+					this.baseColor = this.getParticleIconColor();
 				}
 			}
 			else
@@ -242,8 +264,7 @@ public class ClientBlockStateColorCache
 				this.needPostTinting = true;
 				this.needShade = false;
 				this.tintIndex = 0;
-				this.baseColor = calculateColorFromTexture(Minecraft.getInstance().getModelManager().getBlockModelShaper().getParticleIcon(this.blockState),
-						ColorMode.getColorMode(this.blockState.getBlock()));
+				this.baseColor = this.getParticleIconColor();
 			}
 			
 			this.isColorResolved = true;
@@ -253,6 +274,35 @@ public class ClientBlockStateColorCache
 			RESOLVE_LOCK.unlock();
 		}
 	}
+	
+	@Nullable
+	private List<BakedQuad> getUnculledQuads() { return this.getQuadsForDirection(null); }
+	@Nullable
+	private List<BakedQuad> getQuadsForDirection(@Nullable Direction direction)
+	{
+		List<BakedQuad> quads = null;
+		
+		#if MC_VER < MC_1_21_5
+		quads = Minecraft.getInstance().getModelManager().getBlockModelShaper().
+				getBlockModel(this.blockState).getQuads(this.blockState, direction, RANDOM);
+		#else
+		List<BlockModelPart> blockModelPartList = Minecraft.getInstance().getModelManager().getBlockModelShaper().
+				getBlockModel(this.blockState).collectParts(RANDOM);
+		
+		quads = new ArrayList<>();
+		if (blockModelPartList != null)
+		{
+			for (int i = 0; i < blockModelPartList.size(); i++)
+			{
+				// if direction is null this will return the unculled quads
+				quads.addAll(blockModelPartList.get(i).getQuads(direction));
+			}
+		}
+		#endif
+		
+		return quads;
+	}
+	
 	//TODO: Perhaps make this not just use the first frame?
 	private static int calculateColorFromTexture(TextureAtlasSprite texture, ColorMode colorMode)
 	{
@@ -381,6 +431,13 @@ public class ClientBlockStateColorCache
 		int t = (inputBits >>> 12) & 0xff;
 		
 		return (bias + (scale * t)) >>> 16;
+	}
+	
+	private int getParticleIconColor()
+	{
+		return calculateColorFromTexture(
+				Minecraft.getInstance().getModelManager().getBlockModelShaper().getParticleIcon(this.blockState),
+				ColorMode.getColorMode(this.blockState.getBlock()));
 	}
 	
 	
