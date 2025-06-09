@@ -29,7 +29,6 @@ buildAllJars/
 relocate_natives/.venv/
 relocate_natives/__pycache__/
 relocate_natives/apple-codesign/
-relocate_natives/cache/
 
 # file from notepad++
 *.bak

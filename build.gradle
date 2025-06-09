@@ -13,7 +13,7 @@ plugins {
     id "com.github.johnrengelman.shadow" version '8.1.1' apply false
 
     // Plugin to create merged jars
-    id "io.github.pacifistmc.forgix" version "1.2.9"
+    id "io.github.pacifistmc.forgix" version "1.3.4"
 
     // Manifold preprocessor
     id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
@@ -67,62 +67,15 @@ project.gradle.ext.getProperties().each { prop ->
 // Sets up manifold stuff
 writeBuildGradlePredefine(rootProject.mcVers, rootProject.mcIndex)
 
-
-
-
 // Sets up the version string (the name we use for our jar)
 rootProject.versionStr = rootProject.mod_version + "-" + rootProject.minecraft_version // + "-" + new Date().format("yyyy_MM_dd_HH_mm")
-// Forgix settings (used for merging jars)
-forgix {
-    
-    String loaderHyphenSeparatedList = ((String)gradle.builds_for).replaceAll(",", "-");
-    
-    group = "com.seibel.distanthorizons"
-    mergedJarName = "DistantHorizons-${loaderHyphenSeparatedList}-${rootProject.versionStr}.jar"
-
-    if (findProject(":forge"))
-        forge {
-            jarLocation = "build/libs/DistantHorizons-forge-${rootProject.versionStr}.jar"
-        }
-    
-    if (findProject(":neoforge"))
-        custom {
-            projectName = "neoforge"
-            jarLocation = "build/libs/DistantHorizons-neoforge-${rootProject.versionStr}.jar"
-        }
-
-    if (findProject(":fabric"))
-        fabric {
-            jarLocation = "build/libs/DistantHorizons-fabric-${rootProject.versionStr}.jar"
-        }
-
-    if (findProject(":quilt"))
-        quilt {
-            jarLocation = "build/libs/DistantHorizons-quilt-${rootProject.versionStr}.jar"
-        }
-
-    removeDuplicate "com.seibel.distanthorizons"
-}
-
 
 class NativeTransformer implements Transformer {
-    private boolean enabled = false
     private final HashMap<String, String> replacements = new HashMap()
     private final HashMap<String, byte[]> rewrittenFiles = new HashMap()
     private var nativeRelocator
 
     public File rootDir
-
-    NativeTransformer() {
-        try {
-            int exitCode = Runtime.getRuntime().exec(new String[]{"python", "--version"}).waitFor()
-            if (exitCode == 0) {
-                enabled = true
-            }
-        } catch (IOException e) {
-            println(e)
-        }
-    }
 
     void relocateNative(String target, String replacement) {
         if (replacement.length() > target.length()) {
@@ -132,22 +85,15 @@ class NativeTransformer implements Transformer {
         replacements.put(target, replacement)
     }
 
-    void before(Closure closure) {
-        if (enabled)
-            closure.run()
-    }
-
-
     @Override
     boolean canTransformResource(@Nonnull FileTreeElement element) {
-        return enabled && replacements.keySet().stream().anyMatch {
+        return replacements.keySet().stream().anyMatch {
             element.name.startsWith(it as String)
         }
     }
 
     @Override
     void transform(@Nonnull TransformerContext context) {
-        println("Transforming $context.path...")
         byte[] content = context.is.readAllBytes()
 
         if (nativeRelocator == null) {
@@ -395,16 +341,13 @@ subprojects { p ->
         // Sqlite Database
         // librariesLocation isn't used because it's too long for replacing paths in native libraries
         // Allowing strings larger than the original string would require shifting the entire binary's contents
+        relocate "org.sqlite", "dh_sqlite", {
+            exclude "org/sqlite/native/**"
+        }
+        relocate "jdbc:sqlite", "jdbc:dh_sqlite"
+
         transform(NativeTransformer) {
             rootDir = project.rootDir
-
-            before {
-                relocate "org.sqlite", "dh_sqlite", {
-                    exclude "org/sqlite/native/**"
-                }
-                relocate "jdbc:sqlite", "jdbc:dh_sqlite"
-            }
-
             relocateNative "org/sqlite", "dh_sqlite"
             relocateNative "org_sqlite", "dh_1sqlite"
         }
@@ -582,8 +525,9 @@ allprojects { p ->
     apply plugin: "java"
     apply plugin: "maven-publish"
     
+    // Sets the name of the jar, the version will contain the name of the project if it isn't the root project
     archivesBaseName = rootProject.mod_name
-    version = project.name + "-" + rootProject.versionStr
+    version = (project == rootProject ? "" : project.name + "-") + rootProject.versionStr
     group = rootProject.maven_group
     
     // this is the text that appears at the top of the overview (home) page
@@ -748,14 +692,3 @@ allprojects { p ->
         withSourcesJar()
     }
 }
-
-
-// Delete the merged folder when running clean
-task cleanMergedJars() {
-    def mergedFolder = file("Merged")
-    if (mergedFolder.exists()) {
-        delete(mergedFolder)
-    }
-}
-// add cleanMergedJars to the end of the "clean" task
-tasks["clean"].finalizedBy(cleanMergedJars)

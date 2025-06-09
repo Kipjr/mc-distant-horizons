@@ -45,16 +45,18 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 			);
 			#endif
 	
-	public static void setPacketHandler(Consumer<AbstractNetworkMessage> consumer)
+	public ForgePluginPacketSender() { super(true); }
+	
+	public void setPacketHandler(Consumer<AbstractNetworkMessage> consumer)
 	{
-		setPacketHandler((player, message) -> consumer.accept(message));
+		this.setPacketHandler((player, message) -> consumer.accept(message));
 	}
-	public static void setPacketHandler(BiConsumer<IServerPlayerWrapper, AbstractNetworkMessage> consumer)
+	public void setPacketHandler(BiConsumer<IServerPlayerWrapper, AbstractNetworkMessage> consumer)
 	{
 		#if MC_VER >= MC_1_20_2
 		PLUGIN_CHANNEL.messageBuilder(MessageWrapper.class, 0)
-				.encoder((wrapper, out) -> AbstractPluginPacketSender.encodeMessage(out, wrapper.message))
-				.decoder(in -> new MessageWrapper(AbstractPluginPacketSender.decodeMessage(in)))
+				.encoder((wrapper, out) -> this.encodeMessage(out, wrapper.message))
+				.decoder(in -> new MessageWrapper(this.decodeMessage(in)))
 				.consumerNetworkThread((wrapper, context) ->
 				{
 					if (wrapper.message != null)
@@ -73,8 +75,8 @@ public class ForgePluginPacketSender extends AbstractPluginPacketSender
 				.add();
 		#else // < 1.20.2
 		PLUGIN_CHANNEL.registerMessage(0, MessageWrapper.class,
-				(wrapper, out) -> AbstractPluginPacketSender.encodeMessage(out, wrapper.message),
-				in -> new MessageWrapper(AbstractPluginPacketSender.decodeMessage(in)),
+				(wrapper, out) -> this.encodeMessage(out, wrapper.message),
+				in -> new MessageWrapper(this.decodeMessage(in)),
 				(wrapper, context) ->
 				{
 					if (wrapper.message != null)

@@ -12,14 +12,15 @@ class NativeRelocator
 	/**
 	 * Initializes the NativeRelocator by preparing the environment if necessary.
 	 * Executes the appropriate preparation script based on the OS.
-	 *
-	 * @throws Exception if the preparation script fails or an unsupported OS is detected.
 	 */
-	NativeRelocator(Path rootDirectory) throws Exception
+	NativeRelocator(Path rootDirectory)
 	{
 		this.rootDirectory = rootDirectory;
 		this.cacheRoot = this.rootDirectory.resolve("cache");
-		
+	}
+	
+	private void prepare() throws Exception
+	{
 		if (this.rootDirectory.resolve(".venv").toFile().exists())
 		{
 			return;
@@ -195,6 +196,9 @@ class NativeRelocator
 		{
 			return Files.readAllBytes(outputFilePath);
 		}
+		
+		System.out.println("Relocating to " + outputPath + "...");
+		this.prepare();
 		
 		for (Map.Entry<String, String> replacement : replacements.entrySet())
 		{

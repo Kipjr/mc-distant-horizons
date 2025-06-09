@@ -179,20 +179,24 @@ public class ChunkLoader
 		
 		//================== Read params for making the LevelChunk ==================
 		
-		UpgradeData upgradeData;
-		#if MC_VER < MC_1_17_1
-		upgradeData = tagLevel.contains(TAG_UPGRADE_DATA, 10)
-				? new UpgradeData(tagGetCompoundTag(tagLevel, TAG_UPGRADE_DATA))
-				: UpgradeData.EMPTY;
-		#elif MC_VER < MC_1_21_5
-		upgradeData = tagLevel.contains(TAG_UPGRADE_DATA, 10)
-				? new UpgradeData(tagGetCompoundTag(tagLevel, TAG_UPGRADE_DATA), level)
-				: UpgradeData.EMPTY;
-		#else
-		upgradeData = tagLevel.contains(TAG_UPGRADE_DATA)
-				? new UpgradeData(tagGetCompoundTag(tagLevel, TAG_UPGRADE_DATA), level)
-				: UpgradeData.EMPTY;
-		#endif
+		UpgradeData upgradeData = UpgradeData.EMPTY;
+		// commented out 2025-06-04 as a test to see if the upgrade data
+		// is actually necessary for DH or if it can be ignored
+		// (if it can't be ignored we'll need to handle null responses from tagGetCompoundTag())
+		//
+		//#if MC_VER < MC_1_17_1
+		//upgradeData = tagLevel.contains(TAG_UPGRADE_DATA, 10)
+		//		? new UpgradeData(tagGetCompoundTag(tagLevel, TAG_UPGRADE_DATA))
+		//		: UpgradeData.EMPTY;
+		//#elif MC_VER < MC_1_21_5
+		//upgradeData = tagLevel.contains(TAG_UPGRADE_DATA, 10)
+		//		? new UpgradeData(tagGetCompoundTag(tagLevel, TAG_UPGRADE_DATA), level)
+		//		: UpgradeData.EMPTY;
+		//#else
+		//upgradeData = tagLevel.contains(TAG_UPGRADE_DATA)
+		//		? new UpgradeData(tagGetCompoundTag(tagLevel, TAG_UPGRADE_DATA), level)
+		//		: UpgradeData.EMPTY;
+		//#endif
 		
 		
 		boolean isLightOn = tagGetBoolean(tagLevel, "isLightOn");
@@ -242,7 +246,7 @@ public class ChunkLoader
 		// Set some states after object creation
 		chunk.setLightCorrect(isLightOn);
 		readHeightmaps(chunk, chunkData);
-		readPostPocessings(chunk, chunkData);
+		//readPostPocessings(chunk, chunkData);
 		return chunk;
 	}
 	private static LevelChunkSection[] readSections(LevelAccessor level, ChunkPos chunkPos, CompoundTag chunkData)
@@ -285,48 +289,54 @@ public class ChunkLoader
 			for (int j = 0; j < tagSections.size(); ++j)
 			{
 				CompoundTag tagSection = tagGetCompoundTag(tagSections, j);
-				int sectionYPos = tagGetByte(tagSection, "Y");
+				if (tagSection == null)
+				{
+					continue;
+				}
+				
+				final int sectionYPos = tagGetByte(tagSection, "Y");
 
-			#if MC_VER < MC_1_18_2
-			if (tagSection.contains("Palette", 9) && tagSection.contains("BlockStates", 12))
-			{
-				LevelChunkSection levelChunkSection = new LevelChunkSection(sectionYPos << 4);
-				levelChunkSection.getStates().read(tagSection.getList("Palette", 10),
-						tagSection.getLongArray("BlockStates"));
-				levelChunkSection.recalcBlockCounts();
-				if (!levelChunkSection.isEmpty())
-					chunkSections[#if MC_VER < MC_1_17_1 sectionYPos #else level.getSectionIndexFromSectionY(sectionYPos) #endif ]
-							= levelChunkSection;
-			}
-			#else
+				#if MC_VER < MC_1_18_2
+				if (tagSection.contains("Palette", 9) && tagSection.contains("BlockStates", 12))
+				{
+					LevelChunkSection levelChunkSection = new LevelChunkSection(sectionYPos << 4);
+					levelChunkSection.getStates().read(tagSection.getList("Palette", 10),
+							tagSection.getLongArray("BlockStates"));
+					levelChunkSection.recalcBlockCounts();
+					if (!levelChunkSection.isEmpty())
+						chunkSections[#if MC_VER < MC_1_17_1 sectionYPos #else level.getSectionIndexFromSectionY(sectionYPos) #endif ]
+								= levelChunkSection;
+				}
+				#else
 				int sectionId = level.getSectionIndexFromSectionY(sectionYPos);
 				if (sectionId >= 0 && sectionId < chunkSections.length)
 				{
 					PalettedContainer<BlockState> blockStateContainer;
-				#if MC_VER < MC_1_18_2
-				PalettedContainer<Biome> biomeContainer;
-				#else
+					#if MC_VER < MC_1_18_2
+					PalettedContainer<Biome> biomeContainer;
+					#else
 					PalettedContainer<Holder<Biome>> biomeContainer;
-				#endif
+					#endif
+					
 					
 					boolean containsBlockStates;
-				#if MC_VER < MC_1_21_5
-				containsBlockStates = tagSection.contains("block_states", 10);
-				#else
-					containsBlockStates = tagSection.contains("block_states");
-				#endif
+					#if MC_VER < MC_1_21_5
+					containsBlockStates = tagSection.contains("block_states", 10);
+					#else
+						containsBlockStates = tagSection.contains("block_states");
+					#endif
 					
 					if (containsBlockStates)
 					{
-					#if MC_VER < MC_1_20_6 
-					blockStateContainer = BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tagGetCompoundTag(tagSection, "block_states"))
-						.promotePartial(string -> logBlockDeserializationWarning(chunkPos, sectionYPos, string))
-						.getOrThrow(false, (message) -> logParsingWarningOnce(message));
-					#else
+						#if MC_VER < MC_1_20_6 
+						blockStateContainer = BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tagGetCompoundTag(tagSection, "block_states"))
+							.promotePartial(string -> logBlockDeserializationWarning(chunkPos, sectionYPos, string))
+							.getOrThrow(false, (message) -> logParsingWarningOnce(message));
+						#else
 						blockStateContainer = BLOCK_STATE_CODEC.parse(NbtOps.INSTANCE, tagGetCompoundTag(tagSection, "block_states"))
 								.promotePartial(string -> logBlockDeserializationWarning(chunkPos, sectionYPos, string))
 								.getOrThrow((message) -> logErrorAndReturnException(message));
-					#endif
+						#endif
 					}
 					else
 					{
@@ -334,31 +344,31 @@ public class ChunkLoader
 					}
 				
 				
-				#if MC_VER < MC_1_18_2
-				biomeContainer = tagSection.contains("biomes", 10)
-						? biomeCodec.parse(NbtOps.INSTANCE, tagSection.getCompound("biomes")).promotePartial(string -> logErrors(chunkPos, sectionYPos, string)).getOrThrow(false, (message) -> logWarningOnce(message))
-						: new PalettedContainer<Biome>(biomes, biomes.getOrThrow(Biomes.PLAINS), PalettedContainer.Strategy.SECTION_BIOMES);
-				#else
+					#if MC_VER < MC_1_18_2
+					biomeContainer = tagSection.contains("biomes", 10)
+							? biomeCodec.parse(NbtOps.INSTANCE, tagSection.getCompound("biomes")).promotePartial(string -> logErrors(chunkPos, sectionYPos, string)).getOrThrow(false, (message) -> logWarningOnce(message))
+							: new PalettedContainer<Biome>(biomes, biomes.getOrThrow(Biomes.PLAINS), PalettedContainer.Strategy.SECTION_BIOMES);
+					#else
 					
 					
 					boolean containsBiomes;
-				#if MC_VER < MC_1_21_5
-				containsBiomes = tagSection.contains("biomes", 10);
-				#else
-					containsBiomes = tagSection.contains("biomes");
-				#endif
+					#if MC_VER < MC_1_21_5
+					containsBiomes = tagSection.contains("biomes", 10);
+					#else
+						containsBiomes = tagSection.contains("biomes");
+					#endif
 					
 					if (containsBiomes)
 					{
-					#if MC_VER < MC_1_20_6 
-					biomeContainer = biomeCodec.parse(NbtOps.INSTANCE, tagGetCompoundTag(tagSection, "biomes"))
-						.promotePartial(string -> logBiomeDeserializationWarning(chunkPos, sectionYIndex, (String) string))
-						.getOrThrow(false, (message) -> logParsingWarningOnce(message));
-					#else
+						#if MC_VER < MC_1_20_6 
+						biomeContainer = biomeCodec.parse(NbtOps.INSTANCE, tagGetCompoundTag(tagSection, "biomes"))
+							.promotePartial(string -> logBiomeDeserializationWarning(chunkPos, sectionYIndex, (String) string))
+							.getOrThrow(false, (message) -> logParsingWarningOnce(message));
+						#else
 						biomeContainer = biomeCodec.parse(NbtOps.INSTANCE, tagGetCompoundTag(tagSection, "biomes"))
 								.promotePartial(string -> logBiomeDeserializationWarning(chunkPos, sectionYIndex, (String) string))
 								.getOrThrow((message) -> logErrorAndReturnException(message));
-					#endif
+						#endif
 					}
 					else
 					{
@@ -371,15 +381,15 @@ public class ChunkLoader
 								PalettedContainer.Strategy.SECTION_BIOMES);
 					}
 				
-				#endif
-				
-				#if MC_VER < MC_1_20_1
-				chunkSections[sectionId] = new LevelChunkSection(sectionYPos, blockStateContainer, biomeContainer);
-				#else
+					#endif
+					
+					#if MC_VER < MC_1_20_1
+					chunkSections[sectionId] = new LevelChunkSection(sectionYPos, blockStateContainer, biomeContainer);
+					#else
 					chunkSections[sectionId] = new LevelChunkSection(blockStateContainer, biomeContainer);
-				#endif
+					#endif
 				}
-			#endif
+				#endif
 				
 			}	
 		}
@@ -391,10 +401,14 @@ public class ChunkLoader
 		#else ChunkType #endif 
 	readChunkType(CompoundTag tagLevel)
 	{
-		ChunkStatus chunkStatus = ChunkStatus.byName(tagGetString(tagLevel,"Status"));
-		if (chunkStatus != null)
+		String statusString = tagGetString(tagLevel,"Status");
+		if (statusString != null)
 		{
-			return chunkStatus.getChunkType();
+			ChunkStatus chunkStatus = ChunkStatus.byName(statusString);
+			if (chunkStatus != null)
+			{
+				return chunkStatus.getChunkType();
+			}
 		}
 		
 		#if MC_VER <= MC_1_20_4
@@ -406,43 +420,52 @@ public class ChunkLoader
 	private static void readHeightmaps(LevelChunk chunk, CompoundTag chunkData)
 	{
 		CompoundTag tagHeightmaps = tagGetCompoundTag(chunkData, "Heightmaps");
-		for (Heightmap.Types type : ChunkStatus.FULL.heightmapsAfter())
+		if (tagHeightmaps != null)
 		{
-			String heightmap = type.getSerializationKey();
-			#if MC_VER < MC_1_21_5
-			if (tagHeightmaps.contains(heightmap, 12))
+			for (Heightmap.Types type : ChunkStatus.FULL.heightmapsAfter())
 			{
-				chunk.setHeightmap(type, tagHeightmaps.getLongArray(heightmap));
-			}
-			#else
-			if (tagHeightmaps.contains(heightmap))
-			{
-				Optional<long[]> optionalHeightmap = tagHeightmaps.getLongArray(heightmap);
-				if (optionalHeightmap.isPresent())
+				String heightmap = type.getSerializationKey();
+				#if MC_VER < MC_1_21_5
+				if (tagHeightmaps.contains(heightmap, 12))
 				{
-					chunk.setHeightmap(type, optionalHeightmap.get());
+					chunk.setHeightmap(type, tagHeightmaps.getLongArray(heightmap));
 				}
-			}
-			#endif
-		}
-		Heightmap.primeHeightmaps(chunk, ChunkStatus.FULL.heightmapsAfter());
-	}
-	private static void readPostPocessings(LevelChunk chunk, CompoundTag chunkData)
-	{
-		ListTag tagPostProcessings = tagGetListTag(chunkData,"PostProcessing", 9);
-		for (int i = 0; i < tagPostProcessings.size(); ++i)
-		{
-			ListTag listTag3 = tagGetListTag(tagPostProcessings, i);
-			for (int j = 0; j < listTag3.size(); ++j)
-			{
-				#if MC_VER < MC_1_21_3
-				chunk.addPackedPostProcess(listTag3.getShort(j), i);
 				#else
-				chunk.addPackedPostProcess(ShortList.of(tagGetShort(listTag3, j)), i);
+				if (tagHeightmaps.contains(heightmap))
+				{
+					Optional<long[]> optionalHeightmap = tagHeightmaps.getLongArray(heightmap);
+					if (optionalHeightmap.isPresent())
+					{
+						chunk.setHeightmap(type, optionalHeightmap.get());
+					}
+				}
 				#endif
 			}
+			
+			Heightmap.primeHeightmaps(chunk, ChunkStatus.FULL.heightmapsAfter());
 		}
 	}
+	// commented out as a test as of 2025-06-04 to see if this is actually necessary for DH
+	// DH probably doesn't need any chunk post-processing data
+	//private static void readPostPocessings(LevelChunk chunk, CompoundTag chunkData)
+	//{
+	//	ListTag tagPostProcessings = tagGetListTag(chunkData,"PostProcessing", 9);
+	//	if (tagPostProcessings != null)
+	//	{
+	//		for (int i = 0; i < tagPostProcessings.size(); ++i)
+	//		{
+	//			ListTag listTag3 = tagGetListTag(tagPostProcessings, i);
+	//			for (int j = 0; j < listTag3.size(); ++j)
+	//			{
+	//			#if MC_VER < MC_1_21_3
+	//				chunk.addPackedPostProcess(listTag3.getShort(j), i);
+	//			#else
+	//			chunk.addPackedPostProcess(ShortList.of(tagGetShort(listTag3, j)), i);
+	//			#endif
+	//			}
+	//		}
+	//	}
+	//}
 	#if MC_VER >= MC_1_18_2
 	private static BlendingData readBlendingData(CompoundTag chunkData)
 	{
@@ -728,6 +751,7 @@ public class ChunkLoader
 	
 	
 	/** defaults to null if the tag isn't present */
+	@Nullable
 	private static String tagGetString(CompoundTag tag, String key)
 	{
 		#if MC_VER < MC_1_21_5
@@ -738,6 +762,7 @@ public class ChunkLoader
 	}
 	
 	/** defaults to null if the tag isn't present */
+	@Nullable
 	private static byte[] tagGetByteArray(CompoundTag tag, String key)
 	{
 		#if MC_VER < MC_1_21_5

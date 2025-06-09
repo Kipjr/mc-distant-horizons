@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
@@ -79,6 +80,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 {
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final ForgePluginPacketSender PACKET_SENDER = (ForgePluginPacketSender) SingletonInjector.INSTANCE.get(IPluginPacketSender.class);
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	
@@ -96,7 +98,7 @@ public class ForgeClientProxy implements AbstractModInitializer.IEventProxy
 		MinecraftForge.EVENT_BUS.register(this);
 		
 		// handles singleplayer, LAN, and connecting to a server
-		ForgePluginPacketSender.setPacketHandler((IServerPlayerWrapper player, @NotNull AbstractNetworkMessage message) ->
+		PACKET_SENDER.setPacketHandler((IServerPlayerWrapper player, @NotNull AbstractNetworkMessage message) ->
 		{
 			ClientApi.INSTANCE.pluginMessageReceived(message);
 			ServerApi.INSTANCE.pluginMessageReceived(player, message);

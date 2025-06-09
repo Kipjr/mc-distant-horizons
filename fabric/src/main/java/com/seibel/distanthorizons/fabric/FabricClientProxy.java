@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
@@ -82,6 +83,7 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 {
 	private final ClientApi clientApi = ClientApi.INSTANCE;
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
+	private static final AbstractPluginPacketSender PACKET_SENDER = (AbstractPluginPacketSender) SingletonInjector.INSTANCE.get(IPluginPacketSender.class);
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	// TODO we shouldn't be filtering keys on the Forge/Fabric side, only in ClientApi
@@ -316,9 +318,7 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		#else
 		ClientPlayNetworking.registerGlobalReceiver(AbstractPluginPacketSender.WRAPPER_PACKET_RESOURCE, (client, handler, buffer, packetSender) ->
 		{
-			// Forge packet ID
-			buffer.readByte();
-			AbstractNetworkMessage message = AbstractPluginPacketSender.decodeMessage(buffer);
+			AbstractNetworkMessage message = PACKET_SENDER.decodeMessage(buffer);
 			if (message != null)
 			{
 				ClientApi.INSTANCE.pluginMessageReceived(message);

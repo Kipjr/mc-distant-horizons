@@ -19,8 +19,10 @@
 
 package com.seibel.distanthorizons.common.wrappers.block;
 
-import com.seibel.distanthorizons.core.util.ColorUtil;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.*;
@@ -29,6 +31,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.material.FluidState;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,22 +39,64 @@ import org.jetbrains.annotations.Nullable;
 import net.minecraft.core.Holder;
 #endif
 
+import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 public class TintWithoutLevelOverrider implements BlockAndTintGetter
 {
-	/** 
-	 * This will only ever be null if there was an issue with {@link IClientLevelWrapper#getPlainsBiomeWrapper()}
-	 * but {@link Nullable} is there just in case. 
-	 */
-	@Nullable
-	#if MC_VER >= MC_1_18_2
-	public final Holder<Biome> biome;
+	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	
+	#if MC_VER < MC_1_18_2
+	public static final ConcurrentMap<String, Biome> BIOME_BY_RESOURCE_STRING = new ConcurrentHashMap<>();
 	#else
-	public final Biome biome;
-	#endif
+	public static final ConcurrentMap<String, Holder<Biome>> BIOME_BY_RESOURCE_STRING = new ConcurrentHashMap<>();
+    #endif
+	
+	
+	@NotNull
+	private final BiomeWrapper biomeWrapper;
+	
+	
+	
+	//=============//
+	// constructor //
+	//=============//
+	
+	public TintWithoutLevelOverrider(@NotNull BiomeWrapper biomeWrapper, IClientLevelWrapper clientLevelWrapper)
+	{ this.biomeWrapper = biomeWrapper; }
+	
+	
+	
+	//=========//
+	// methods //
+	//=========//
+	
+	@Override
+	public int getBlockTint(@NotNull BlockPos blockPos, @NotNull ColorResolver colorResolver)
+	{
+		String biomeString = this.biomeWrapper.getSerialString();
+		if (biomeString == null 
+			|| biomeString.isEmpty() 
+			|| biomeString.equals(BiomeWrapper.EMPTY_BIOME_STRING))
+		{
+			// default to "plains" for empty/invalid biomes
+			biomeString = "minecraft:plains";
+		}
+		
+		
+		return colorResolver.getColor(unwrap(getClientBiome(biomeString)), blockPos.getX(), blockPos.getZ());
+	}
+	private static Biome unwrap(#if MC_VER >= MC_1_18_2 Holder<Biome> #else Biome #endif biome)
+	{
+		#if MC_VER >= MC_1_18_2
+		return biome.value();
+		#else
+		return biome;
+		#endif
+	}
 	
 	/**
-	 * Constructs the TintWithoutLevelOverrider, storing the provided Biome Holder for late-binding access.
-	 *
 	 * <p>Previously, this class might have immediately unwrapped the Holder like this:</p>
 	 * <pre>{@code
 	 * // Inside constructor (OLD WAY - PROBLEMATIC):
@@ -85,41 +130,52 @@ public class TintWithoutLevelOverrider implements BlockAndTintGetter
 	 * whenever the biome information is needed, ensuring it always retrieves the most current {@code Biome}
 	 * instance associated with the holder at that time.</p>
 	 */
-	public TintWithoutLevelOverrider(BiomeWrapper biomeWrapper, IClientLevelWrapper clientLevelWrapper)
+	private static #if MC_VER < MC_1_18_2 Biome #else Holder<Biome> #endif getClientBiome(String biomeResourceString)
 	{
-		#if MC_VER >= MC_1_18_2 Holder<Biome> #else Biome #endif biome = biomeWrapper.biome;
-		if (biome == null) // We are looking at the empty biome wrapper
-		{
-			BiomeWrapper plainsBiomeWrapper = ((BiomeWrapper) clientLevelWrapper.getPlainsBiomeWrapper());
-			if (plainsBiomeWrapper != null)
-			{
-				biome = plainsBiomeWrapper.biome;
-			}
-		}
-		
-		this.biome = biome;
-	}
-	
-	
-	
-	@Override
-	public int getBlockTint(@NotNull BlockPos blockPos, @NotNull ColorResolver colorResolver)
-	{
-		if (this.biome == null)
-		{
-			// hopefully unneeded debug color
-			return ColorUtil.CYAN;
-		}
-		return colorResolver.getColor(unwrap(biome), blockPos.getX(), blockPos.getZ());
-	}
-	
-	private static Biome unwrap(#if MC_VER >= MC_1_18_2 Holder<Biome> #else Biome #endif biome)
-	{
-		#if MC_VER >= MC_1_18_2
-		return biome.value();
-		#else
-		return biome;
-		#endif
+		// cache the client biomes so we don't have to re-parse the resource location every time
+		return BIOME_BY_RESOURCE_STRING.compute(biomeResourceString, 
+			(resourceString, existingBiome) -> 
+			{ 
+				if (existingBiome != null)
+				{
+					return existingBiome;
+				}
+				
+				ClientLevel clientLevel = Minecraft.getInstance().level;
+				if (clientLevel == null)
+				{
+					// shouldn't happen, but just in case
+					throw new IllegalStateException("Attempted to get client biome when no client level was loaded.");
+				}
+				
+				BiomeWrapper.BiomeDeserializeResult result;
+				try
+				{
+					result = BiomeWrapper.deserializeBiome(resourceString, clientLevel.registryAccess());
+				}
+				catch (Exception e)
+				{
+					LOGGER.warn("Unable to deserialize client biome ["+resourceString+"], using fallback...");
+					
+					try
+					{
+						result = BiomeWrapper.deserializeBiome("minecraft:plains", clientLevel.registryAccess());
+					}
+					catch (IOException ex)
+					{
+						// should never happen, if it does this log will explode, but just in case
+						LOGGER.error("Unable to deserialize fallback client biome [minecraft:plains], returning NULL.");
+						return null;
+					}
+				}
+				
+				if (result.success)
+				{
+					existingBiome = result.biome;
+				}
+				
+				return existingBiome;
+			});
 	}
 	
 	

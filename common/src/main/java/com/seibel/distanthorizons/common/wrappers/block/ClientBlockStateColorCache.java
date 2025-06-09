@@ -91,7 +91,7 @@ public class ClientBlockStateColorCache
 	private static final RandomSource RANDOM = RandomSource.create();
 	#endif
 	
-	private final IClientLevelWrapper levelWrapper;
+	private final IClientLevelWrapper clientLevelWrapper;
 	private final BlockState blockState;
 	private final LevelReader level;
 	
@@ -174,7 +174,7 @@ public class ClientBlockStateColorCache
 	public ClientBlockStateColorCache(BlockState blockState, IClientLevelWrapper samplingLevel)
 	{
 		this.blockState = blockState;
-		this.levelWrapper = samplingLevel;
+		this.clientLevelWrapper = samplingLevel;
 		this.level = (LevelReader) samplingLevel.getWrappedMcObject();
 		this.resolveColors();
 	}
@@ -471,7 +471,7 @@ public class ClientBlockStateColorCache
 				try
 				{
 					tintColor = Minecraft.getInstance().getBlockColors()
-							.getColor(this.blockState, new TintWithoutLevelOverrider(biome, this.levelWrapper), McObjectConverter.Convert(pos), this.tintIndex);
+							.getColor(this.blockState, new TintWithoutLevelOverrider(biome, this.clientLevelWrapper), McObjectConverter.Convert(pos), this.tintIndex);
 				}
 				catch (UnsupportedOperationException e)
 				{

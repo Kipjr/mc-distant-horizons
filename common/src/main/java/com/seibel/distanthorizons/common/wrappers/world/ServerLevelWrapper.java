@@ -42,6 +42,7 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.world.IBiomeWrapper;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IServerLevelWrapper;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkSource;
 
@@ -115,12 +116,12 @@ public class ServerLevelWrapper implements IServerLevelWrapper
 	@Override
 	public String getWorldFolderName()
 	{
-		// TODO can we just replace this with getMcSaveFolder()? Why are we using the screenshot file anyway?
-		//  this can have issues when the screenshot file is null/missing
-		#if MC_VER >= MC_1_17_1
-		return this.level.getServer().getWorldScreenshotFile().get().getParent().getFileName().toString();
-		#else // <= 1.16.5
-		return this.level.getServer().getWorldScreenshotFile().getParentFile().getName();
+		// Need specifically overworld since it's the only dimension that is stored in a server root folder
+		
+		#if MC_VER >= MC_1_21_3
+		return this.level.getServer().getLevel(Level.OVERWORLD).getChunkSource().getDataStorage().dataFolder.getParent().getFileName().toString();
+		#else // <= 1.21.3
+		return this.level.getServer().getLevel(Level.OVERWORLD).getChunkSource().getDataStorage().dataFolder.getParentFile().getName();
 		#endif
 	}
 	

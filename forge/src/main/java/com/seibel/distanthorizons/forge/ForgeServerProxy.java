@@ -7,7 +7,9 @@ import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
 import com.seibel.distanthorizons.core.api.internal.ServerApi;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -51,6 +53,8 @@ import java.util.function.Supplier;
 
 public class ForgeServerProxy implements AbstractModInitializer.IEventProxy
 {
+	private static final ForgePluginPacketSender PACKET_SENDER = (ForgePluginPacketSender) SingletonInjector.INSTANCE.get(IPluginPacketSender.class);
+
 	#if MC_VER < MC_1_19_2
 	private static LevelAccessor GetEventLevel(WorldEvent e) { return e.getWorld(); }
 	#else
@@ -68,7 +72,7 @@ public class ForgeServerProxy implements AbstractModInitializer.IEventProxy
 		MinecraftForge.EVENT_BUS.register(this);
 		if (this.isDedicated)
 		{
-			ForgePluginPacketSender.setPacketHandler(ServerApi.INSTANCE::pluginMessageReceived);
+			PACKET_SENDER.setPacketHandler(ServerApi.INSTANCE::pluginMessageReceived);
 		}
 	}
 	

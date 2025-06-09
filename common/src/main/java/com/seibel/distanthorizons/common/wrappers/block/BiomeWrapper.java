@@ -47,6 +47,7 @@ import net.minecraft.core.registries.Registries;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.biome.Biome;
+
 #if MC_VER >= MC_1_18_2
 import net.minecraft.world.level.biome.Biomes;
 #endif
@@ -128,14 +129,6 @@ public class BiomeWrapper implements IBiomeWrapper
 		this.hashCode = Objects.hash(this.serialString);
 		
 		//LOGGER.trace("Created BiomeWrapper ["+this.serialString+"] for ["+biome+"]");
-	}
-	
-	/** should only be used to create {@link BiomeWrapper#EMPTY_WRAPPER} */
-	private BiomeWrapper()
-	{
-		this.biome = null;
-		this.serialString = EMPTY_BIOME_STRING;
-		this.hashCode = Objects.hash(this.serialString);
 	}
 	
 	
@@ -286,64 +279,16 @@ public class BiomeWrapper implements IBiomeWrapper
 		BiomeWrapper foundWrapper = EMPTY_WRAPPER;
 		try
 		{
-			// parse the resource location
-			int separatorIndex = resourceLocationString.indexOf(":");
-			if (separatorIndex == -1)
-			{
-				throw new IOException("Unable to parse resource location string: [" + resourceLocationString + "].");
-			}
-			
-			ResourceLocation resourceLocation;
-			try
-			{
-				#if MC_VER < MC_1_21_1
-				resourceLocation = new ResourceLocation(resourceLocationString.substring(0, separatorIndex), resourceLocationString.substring(separatorIndex + 1));
-				#else
-				resourceLocation = ResourceLocation.fromNamespaceAndPath(resourceLocationString.substring(0, separatorIndex), resourceLocationString.substring(separatorIndex + 1));
-				#endif
-			}
-			catch (Exception e)
-			{
-				throw new IOException("No Resource Location found for the string: [" + resourceLocationString + "] Error: [" + e.getMessage() + "].");
-			}
-			
-			
 			try
 			{
 				Level level = (Level) levelWrapper.getWrappedMcObject();
 				net.minecraft.core.RegistryAccess registryAccess = level.registryAccess();
 				
-				boolean success;
-				#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
-				Biome biome = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).get(resourceLocation);
-				success = (biome != null);
-				#elif MC_VER == MC_1_18_2 || MC_VER == MC_1_19_2
-				Biome unwrappedBiome = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).get(resourceLocation);
-				success = (unwrappedBiome != null);
-				Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
-				#elif MC_VER < MC_1_21_3
-				Biome unwrappedBiome = registryAccess.registryOrThrow(Registries.BIOME).get(resourceLocation);
-				success = (unwrappedBiome != null);
-				Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
-				#else
-				Holder<Biome> biome;
-				Optional<Holder.Reference<Biome>> optionalBiomeHolder = registryAccess.lookupOrThrow(Registries.BIOME).get(resourceLocation);
-				if (optionalBiomeHolder.isPresent())
-				{
-					Biome unwrappedBiome = optionalBiomeHolder.get().value();
-					success = (unwrappedBiome != null);
-					biome = new Holder.Direct<>(unwrappedBiome);
-				}
-				else
-				{
-					success = false;
-					biome = null;
-				}
-				#endif
+				BiomeDeserializeResult deserializeResult = deserializeBiome(resourceLocationString, registryAccess);
 				
 				
 				
-				if (!success)
+				if (!deserializeResult.success)
 				{
 					if (!brokenResourceLocationStrings.contains(resourceLocationString))
 					{
@@ -354,7 +299,7 @@ public class BiomeWrapper implements IBiomeWrapper
 				}
 				
 				
-				foundWrapper = (BiomeWrapper) getBiomeWrapper(biome, levelWrapper);
+				foundWrapper = (BiomeWrapper) getBiomeWrapper(deserializeResult.biome, levelWrapper);
 				return foundWrapper;
 			}
 			catch (Exception e)
@@ -367,5 +312,83 @@ public class BiomeWrapper implements IBiomeWrapper
 			WRAPPER_BY_RESOURCE_LOCATION.putIfAbsent(finalResourceStateString, foundWrapper);
 		}
 	}
+	
+	public static BiomeDeserializeResult deserializeBiome(String resourceLocationString, net.minecraft.core.RegistryAccess registryAccess) throws IOException
+	{
+		// parse the resource location
+		int separatorIndex = resourceLocationString.indexOf(":");
+		if (separatorIndex == -1)
+		{
+			throw new IOException("Unable to parse resource location string: [" + resourceLocationString + "].");
+		}
+		
+		ResourceLocation resourceLocation;
+		try
+		{
+			#if MC_VER < MC_1_21_1
+			resourceLocation = new ResourceLocation(resourceLocationString.substring(0, separatorIndex), resourceLocationString.substring(separatorIndex + 1));
+			#else
+			resourceLocation = ResourceLocation.fromNamespaceAndPath(resourceLocationString.substring(0, separatorIndex), resourceLocationString.substring(separatorIndex + 1));
+			#endif
+		}
+		catch (Exception e)
+		{
+			throw new IOException("No Resource Location found for the string: [" + resourceLocationString + "] Error: [" + e.getMessage() + "].");
+		}
+		
+		
+		boolean success;
+		#if MC_VER == MC_1_16_5 || MC_VER == MC_1_17_1
+		Biome biome = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).get(resourceLocation);
+		success = (biome != null);
+		#elif MC_VER == MC_1_18_2 || MC_VER == MC_1_19_2
+		Biome unwrappedBiome = registryAccess.registryOrThrow(Registry.BIOME_REGISTRY).get(resourceLocation);
+		success = (unwrappedBiome != null);
+		Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
+		#elif MC_VER < MC_1_21_3
+		Biome unwrappedBiome = registryAccess.registryOrThrow(Registries.BIOME).get(resourceLocation);
+		success = (unwrappedBiome != null);
+		Holder<Biome> biome = new Holder.Direct<>(unwrappedBiome);
+		#else
+		Holder<Biome> biome;
+		Optional<Holder.Reference<Biome>> optionalBiomeHolder = registryAccess.lookupOrThrow(Registries.BIOME).get(resourceLocation);
+		if (optionalBiomeHolder.isPresent())
+		{
+			Biome unwrappedBiome = optionalBiomeHolder.get().value();
+			success = (unwrappedBiome != null);
+			biome = new Holder.Direct<>(unwrappedBiome);
+		}
+		else
+		{
+			success = false;
+			biome = null;
+		}
+		#endif
+		
+		return new BiomeDeserializeResult(success, biome);
+	}
+	
+	
+	//================//
+	// helper classes //
+	//================//
+	
+	public static class BiomeDeserializeResult
+	{
+		public final boolean success;
+		
+		#if MC_VER < MC_1_18_2
+		public final Biome biome;
+		#else
+		public final Holder<Biome> biome;
+    #endif
+		
+		public BiomeDeserializeResult(boolean success, #if MC_VER < MC_1_18_2 Biome #else Holder<Biome> #endif biome)
+		{
+			this.success = success;
+			this.biome = biome;
+		}
+	}
+	
 	
 }

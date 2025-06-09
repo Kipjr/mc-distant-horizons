@@ -9,7 +9,10 @@ import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
 import com.seibel.distanthorizons.core.api.internal.ServerApi;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
+import com.seibel.distanthorizons.common.AbstractPluginPacketSender;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
 import com.seibel.distanthorizons.fabric.testing.TestWorldGenBindingEvent;
@@ -32,7 +35,6 @@ import com.seibel.distanthorizons.common.CommonPacketPayload;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 #else
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
-import com.seibel.distanthorizons.common.AbstractPluginPacketSender;
 #endif
 
 import java.util.function.Supplier;
@@ -48,6 +50,8 @@ import java.util.function.Supplier;
 public class FabricServerProxy implements AbstractModInitializer.IEventProxy
 {
 	private static final ServerApi SERVER_API = ServerApi.INSTANCE;
+	@SuppressWarnings("unused")
+	private static final AbstractPluginPacketSender PACKET_SENDER = (AbstractPluginPacketSender) SingletonInjector.INSTANCE.get(IPluginPacketSender.class);
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
 	private final boolean isDedicatedServer;
@@ -192,9 +196,7 @@ public class FabricServerProxy implements AbstractModInitializer.IEventProxy
 		#else
 		ServerPlayNetworking.registerGlobalReceiver(AbstractPluginPacketSender.WRAPPER_PACKET_RESOURCE, (server, serverPlayer, handler, buffer, packetSender) ->
 		{
-			// Forge packet ID
-			buffer.readByte();
-			AbstractNetworkMessage message = AbstractPluginPacketSender.decodeMessage(buffer);
+			AbstractNetworkMessage message = PACKET_SENDER.decodeMessage(buffer);
 			if (message != null)
 			{
 				ServerApi.INSTANCE.pluginMessageReceived(ServerPlayerWrapper.getWrapper(serverPlayer), message);

@@ -1,6 +1,7 @@
 package com.seibel.distanthorizons.common;
 
 import com.seibel.distanthorizons.core.config.Config;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.network.event.internal.IncompatibleMessageInternalEvent;
 import com.seibel.distanthorizons.core.network.event.internal.ProtocolErrorInternalEvent;
@@ -30,6 +31,16 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 	public static final ResourceLocation WRAPPER_PACKET_RESOURCE = new ResourceLocation(ModInfo.RESOURCE_NAMESPACE, ModInfo.WRAPPER_PACKET_PATH);
 	#endif
 	
+	// "Forge byte" is an unused packet ID. We have our own system which works with all mod loaders,
+	// so we're just accounting for it by reading the protocol version as a byte instead of a short in Forge, to keep cross-loader compatibility
+	private final boolean forgeByteInProtocolVersion;
+	
+	
+	public AbstractPluginPacketSender() { this(false); }
+	public AbstractPluginPacketSender(boolean forgeByteInProtocolVersion)
+	{
+		this.forgeByteInProtocolVersion = forgeByteInProtocolVersion;
+	}
 	
 	@Override
 	public final void sendToClient(IServerPlayerWrapper serverPlayer, AbstractNetworkMessage message)
@@ -41,7 +52,7 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 	@Override
 	public abstract void sendToServer(AbstractNetworkMessage message);
 	
-	public static AbstractNetworkMessage decodeMessage(FriendlyByteBuf in)
+	public AbstractNetworkMessage decodeMessage(FriendlyByteBuf in)
 	{
 		AbstractNetworkMessage message = null;
 		
@@ -49,7 +60,7 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 		{
 			in.markReaderIndex();
 			
-			int protocolVersion = in.readShort();
+			int protocolVersion = this.forgeByteInProtocolVersion ? in.readByte() : in.readShort();
 			if (protocolVersion != ModInfo.PROTOCOL_VERSION)
 			{
 				return new IncompatibleMessageInternalEvent(protocolVersion);
@@ -82,11 +93,19 @@ public abstract class AbstractPluginPacketSender implements IPluginPacketSender
 		}
 	}
 	
-	public static void encodeMessage(FriendlyByteBuf out, AbstractNetworkMessage message)
+	public void encodeMessage(FriendlyByteBuf out, AbstractNetworkMessage message)
 	{
 		// This is intentionally unhandled, because errors related to this are unlikely to appear in wild
 		Objects.requireNonNull(message);
-		out.writeShort(ModInfo.PROTOCOL_VERSION);
+		
+		if (this.forgeByteInProtocolVersion)
+		{
+			out.writeByte(ModInfo.PROTOCOL_VERSION);
+		}
+		else
+		{
+			out.writeShort(ModInfo.PROTOCOL_VERSION);
+		}
 		
 		try
 		{
