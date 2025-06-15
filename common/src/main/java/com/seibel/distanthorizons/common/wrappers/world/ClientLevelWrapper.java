@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 #if MC_VER <= MC_1_20_4
 import net.minecraft.world.level.chunk.ChunkStatus;
@@ -65,6 +66,10 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	
 	private final ClientLevel level;
 	private final ConcurrentHashMap<BlockState, ClientBlockStateColorCache> blockCache = new ConcurrentHashMap<>();
+	
+	/** cached method reference to reduce GC overhead */
+	private final Function<BlockState, ClientBlockStateColorCache> cachedBlockColorCacheFunction = (blockState) -> this.createBlockColorCache(blockState);
+	
 	
 	private BlockStateWrapper dirtBlockWrapper;
 	private BiomeWrapper plainsBiomeWrapper;
@@ -162,10 +167,13 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	{
 		ClientBlockStateColorCache blockColorCache = this.blockCache.computeIfAbsent(
 				((BlockStateWrapper) blockWrapper).blockState,
-				(block) -> new ClientBlockStateColorCache(block, this));
+				this.cachedBlockColorCacheFunction);
 		
 		return blockColorCache.getColor((BiomeWrapper) biome, pos);
 	}
+	/** used by {@link ClientLevelWrapper#cachedBlockColorCacheFunction} */
+	private ClientBlockStateColorCache createBlockColorCache(BlockState block) { return new ClientBlockStateColorCache(block, this); }
+	
 	
 	@Override
 	public int getDirtBlockColor()
