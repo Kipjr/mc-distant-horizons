@@ -23,7 +23,7 @@ jobs:
           $ResponseVersions = Invoke-RestMethod -Method Get -Uri https://launchermeta.mojang.com/mc/game/version_manifest.json
           $LatestVersion = $ResponseVersions.latest.release
           Write-Host "Latest Version: $LatestVersion"
-          $ExistingVersions = @('1.21.4') # Current versions in the matrix
+          $ExistingVersions = @('1.21.6') # Current versions in the matrix
           $UpdatedVersions = $ExistingVersions + $LatestVersion
           $UniqueVersions = $UpdatedVersions | Sort-Object -Unique
           Write-Host "Unique Versions: $($UniqueVersions -join ',')"
