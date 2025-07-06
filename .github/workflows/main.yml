@@ -27,12 +27,14 @@ jobs:
           $UpdatedVersions = $ExistingVersions + $LatestVersion
           $UniqueVersions = $UpdatedVersions | Sort-Object -Unique
           Write-Host "Unique Versions: $($UniqueVersions -join ',')"
-          echo "mc_ver=[$($UniqueVersions -join ',')]" >> $env:GITHUB_ENV
+          $HighestVersion = $UniqueVersions | Sort-Object -Descending | Select-Object -First 1
+          # echo "mc_ver=[$($UniqueVersions -join ',')]" >> $env:GITHUB_ENV
+          echo "mc_ver=[$HighestVersion]" >> $env:GITHUB_ENV
 
       - name: Set Matrix
         shell: bash
         run: |
-          echo "strategy.matrix.mc_ver=$mc_ver" >> $GITHUB_OUTPUT
+          echo "strategy.matrix.MC_VER=$mc_ver" >> $GITHUB_OUTPUT
 
       - name: Checkout code
         uses: actions/checkout@v3
