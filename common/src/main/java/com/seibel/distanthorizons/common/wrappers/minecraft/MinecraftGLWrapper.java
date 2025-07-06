@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.common.wrappers.minecraft;
 
 #if MC_VER < MC_1_21_5
 import com.mojang.blaze3d.platform.GlStateManager;
-#elif MC_VER == MC_1_21_5
+#elif MC_VER >= MC_1_21_5
 import com.mojang.blaze3d.opengl.GlStateManager;
 #endif
 
@@ -233,7 +233,7 @@ public class MinecraftGLWrapper implements IMinecraftGLWrapper
 		GlStateManager._activeTexture(textureId);
 	}
 	@Override
-	public int getActiveTexture() { return GL32.glGetInteger(GL32.GL_ACTIVE_TEXTURE); }
+	public int getActiveTexture() { return GL32.glGetInteger(GL32.GL_TEXTURE_BINDING_2D); }
 	
 	/**
 	 * Always binds to {@link GL32#GL_TEXTURE_2D}

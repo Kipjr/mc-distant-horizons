@@ -52,6 +52,27 @@ public class DhScreen extends Screen
 	{
 		renderTooltip(guiStack, comp, x, y);
 	}
+	#elif MC_VER < MC_1_21_6
+	protected void DhDrawCenteredString(GuiGraphics guiStack, Font font, Component text, int x, int y, int color)
+	{
+		guiStack.drawCenteredString(font, text, x, y, color);
+	}
+	protected void DhDrawString(GuiGraphics guiStack, Font font, Component text, int x, int y, int color)
+	{
+		guiStack.drawString(font, text, x, y, color);
+	}
+	//protected void DhRenderTooltip(GuiGraphics guiStack, Font font, List<? extends net.minecraft.util.FormattedCharSequence> text, int x, int y)
+	//{
+	//	guiStack.renderTooltip(font, text, x, y);
+	//}
+	protected void DhRenderComponentTooltip(GuiGraphics guiStack, Font font, List<Component> comp, int x, int y)
+	{
+		guiStack.renderComponentTooltip(font, comp, x, y);
+	}
+	protected void DhRenderTooltip(GuiGraphics guiStack, Font font, Component text, int x, int y)
+	{
+		guiStack.renderTooltip(font, text, x, y);
+	}
 	#else
 	protected void DhDrawCenteredString(GuiGraphics guiStack, Font font, Component text, int x, int y, int color)
 	{
@@ -61,17 +82,20 @@ public class DhScreen extends Screen
 	{
 		guiStack.drawString(font, text, x, y, color);
 	}
-	protected void DhRenderTooltip(GuiGraphics guiStack, Font font, List<? extends net.minecraft.util.FormattedCharSequence> text, int x, int y)
-	{
-		guiStack.renderTooltip(font, text, x, y);
-	}
+	//protected void DhRenderTooltip(GuiGraphics guiStack, Font font, List<? extends net.minecraft.util.FormattedCharSequence> text, int x, int y)
+	//{
+	//	//guiStack.renderTooltip(font, text, x, y);
+	//}
 	protected void DhRenderComponentTooltip(GuiGraphics guiStack, Font font, List<Component> comp, int x, int y)
 	{
-		guiStack.renderComponentTooltip(font, comp, x, y);
+		guiStack.setComponentTooltipForNextFrame(font, comp, x, y);
 	}
 	protected void DhRenderTooltip(GuiGraphics guiStack, Font font, Component text, int x, int y)
 	{
-		guiStack.renderTooltip(font, text, x, y);
+		guiStack.setTooltipForNextFrame(font, text, x, y);
 	}
-        #endif
+    #endif
+	
+	
+	
 }

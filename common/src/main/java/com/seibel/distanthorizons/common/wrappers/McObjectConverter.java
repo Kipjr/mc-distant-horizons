@@ -49,7 +49,9 @@ public class McObjectConverter
 	@Deprecated
 	public static Mat4f Convert(
 			#if MC_VER < MC_1_19_4 com.mojang.math.Matrix4f 
-			#else org.joml.Matrix4f #endif 
+			#elif MC_VER < MC_1_21_6 org.joml.Matrix4f
+			#else org.joml.Matrix4fc 
+			#endif 
 			mcMatrix)
 	{
 		FloatBuffer buffer = FloatBuffer.allocate(16);
@@ -63,7 +65,9 @@ public class McObjectConverter
 	/** Taken from Minecraft's com.mojang.math.Matrix4f class from 1.18.2 */
 	private static void storeMatrix(
 			#if MC_VER < MC_1_19_4 com.mojang.math.Matrix4f 
-			#else org.joml.Matrix4f #endif
+			#elif MC_VER < MC_1_21_6 org.joml.Matrix4f 
+			#else org.joml.Matrix4fc 
+			#endif
 			matrix, 
 			FloatBuffer buffer)
 	{

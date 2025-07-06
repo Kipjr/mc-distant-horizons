@@ -169,8 +169,10 @@ public class UpdateModScreen extends DhScreen
 	{
 		#if MC_VER < MC_1_20_2
 		this.renderBackground(matrices); // Render background
-		#else
+		#elif MC_VER < MC_1_21_6
 		this.renderBackground(matrices, mouseX, mouseY, delta); // Render background
+		#else
+		// background blur is already being rendered, rendering again causes the game to crash
 		#endif
 		
 		// TODO: add the tooltips for the buttons
@@ -178,16 +180,30 @@ public class UpdateModScreen extends DhScreen
 		// TODO: Add tooltips
 		
 		// Render the text's
-		DhDrawCenteredString(matrices, this.font, Translatable(ModInfo.ID + ".updater.text1"), this.width / 2, this.height / 2 - 35, 0xFFFFFF);
-		DhDrawCenteredString(matrices, this.font, 
-				Translatable(ModInfo.ID + ".updater.text2", currentVer, nextVer), 
-				this.width / 2, this.height / 2 - 20, 0x52FD52);
+		this.DhDrawCenteredString(matrices, this.font, 
+				Translatable(ModInfo.ID + ".updater.text1"), 
+				this.width / 2, this.height / 2 - 35,
+				#if MC_VER < MC_1_21_6
+				0xFFFFFF // RGB
+				#else
+				0xFFFFFFFF // ARGB
+				#endif
+		);
+		this.DhDrawCenteredString(matrices, this.font, 
+				Translatable(ModInfo.ID + ".updater.text2", this.currentVer, this.nextVer), 
+				this.width / 2, this.height / 2 - 20, 
+				#if MC_VER < MC_1_21_6
+				0x52FD52 // RGB
+				#else
+				0xFF52FD52 // ARGB
+				#endif
+		);
 	}
 	
 	@Override
 	public void onClose()
 	{
-		Objects.requireNonNull(minecraft).setScreen(this.parent); // Goto the parent screen
+		Objects.requireNonNull(this.minecraft).setScreen(this.parent); // Go to the parent screen
 	}
 	
 }

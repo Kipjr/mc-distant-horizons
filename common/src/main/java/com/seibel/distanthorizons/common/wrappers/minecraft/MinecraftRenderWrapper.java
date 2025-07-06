@@ -33,17 +33,18 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.util.ColorUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.ILightMapWrapper;
 
-#if MC_VER >= MC_1_17_1
+#if MC_VER < MC_1_17_1
+#elif MC_VER < MC_1_21_6
 import net.minecraft.client.renderer.FogRenderer;
 import com.mojang.blaze3d.systems.RenderSystem;
+#else
+import net.minecraft.client.renderer.fog.FogRenderer;
 #endif
 
 #if MC_VER < MC_1_19_4
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 #else
-#endif
-#if MC_VER >= MC_1_20_2
 #endif
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.AbstractOptifineAccessor;
@@ -73,7 +74,6 @@ import org.joml.Vector4f;
 
 #if MC_VER >= MC_1_21_5
 import com.mojang.blaze3d.opengl.GlTexture;
-import org.lwjgl.opengl.GL32;
 #endif
 
 /**
@@ -109,6 +109,11 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	public boolean colorTextureCastFailLogged = false;
 	public boolean depthTextureCastFailLogged = false;
 	
+	#if MC_VER < MC_1_21_6
+	#else
+	private static FogRenderer mcFogRenderer = null;
+	#endif
+	
 	
 	
 	//=========//
@@ -126,11 +131,22 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	/** Unless you really need to know if the player is blind, use {@link MinecraftRenderWrapper#isFogStateSpecial()}/{@link IMinecraftRenderWrapper#isFogStateSpecial()} instead */
 	public boolean playerHasBlindingEffect()
 	{
-		return MC.player.getActiveEffectsMap().get(MobEffects.BLINDNESS) != null
+		if (MC.player == null)
+		{
+			return false;
+		}
+		else if (MC.player.getActiveEffectsMap() == null)
+		{
+			return false;
+		}
+		else
+		{
+			return MC.player.getActiveEffectsMap().get(MobEffects.BLINDNESS) != null
 				#if MC_VER >= MC_1_19_2
-				|| MC.player.getActiveEffectsMap().get(MobEffects.DARKNESS) != null // Deep dark effect
+					|| MC.player.getActiveEffectsMap().get(MobEffects.DARKNESS) != null // Deep dark effect
 				#endif
-				;
+					;
+		}
 	}
 	
 	@Override
@@ -163,8 +179,33 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 				Math.max(0f, Math.min(colorValues[2], 1f)), // b
 				Math.max(0f, Math.min(colorValues[3], 1f))  // a
 		);
-		#else
+		#elif MC_VER < MC_1_21_6
 		Vector4f colorValues = FogRenderer.computeFogColor(MC.gameRenderer.getMainCamera(), partialTicks, MC.level, 1, MC.gameRenderer.getDarkenWorldAmount(partialTicks));
+		return new Color(
+				Math.max(0f, Math.min(colorValues.x, 1f)), // r
+				Math.max(0f, Math.min(colorValues.y, 1f)), // g
+				Math.max(0f, Math.min(colorValues.z, 1f)), // b
+				Math.max(0f, Math.min(colorValues.w, 1f))  // a
+		);
+		#else
+			
+		if (mcFogRenderer == null)
+		{
+			mcFogRenderer = new FogRenderer();
+		}
+		
+		if (MC.level == null)
+		{
+			// shouldn't happen, but just in case
+			return Color.white;
+		}
+		
+		boolean isFoggy = 
+				MC.level.effects().isFoggyAt(
+						MC.gameRenderer.getMainCamera().getBlockPosition().getX(),
+						MC.gameRenderer.getMainCamera().getBlockPosition().getZ()) 
+					|| MC.gui.getBossOverlay().shouldCreateWorldFog();
+		Vector4f colorValues = mcFogRenderer.setupFog(MC.gameRenderer.getMainCamera(), MC.options.getEffectiveRenderDistance(), isFoggy, MC.deltaTracker, MC.gameRenderer.getDarkenWorldAmount(MC.deltaTracker.getGameTimeDeltaPartialTick(true)), MC.level);
 		return new Color(
 				Math.max(0f, Math.min(colorValues.x, 1f)), // r
 				Math.max(0f, Math.min(colorValues.y, 1f)), // g

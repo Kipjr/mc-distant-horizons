@@ -3,6 +3,8 @@ loaderVersion = "*" # // mandatory. Allow all forge versions as we are definding
 license = "LGPL"
 issueTrackerURL = "${issues}"
 
+# https://docs.neoforged.net/docs/gettingstarted/modfiles/#neoforgemodstoml
+
 
 [[mods]] #//mandatory
     modId = "distanthorizons" #//mandatory
@@ -31,5 +33,12 @@ issueTrackerURL = "${issues}"
     modId = "minecraft"
     type = "required"
     versionRange = "${compatible_forgemc_versions}" # Where we set what version of mc it is avalible for
+    ordering = "NONE"
+    side = "BOTH"
+
+[[dependencies.distanthorizons]]
+    modId = "neoforge"
+    type = "required"
+    versionRange = "${neoforge_version_range}" 
     ordering = "NONE"
     side = "BOTH"

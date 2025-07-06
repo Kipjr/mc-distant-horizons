@@ -78,13 +78,6 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 
-//	private static SimpleChannel multiversePluginChannel;
-	
-	// Not the cleanest way of passing this to the LOD renderer, but it'll have to do for now
-	public static Mat4f currentModelViewMatrix = new Mat4f();
-	public static Mat4f currentProjectionMatrix = new Mat4f();
-	
-	
 	
 	
 	@Override
@@ -244,16 +237,7 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	// rendering //
 	//===========//
 	
-	@SubscribeEvent
-	public void beforeLevelRenderEvent(RenderLevelStageEvent event)
-	{
-		if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_SKY)
-		{
-			currentModelViewMatrix = McObjectConverter.Convert(event.getModelViewMatrix());
-			currentProjectionMatrix = McObjectConverter.Convert(event.getProjectionMatrix());
-		}
-	}
-	
+	#if MC_VER < MC_1_21_6
 	@SubscribeEvent
 	public void afterLevelRenderEvent(RenderLevelStageEvent event)
 	{
@@ -272,6 +256,56 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 			}
 		}
 	}
+	#else
+	
+	
+	@SubscribeEvent
+	public void afterLevelEntityRenderEvent(RenderLevelStageEvent.AfterEntities event)
+	{
+		ClientApi.INSTANCE.renderFade(
+				ClientApi.RENDER_STATE.mcModelViewMatrix,
+				ClientApi.RENDER_STATE.mcProjectionMatrix,
+				ClientApi.RENDER_STATE.frameTime,
+				ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel())
+		);
+	}
+	
+	
+	@SubscribeEvent
+	public void afterLevelTranslucentRenderEvent(RenderLevelStageEvent.AfterTranslucentBlocks event)
+	{
+		ClientApi.INSTANCE.renderDeferredLodsForShaders(ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel()),
+				ClientApi.RENDER_STATE.mcModelViewMatrix,
+				ClientApi.RENDER_STATE.mcProjectionMatrix,
+				ClientApi.RENDER_STATE.frameTime
+		);
+	}
+	
+	@SubscribeEvent
+	public void afterLevelRenderEvent(RenderLevelStageEvent.AfterLevel event)
+	{
+		try
+		{
+			// should generally only need to be set once per game session
+			// allows DH to render directly to Optifine's level frame buffer,
+			// allowing better shader support
+			MinecraftRenderWrapper.INSTANCE.finalLevelFrameBufferId = GL32.glGetInteger(GL32.GL_FRAMEBUFFER_BINDING);
+		}
+		catch (Exception | Error e)
+		{
+			LOGGER.error("Unexpected error in afterLevelRenderEvent: "+e.getMessage(), e);
+		}
+		
+		
+		ClientApi.INSTANCE.renderFadeOpaque(
+				ClientApi.RENDER_STATE.mcModelViewMatrix,
+				ClientApi.RENDER_STATE.mcProjectionMatrix,
+				ClientApi.RENDER_STATE.frameTime,
+				ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel())
+		);
+	}
+	
+	#endif
 	
 	
 	
@@ -280,6 +314,7 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	//================//
 	
 	private static LevelAccessor GetEventLevel(LevelEvent e) { return e.getLevel(); }
+	
 	
 	
 }

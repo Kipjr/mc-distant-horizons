@@ -15,12 +15,15 @@ for %%f in (versionProperties\*) do (
     @rem Clean out the folders, build it, and merge it
     echo ==================== Cleaning workspace to build !version! ====================
     call .\gradlew.bat clean
-    echo ==================== Building !version! ====================
+    
+	echo ==================== Building !version! ====================
     call .\gradlew.bat build -PmcVer="!version!"
-    echo ==================== Merging !version! ====================
+    
+	echo ==================== Merging !version! ====================
     call .\gradlew.bat mergeJars -PmcVer="!version!"
+	
     echo ==================== Moving jar ====================
-    move Merged\*.jar buildAllJars\
+    move build\merged\*.jar buildAllJars\
 )
 
 endlocal

@@ -162,7 +162,7 @@ public class ChunkLoader
 		#if MC_VER < MC_1_18_2
 			if (chunkType != ChunkStatus.ChunkType.LEVELCHUNK)
 				return null;
-		#else
+		#elif MC_VER < MC_1_21_6
 			
 			BlendingData blendingData = readBlendingData(tagLevel);
 			#if MC_VER < MC_1_19_2
@@ -172,7 +172,15 @@ public class ChunkLoader
 			if (chunkType == #if MC_VER < MC_1_20_6 ChunkStatus.ChunkType.PROTOCHUNK #else ChunkType.PROTOCHUNK #endif && blendingData == null)
 				return null;
 			#endif
+		#else
+
+		// ignore blending data, there appears to be an issue with parsing it in 1.21.6
+		BlendingData blendingData = null;
 		
+		if (chunkType == ChunkType.PROTOCHUNK)
+		{
+			return null;
+		}
 		#endif
 		
 		long inhabitedTime = tagGetLong(tagLevel, "InhabitedTime");
@@ -489,6 +497,7 @@ public class ChunkLoader
 				#if MC_VER < MC_1_21_3
 				blendingData = BlendingData.CODEC.parse(blendingDataTag).resultOrPartial((message) -> logParsingWarningOnce(message)).orElse(null);
 				#else
+				// blending data appears to have changed as of 1.21.6 causing a class cast exception here due to it being wrapped in a Java.Optional
 				blendingData = BlendingData.unpack(BlendingData.Packed.CODEC.parse(blendingDataTag).resultOrPartial((message) -> logParsingWarningOnce(message)).orElse(null));
 				#endif
 			}

@@ -22,67 +22,87 @@ package com.seibel.distanthorizons.neoforge.mixins.client;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
+import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-
-import com.mojang.blaze3d.systems.RenderSystem;
 
 import net.minecraft.client.Camera;
-import net.minecraft.client.renderer.FogRenderer;
-import net.minecraft.client.renderer.FogRenderer.FogMode;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
 #if MC_VER < MC_1_17_1
 import net.minecraft.world.level.material.FluidState;
-org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import net.minecraft.client.renderer.FogRenderer;
+import net.minecraft.client.renderer.FogRenderer.FogMode;
+import com.mojang.blaze3d.systems.RenderSystem;
+
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 #elif MC_VER < MC_1_21_3
 import net.minecraft.world.level.material.FogType;
+import net.minecraft.client.renderer.FogRenderer;
+import net.minecraft.client.renderer.FogRenderer.FogMode;
+import com.mojang.blaze3d.systems.RenderSystem;
+
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+#elif MC_VER < MC_1_21_6
+import net.minecraft.world.level.material.FogType;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import com.mojang.blaze3d.shaders.FogShape;
+import net.minecraft.client.renderer.FogRenderer;
+import net.minecraft.client.renderer.FogRenderer.FogMode;
+import net.minecraft.client.renderer.FogParameters;
+import org.joml.Vector4f;
+import com.mojang.blaze3d.systems.RenderSystem;
+
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 #else
-import net.minecraft.client.renderer.FogParameters;
 import net.minecraft.world.level.material.FogType;
-import org.joml.Vector4f;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import net.minecraft.client.renderer.fog.FogRenderer;
+import net.minecraft.client.renderer.fog.FogData;
+
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 #endif
-
-
 
 @Mixin(FogRenderer.class)
 public class MixinFogRenderer
 {
 	// Using this instead of Float.MAX_VALUE because Sodium don't like it.
+	@Unique
 	private static final float A_REALLY_REALLY_BIG_VALUE = 420694206942069.F;
+	@Unique
 	private static final float A_EVEN_LARGER_VALUE = 42069420694206942069.F;
 	
 	
 	
-	#if MC_VER == MC_1_17_1 || MC_VER == MC_1_18_2
-	@Inject(at = @At("RETURN"),
-			method = "setupFog(Lnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/FogRenderer$FogMode;FZF)V",
-			remap = false)
-	private static void disableSetupFog(Camera camera, FogMode fogMode, float f, boolean bl, float partTick, CallbackInfo callback)
+	#if MC_VER < MC_1_19_2
+	@Inject(at = @At("RETURN"), method = "setupFog")
+	private static void disableSetupFog(Camera camera, FogMode fogMode, float f, boolean bl, CallbackInfo callback)
 	#elif MC_VER < MC_1_21_3
-	@Inject(at = @At("RETURN"),
-			method = "setupFog(Lnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/FogRenderer$FogMode;FZF)V",
-			remap = true)
-	private static void disableSetupFog(Camera camera, FogMode fogMode, float f, boolean bl, float partTick, CallbackInfo callback)
+	@Inject(at = @At("RETURN"), method = "setupFog")
+	private static void disableSetupFog(Camera camera, FogMode fogMode, float f, boolean bl, float g, CallbackInfo callback)
+	#elif MC_VER < MC_1_21_6
+	@Inject(at = @At("RETURN"), method = "setupFog", cancellable = true)
+	private static void disableSetupFog(Camera camera, FogMode fogMode, Vector4f vector4f, float f, boolean bl, float g, CallbackInfoReturnable<FogParameters> callback)
 	#else
-	@Inject(at = @At("RETURN"),
-			method = "setupFog(Lnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/FogRenderer$FogMode;Lorg/joml/Vector4f;FZF)Lnet/minecraft/client/renderer/FogParameters;",
-			remap = true, cancellable = true)
-	private static void disableSetupFog(Camera camera, FogMode fogMode, Vector4f vector4f, float f, boolean bl, float partTick, CallbackInfoReturnable<FogParameters> callback)
+	@Unique
+	private static void unused()
 	#endif
 	{
-		boolean cameraNotInFluid = cameraNotInFluid(camera);
+		#if MC_VER < MC_1_21_6
+		boolean cancelFog = cancelFog(camera, fogMode);
+		#elif MC_VER < MC_1_21_6
+		boolean cancelFog = cancelFog(camera);
+		#else
+		boolean cancelFog = cancelFog();
+		#endif
 		
-		Entity entity = camera.getEntity();
-		boolean isSpecialFog = (entity instanceof LivingEntity) && ((LivingEntity) entity).hasEffect(MobEffects.BLINDNESS);
-		if (!isSpecialFog && cameraNotInFluid && fogMode == FogMode.FOG_TERRAIN
-				&& !SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class).isFogStateSpecial()
-				&& !Config.Client.Advanced.Graphics.Fog.enableVanillaFog.get())
+		if (cancelFog)
 		{
 			#if MC_VER < MC_1_17_1
 			RenderSystem.fogStart(A_REALLY_REALLY_BIG_VALUE);
@@ -90,12 +110,77 @@ public class MixinFogRenderer
 			#elif MC_VER < MC_1_21_3
 			RenderSystem.setShaderFogStart(A_REALLY_REALLY_BIG_VALUE);
 			RenderSystem.setShaderFogEnd(A_EVEN_LARGER_VALUE);
-			#else
+			#elif MC_VER < MC_1_21_6
 			callback.setReturnValue(FogParameters.NO_FOG);
+			#else
 			#endif
 		}
+		
 	}
 	
+	
+	#if MC_VER < MC_1_21_6
+	#else
+	
+	// In MC's FogRenderer they clamp the "renderDistanceEnd" fog field to the render distance,
+	// which prevents us from disabling the vanilla fog.
+	// This mixin fires after they set the "renderDistanceEnd" so we can change it.
+	@WrapOperation(
+			method = "setupFog",
+			at = @At(
+					value = "FIELD",
+					target = "Lnet/minecraft/client/renderer/fog/FogData;renderDistanceEnd:F",
+					opcode = org.objectweb.asm.Opcodes.PUTFIELD
+			)
+	)
+	private void onSetRenderDistanceEnd(FogData instance, float value, Operation<Void> original)
+	{
+		if (cancelFog())
+		{
+			instance.environmentalStart = A_REALLY_REALLY_BIG_VALUE;
+			instance.environmentalEnd = A_EVEN_LARGER_VALUE;
+			
+			instance.renderDistanceStart = A_REALLY_REALLY_BIG_VALUE;
+			instance.renderDistanceEnd = A_EVEN_LARGER_VALUE;
+		}
+		
+		// Always call the original with the modified or original value
+		original.call(instance, value);
+	}
+	
+	#endif
+	
+	
+	@Unique
+	#if MC_VER < MC_1_21_6
+	private static boolean cancelFog(Camera camera, FogMode fogMode)
+	#else
+	private static boolean cancelFog()
+	#endif
+	{
+		#if MC_VER < MC_1_21_6
+		Entity entity = camera.getEntity();
+		#else
+		Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+		Entity entity = camera.getEntity();	
+		#endif
+		
+		
+		boolean cameraNotInFluid = cameraNotInFluid(camera);
+		boolean isSpecialFog = (entity instanceof LivingEntity) && ((LivingEntity) entity).hasEffect(MobEffects.BLINDNESS);
+		
+		boolean cancelFog = !isSpecialFog;
+		cancelFog = cancelFog && cameraNotInFluid;
+		#if MC_VER < MC_1_21_6
+		cancelFog = cancelFog && (fogMode == FogMode.FOG_TERRAIN);
+		#endif
+		cancelFog = cancelFog && !SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class).isFogStateSpecial();
+		cancelFog = cancelFog && !Config.Client.Advanced.Graphics.Fog.enableVanillaFog.get();
+		
+		return cancelFog;
+	}
+	
+	@Unique
 	private static boolean cameraNotInFluid(Camera camera)
 	{
 		#if MC_VER < MC_1_17_1
@@ -108,6 +193,7 @@ public class MixinFogRenderer
 		
 		return cameraNotInFluid;
 	}
+	
 	
 	
 }

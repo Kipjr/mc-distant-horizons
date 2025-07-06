@@ -54,8 +54,10 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper
 		{
 			#if MC_VER < MC_1_20_1
 			level = this.getServerPlayer().getLevel();
-			#else
+			#elif MC_VER < MC_1_21_6
 			level = this.getServerPlayer().serverLevel();
+			#else
+			level = this.getServerPlayer().level();
 			#endif
 		}
 		
@@ -70,7 +72,14 @@ public class ServerPlayerWrapper implements IServerPlayerWrapper
 	}
 	
 	@Override
-	public int getViewDistance() { return this.getServerPlayer().server.getPlayerList().getViewDistance(); }
+	public int getViewDistance() 
+	{
+		#if MC_VER < MC_1_21_6
+		return this.getServerPlayer().server.getPlayerList().getViewDistance();
+		#else
+		return this.getServerPlayer().getServer().getPlayerList().getViewDistance();
+		#endif
+	}
 	
 	@Override
 	public SocketAddress getRemoteAddress()

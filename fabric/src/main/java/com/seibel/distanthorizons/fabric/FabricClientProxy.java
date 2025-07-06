@@ -228,6 +228,14 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 			modelViewMatrix = McObjectConverter.Convert(renderContext.positionMatrix());
 			#endif
 			
+			
+			//LOGGER.info("\n\n" +
+			//		"Level Render\n" +
+			//		"Mc MVM: \n" + modelViewMatrix.toString() + "\n" +
+			//		"Mc Proj: \n" + projectionMatrix.toString()
+			//);
+			
+			
 			this.clientApi.renderLods(ClientLevelWrapper.getWrapper(renderContext.world()),
 					modelViewMatrix,
 					projectionMatrix,
@@ -274,6 +282,17 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 			modelViewMatrix = McObjectConverter.Convert(renderContext.matrixStack().last().pose());
 			#else
 			modelViewMatrix = McObjectConverter.Convert(renderContext.positionMatrix());
+			#endif
+			
+			
+			#if MC_VER < MC_1_21_6
+			// rendered in MixinLevelRenderer
+			#else
+			ClientApi.INSTANCE.renderDeferredLodsForShaders(ClientLevelWrapper.getWrapper(renderContext.world()),
+					ClientApi.RENDER_STATE.mcModelViewMatrix,
+					ClientApi.RENDER_STATE.mcProjectionMatrix,
+					ClientApi.RENDER_STATE.frameTime
+			);
 			#endif
 			
 			this.clientApi.renderFade(

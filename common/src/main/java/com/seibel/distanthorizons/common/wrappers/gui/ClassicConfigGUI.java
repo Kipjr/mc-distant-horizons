@@ -56,20 +56,20 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static com.seibel.distanthorizons.common.wrappers.gui.GuiHelper.*;
+import static com.seibel.distanthorizons.common.wrappers.gui.GuiHelper.Translatable;
 
 
-/**
+/*
  * Based upon TinyConfig but is highly modified
  * https://github.com/Minenash/TinyConfig
+ *
+ * Note: floats don't work with this system, use doubles.
  *
  * Credits to Motschen
  *
  * @author coolGi
  * @version 5-21-2022
  */
-// FLOATS DONT WORK WITH THIS
-
-/** This file is going to be removed sometime soon, please dont hook onto anything within this file until the new UI is compleated */
 @SuppressWarnings("unchecked")
 public class ClassicConfigGUI
 {
@@ -178,7 +178,7 @@ public class ClassicConfigGUI
 				}
 				else
 				{
-					((ConfigEntry) info).uiSetWithoutSaving(value.intValue());
+					((ConfigEntry) info).uiSetWithoutSaving(value != null ? value.intValue() : 0);
 				}
 			}
 			
@@ -249,7 +249,7 @@ public class ClassicConfigGUI
 		protected void init()
 		{
 			super.init();
-			if (!reload)
+			if (!this.reload)
 			{
 				ConfigBase.INSTANCE.configFileINSTANCE.loadFromFile();
 			}
@@ -276,7 +276,7 @@ public class ClassicConfigGUI
 						(buttonWidget) -> {
 							ChangelogScreen changelogScreen = new ChangelogScreen(this);
 							if (changelogScreen.usable)
-								Objects.requireNonNull(minecraft).setScreen(changelogScreen);
+								Objects.requireNonNull(this.minecraft).setScreen(changelogScreen);
 							else 
 								LOGGER.warn("Changelog was not able to open");
 						},
@@ -286,17 +286,17 @@ public class ClassicConfigGUI
 			}
 			
 			
-			addBtn(MakeBtn(Translatable("distanthorizons.general.cancel"), 
+			this.addBtn(MakeBtn(Translatable("distanthorizons.general.cancel"), 
 					this.width / 2 - 154, this.height - 28, 
 					150, 20, 
 					button -> 
 					{
 						ConfigBase.INSTANCE.configFileINSTANCE.loadFromFile();
-						Objects.requireNonNull(minecraft).setScreen(parent);
+						Objects.requireNonNull(this.minecraft).setScreen(this.parent);
 					}));
-			doneButton = addBtn(MakeBtn(Translatable("distanthorizons.general.done"), this.width / 2 + 4, this.height - 28, 150, 20, (button) -> {
+			this.doneButton = this.addBtn(MakeBtn(Translatable("distanthorizons.general.done"), this.width / 2 + 4, this.height - 28, 150, 20, (button) -> {
 				ConfigBase.INSTANCE.configFileINSTANCE.saveToFile();
-				Objects.requireNonNull(minecraft).setScreen(parent);
+				Objects.requireNonNull(this.minecraft).setScreen(this.parent);
 			}));
 			
 			this.list = new ConfigListWidget(this.minecraft, this.width * 2, this.height, 32, 32, 25);
@@ -312,8 +312,8 @@ public class ClassicConfigGUI
 			{
 				try
 				{
-					if (info.getCategory().matches(category) && info.getAppearance().showInGui)
-						addMenuItem(info);
+					if (info.getCategory().matches(this.category) && info.getAppearance().showInGui)
+						this.addMenuItem(info);
 				}
 				catch (Exception e)
 				{
@@ -336,7 +336,7 @@ public class ClassicConfigGUI
 		private void addMenuItem(AbstractConfigType info)
 		{
 			initEntry(info, this.translationPrefix);
-			Component name = Translatable(translationPrefix + info.getNameWCategory());
+			Component name = Translatable(this.translationPrefix + info.getNameWCategory());
 			
 			
 			if (ConfigEntry.class.isAssignableFrom(info.getClass()))
@@ -345,7 +345,7 @@ public class ClassicConfigGUI
 					((ConfigEntry) info).uiSetWithoutSaving(((ConfigEntry) info).getDefaultValue());
 					((EntryInfo) info.guiValue).index = 0;
 					this.reload = true;
-					Objects.requireNonNull(minecraft).setScreen(this);
+					Objects.requireNonNull(this.minecraft).setScreen(this);
 				};
 				int posX = this.width - ConfigScreenConfigs.SpaceFromRightScreen - 150 - ConfigScreenConfigs.ButtonWidthSpacing - ConfigScreenConfigs.ResetButtonWidth;
 				int posZ = 0;
@@ -359,17 +359,17 @@ public class ClassicConfigGUI
 					Map.Entry<Button.OnPress, Function<Object, Component>> widget = (Map.Entry<Button.OnPress, Function<Object, Component>>) ((EntryInfo) info.guiValue).widget;
 					if (info.getType().isEnum())
 					{
-						widget.setValue(value -> Translatable(translationPrefix + "enum." + info.getType().getSimpleName() + "." + info.get().toString()));
+						widget.setValue(value -> Translatable(this.translationPrefix + "enum." + info.getType().getSimpleName() + "." + info.get().toString()));
 					}
 					this.list.addButton(MakeBtn(widget.getValue().apply(info.get()), this.width - 150 - ConfigScreenConfigs.SpaceFromRightScreen, 0, 150, 20, widget.getKey()), resetButton, null, name);
 					return;
 				}
 				else if (((EntryInfo) info.guiValue).widget != null)
 				{
-					EditBox widget = new EditBox(font, this.width - 150 - ConfigScreenConfigs.SpaceFromRightScreen + 2, 0, 150 - 4, 20, null);
+					EditBox widget = new EditBox(this.font, this.width - 150 - ConfigScreenConfigs.SpaceFromRightScreen + 2, 0, 150 - 4, 20, Translatable("")); 
 					widget.setMaxLength(150);
 					widget.insertText(String.valueOf(info.get()));
-					Predicate<String> processor = ((BiFunction<EditBox, Button, Predicate<String>>) ((EntryInfo) info.guiValue).widget).apply(widget, doneButton);
+					Predicate<String> processor = ((BiFunction<EditBox, Button, Predicate<String>>) ((EntryInfo) info.guiValue).widget).apply(widget, this.doneButton);
 					widget.setFilter(processor);
 					this.list.addButton(widget, resetButton, null, name);
 					return;
@@ -379,7 +379,7 @@ public class ClassicConfigGUI
 			{
 				Button widget = MakeBtn(name, this.width / 2 - 100, this.height - 28, 100 * 2, 20, (button -> {
 					ConfigBase.INSTANCE.configFileINSTANCE.saveToFile();
-					Objects.requireNonNull(minecraft).setScreen(ClassicConfigGUI.getScreen(this.configBase, this, ((ConfigCategory) info).getDestination()));
+					Objects.requireNonNull(this.minecraft).setScreen(ClassicConfigGUI.getScreen(this.configBase, this, ((ConfigCategory) info).getDestination()));
 				}));
 				this.list.addButton(widget, null, null, null);
 				return;
@@ -420,7 +420,13 @@ public class ClassicConfigGUI
 			#endif
 			this.list.render(matrices, mouseX, mouseY, delta); // Render buttons
 			
-			DhDrawCenteredString(matrices, font, title, width / 2, 15, 0xFFFFFF); // Render title
+			// Render title
+			this.DhDrawCenteredString(matrices, this.font, this.title, this.width / 2, 15, 
+					#if MC_VER < MC_1_21_6 
+					0xFFFFFF // RGB white
+					#else 
+					0xFFFFFFFF // ARGB white
+					#endif);
 			
 			if (this.configBase.modID.equals("distanthorizons"))
 			{
@@ -429,7 +435,14 @@ public class ClassicConfigGUI
 				
 				// If the update is pending, display this message to inform the user that it will apply when the game restarts
 				if (SelfUpdater.deleteOldJarOnJvmShutdown)
-					DhDrawString(matrices, font, Translatable(configBase.modID + ".updater.waitingForClose"), 4, height - 38, 0xFFFFFF);
+				{
+					this.DhDrawString(matrices, this.font, Translatable(this.configBase.modID + ".updater.waitingForClose"), 4, this.height - 38, 
+						#if MC_VER < MC_1_21_6
+						0xFFFFFF // RGB white
+						#else 
+						0xFFFFFFFF // ARGB white
+						#endif);
+				}
 			}
 			
 			
@@ -659,8 +672,10 @@ public class ClassicConfigGUI
 			if (text != null && (!text.getString().contains("spacer") || button != null))
                 #if MC_VER < MC_1_20_1
 				GuiComponent.drawString(matrices, textRenderer, text, 12, y + 5, 0xFFFFFF);
+				#elif MC_VER < MC_1_21_6
+				matrices.drawString(textRenderer, this.text, 12, y + 5, 0xFFFFFF);
 				#else
-				matrices.drawString(textRenderer, text, 12, y + 5, 0xFFFFFF);
+				matrices.drawString(textRenderer, this.text, 12, y + 5, 0xFFFFFFFF);
 				#endif
 		}
 		

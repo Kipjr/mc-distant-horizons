@@ -156,7 +156,7 @@ public class MixinLevelRenderer
 		} 
 		else if (renderType.equals(RenderType.translucent())) 
 		{
-			ClientApi.INSTANCE.renderDeferredLods(ClientLevelWrapper.getWrapper(this.level), mcModelViewMatrix, mcProjectionMatrix, frameTime);
+			ClientApi.INSTANCE.renderDeferredLodsForShaders(ClientLevelWrapper.getWrapper(this.level), mcModelViewMatrix, mcProjectionMatrix, frameTime);
 		}
 		
 		// render fade

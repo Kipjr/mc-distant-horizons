@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.fabric;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.seibel.distanthorizons.api.enums.config.EDhApiMcRenderingFadeMode;
 import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.ConfigBase;

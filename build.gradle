@@ -245,7 +245,9 @@ subprojects { p ->
         // Note: MC 1.16 uses 8.2.1, and versions after use 8.5.12
         // We cannot relocate this library since we call some MC classes that reference it
         implementation("it.unimi.dsi:fastutil:${rootProject.fastutil_version}")
-        
+
+        //forgeShadowMe("com.github.luben:zstd-jni:1.5.7-3")
+        //forgeShadowMe("org.apache.commons:commons-compress:1.27.1")
         
         // Compression
         forgeShadowMe("org.lz4:lz4-java:${rootProject.lz4_version}") // LZ4
@@ -445,6 +447,8 @@ subprojects { p ->
 
                 fabric_incompatibility_list  : fabric_incompatibility_list,
                 fabric_recommend_list        : fabric_recommend_list,
+
+                neoforge_version_range       : neoforge_version_range,
         ]
         
         // replace any properties in the sub-projects with the values defined here
