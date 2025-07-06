@@ -13,9 +13,6 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        mc_ver: [1.21.6]
     steps:
       - name: Get Latest Version
         shell: pwsh
@@ -29,12 +26,7 @@ jobs:
           Write-Host "Unique Versions: $($UniqueVersions -join ',')"
           $HighestVersion = $UniqueVersions | Sort-Object -Descending | Select-Object -First 1
           # echo "mc_ver=[$($UniqueVersions -join ',')]" >> $env:GITHUB_ENV
-          echo "mc_ver=[$HighestVersion]" >> $env:GITHUB_ENV
-
-      - name: Set Matrix
-        shell: bash
-        run: |
-          echo "strategy.matrix.MC_VER=$mc_ver" >> $GITHUB_OUTPUT
+          echo "mc_ver=$HighestVersion" >> $env:GITHUB_ENV
 
       - name: Checkout code
         uses: actions/checkout@v3
@@ -53,20 +45,20 @@ jobs:
           path: |
             ~/.gradle
             cache/
-          key: gradle-${{ matrix.MC_VER }}
+          key: gradle-${{ $mc_ver }}
           restore-keys: |
             gradle-
 
       - name: Run Gradle tasks
         run: |
-          ./gradlew clean -PmcVer="${{ matrix.MC_VER }}" --gradle-user-home cache/
-          ./gradlew build -PmcVer="${{ matrix.MC_VER }}" --gradle-user-home cache/
-          ./gradlew mergeJars -PmcVer="${{ matrix.MC_VER }}" --gradle-user-home cache/
+          ./gradlew clean -PmcVer="${{ $mc_ver }}" --gradle-user-home cache/
+          ./gradlew build -PmcVer="${{ $mc_ver }}" --gradle-user-home cache/
+          ./gradlew mergeJars -PmcVer="${{ $mc_ver }}" --gradle-user-home cache/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: NightlyBuild_${{ matrix.MC_VER }}
+          name: NightlyBuild_${{ $mc_ver }}
           path: |
             Merged/*.jar
             quilt/build/libs/*.jar
