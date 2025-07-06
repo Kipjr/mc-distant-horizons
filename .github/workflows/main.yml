@@ -45,20 +45,20 @@ jobs:
           path: |
             ~/.gradle
             cache/
-          key: gradle-${{ $mc_ver }}
+          key: gradle-${{ env.mc_ver }}
           restore-keys: |
             gradle-
 
       - name: Run Gradle tasks
         run: |
-          ./gradlew clean -PmcVer="${{ $mc_ver }}" --gradle-user-home cache/
-          ./gradlew build -PmcVer="${{ $mc_ver }}" --gradle-user-home cache/
-          ./gradlew mergeJars -PmcVer="${{ $mc_ver }}" --gradle-user-home cache/
+          ./gradlew clean -PmcVer="${{ env.mc_ver }}" --gradle-user-home cache/
+          ./gradlew build -PmcVer="${{ env.mc_ver }}" --gradle-user-home cache/
+          ./gradlew mergeJars -PmcVer="${{ env.mc_ver }}" --gradle-user-home cache/
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: NightlyBuild_${{ $mc_ver }}
+          name: NightlyBuild_${{ env.mc_ver }}
           path: |
             Merged/*.jar
             quilt/build/libs/*.jar
