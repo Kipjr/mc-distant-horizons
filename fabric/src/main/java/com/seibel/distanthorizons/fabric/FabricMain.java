@@ -127,7 +127,8 @@ public class FabricMain extends AbstractModInitializer implements ClientModIniti
 	}
 	
 	@Override
-	protected void subscribeClientStartedEvent(Runnable eventHandler) { ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> eventHandler.run()); }
+	protected void subscribeClientStartedEvent(Runnable eventHandler) 
+	{ ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> eventHandler.run()); }
 	
 	@Override
 	protected void subscribeServerStartingEvent(Consumer<MinecraftServer> eventHandler)

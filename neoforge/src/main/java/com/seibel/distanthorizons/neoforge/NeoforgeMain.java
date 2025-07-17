@@ -155,7 +155,9 @@ public class NeoforgeMain extends AbstractModInitializer
 	@Override
 	protected void subscribeClientStartedEvent(Runnable eventHandler)
 	{
-		// FIXME What event is this?
+		// Just run the event handler, since there are no proper ClientLifecycleEvent for the client 
+		// to signify readiness other than FmlClientSetupEvent
+		eventHandler.run(); 
 	}
 	
 	@Override
