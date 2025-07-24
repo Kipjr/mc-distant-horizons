@@ -50,7 +50,7 @@ import java.util.function.Consumer;
 
 #if MC_VER < MC_1_20_6
 import net.neoforged.neoforge.client.ConfigScreenHandler;
-#elif MC_VER < MC_1_21_7
+#elif MC_VER < MC_1_21_8
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import org.jetbrains.annotations.NotNull;
 #else
@@ -76,7 +76,7 @@ public class NeoforgeMain extends AbstractModInitializer
 			this.onInitializeClient();
 			eventBus.addListener(this::registerNetworkingClientServer);
 			
-			#if MC_VER < MC_1_21_7
+			#if MC_VER < MC_1_21_8
 			#else
 			eventBus.addListener(this::registerClientPayloadEvent);
 			#endif
@@ -107,7 +107,7 @@ public class NeoforgeMain extends AbstractModInitializer
 	public void registerNetworkingServer(RegisterPayloadHandlersEvent event)
 	{ NeoforgePluginPacketSender.setPacketHandler(event, ServerApi.INSTANCE::pluginMessageReceived); }
 	
-	#if MC_VER < MC_1_21_7
+	#if MC_VER < MC_1_21_8
 	#else
 	public void registerClientPayloadEvent(RegisterClientPayloadHandlersEvent event)
 	{ NeoforgePluginPacketSender.registerClientPacketHandler(event); }

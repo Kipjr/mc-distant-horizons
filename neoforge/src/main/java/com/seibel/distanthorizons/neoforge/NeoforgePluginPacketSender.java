@@ -14,7 +14,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-#if MC_VER < MC_1_21_7
+#if MC_VER < MC_1_21_8
 #else
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
@@ -48,7 +48,7 @@ public class NeoforgePluginPacketSender extends AbstractPluginPacketSender
 		});
 	}
 	
-	#if MC_VER < MC_1_21_7
+	#if MC_VER < MC_1_21_8
 	#else
 	public static void registerClientPacketHandler(RegisterClientPayloadHandlersEvent event)
 	{
@@ -67,7 +67,7 @@ public class NeoforgePluginPacketSender extends AbstractPluginPacketSender
 	@Override
 	public void sendToServer(AbstractNetworkMessage message)
 	{
-		#if MC_VER < MC_1_21_7
+		#if MC_VER < MC_1_21_8
 		PacketDistributor.sendToServer(new CommonPacketPayload(message));
 		#else
 		ClientPacketDistributor.sendToServer(new CommonPacketPayload(message));
