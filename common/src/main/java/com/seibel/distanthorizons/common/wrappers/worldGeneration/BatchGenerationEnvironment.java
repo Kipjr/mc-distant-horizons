@@ -51,6 +51,9 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.jetbrains.annotations.NotNull;
+import javax.annotation.Nullable;
+
 import com.seibel.distanthorizons.common.wrappers.DependencySetupDoneCheck;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepBiomes;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepFeatures;
@@ -85,9 +88,6 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 import org.jetbrains.annotations.Nullable;
 #else
 import net.minecraft.world.level.chunk.status.ChunkStatus;
-import org.jetbrains.annotations.NotNull;
-
-import javax.annotation.Nullable;
 #endif
 
 /*
