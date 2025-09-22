@@ -163,6 +163,18 @@ public abstract class AbstractModInitializer
 	{
 		ConfigBase.INSTANCE = new ConfigBase(ModInfo.ID, ModInfo.NAME, Config.class, ModInfo.CONFIG_FILE_VERSION);
 		Config.completeDelayedSetup();
+		
+		
+		if (ModInfo.IS_DEV_BUILD)
+		{
+			String missingLangEntries = ConfigBase.INSTANCE.generateLang(true, true);
+			if (missingLangEntries != null
+				&& missingLangEntries.length() != 0)
+			{
+				LOGGER.warn("One or more language entries is missing:");
+				LOGGER.warn(missingLangEntries);
+			}
+		}
 	}
 	
 	private void checkForUpdates()
