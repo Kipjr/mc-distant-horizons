@@ -74,6 +74,7 @@ public class ChangelogScreen extends DhScreen
 		{
 			return;
 		}
+		
 		try
 		{
 			this.setupChangelog(versionID);
@@ -175,9 +176,12 @@ public class ChangelogScreen extends DhScreen
 	{
 		#if MC_VER < MC_1_20_2
 		this.renderBackground(matrices); // Render background
-		#else
+		#elif MC_VER < MC_1_21_6
 		this.renderBackground(matrices, mouseX, mouseY, delta); // Render background
+		#else
+		// background blur is already being rendered, rendering again causes the game to crash
 		#endif
+		
 		if (!this.usable)
 		{
 			return;

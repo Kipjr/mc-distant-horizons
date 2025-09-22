@@ -78,9 +78,12 @@ public class MinecraftScreen
 		{
 			#if MC_VER < MC_1_20_2
 			this.renderBackground(matrices); // Render background
-			#else
+			#elif MC_VER < MC_1_21_6
 			this.renderBackground(matrices, mouseX, mouseY, delta); // Render background
+			#else
+			// background blur is already being rendered, rendering again causes the game to crash
 			#endif
+			
 			this.list.render(matrices, mouseX, mouseY, delta); // Renders the items in the render list (currently only used to tint background darker)
 			
 			screen.mouseX = mouseX;
