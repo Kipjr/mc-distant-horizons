@@ -313,7 +313,7 @@ public class ClassicConfigGUI
 			#if MC_VER < MC_1_20_6 // no background is rendered in MC 1.20.6+
 			if (this.minecraft != null && this.minecraft.level != null)
 			{
-				this.list.setRenderBackground(false);
+				this.configListWidget.setRenderBackground(false);
 			}
 			#endif
 			
@@ -461,7 +461,8 @@ public class ClassicConfigGUI
 			this.configListWidget.render(matrices, mouseX, mouseY, delta); // Render buttons
 			
 			// Render title
-			this.DhDrawCenteredString(matrices, this.font, this.title, this.width / 2, 15, 
+			this.DhDrawCenteredString(matrices, this.font, this.title, 
+					this.width / 2, 15, 
 					#if MC_VER < MC_1_21_6 
 					0xFFFFFF // RGB white
 					#else 
