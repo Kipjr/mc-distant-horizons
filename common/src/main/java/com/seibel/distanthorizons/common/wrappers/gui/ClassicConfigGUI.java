@@ -821,11 +821,10 @@ public class ClassicConfigGUI
 		{
 			for (ButtonEntry buttonEntry : this.children())
 			{
-				if (buttonEntry.button != null 
-					&& buttonEntry.button.visible)
+				AbstractWidget button = buttonEntry.button;
+				if (button != null 
+					&& button.visible)
 				{
-					AbstractWidget button = buttonEntry.button;
-					
 					#if MC_VER < MC_1_19_4
 					double minX = button.x;
 					double minY = button.y;
@@ -835,12 +834,12 @@ public class ClassicConfigGUI
 					#endif
 					
 					double maxX = minX + button.getWidth();
-					double maxY = minX + button.getHeight();
-							
-					if (mouseX >= minX && mouseY >= minY
-						&& mouseX < maxX && mouseY < maxY)
+					double maxY = minY + button.getHeight();
+					
+					if (mouseX >= minX && mouseX < maxX
+						&& mouseY >= minY && mouseY < maxY)
 					{
-						return buttonEntry.button;
+						return button;
 					}
 				}
 			}
