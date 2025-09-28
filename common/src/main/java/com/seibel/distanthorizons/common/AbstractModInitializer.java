@@ -79,7 +79,6 @@ public abstract class AbstractModInitializer
 		
 		// Client uses config for auto-updater, so it's initialized here instead of post-init stage
 		this.initConfig();
-		this.initLang();
 		logModIncompatibilityWarnings(); // needs to be called after config loading
 		
 		LOGGER.info(ModInfo.READABLE_NAME + " client Initialized.");
@@ -164,20 +163,6 @@ public abstract class AbstractModInitializer
 	{
 		ConfigBase.INSTANCE = new ConfigBase(ModInfo.ID, ModInfo.NAME, Config.class, ModInfo.CONFIG_FILE_VERSION);
 		Config.completeDelayedSetup();
-	}
-	
-	private void initLang()
-	{
-		if (ModInfo.IS_DEV_BUILD)
-		{
-			String missingLangEntries = ConfigBase.INSTANCE.generateLang(true, true);
-			if (missingLangEntries != null
-					&& missingLangEntries.length() != 0)
-			{
-				LOGGER.warn("One or more language entries is missing:");
-				LOGGER.warn(missingLangEntries);
-			}
-		}
 	}
 	
 	private void checkForUpdates()
