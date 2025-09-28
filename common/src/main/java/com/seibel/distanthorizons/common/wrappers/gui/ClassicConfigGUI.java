@@ -153,14 +153,14 @@ public class ClassicConfigGUI
 		protected ConfigScreen(ConfigBase configBase, Screen parent, String category)
 		{
 			super(Translatable(
-					LANG_WRAPPER.langExists(configBase.modID + ".config" + (category.isEmpty() ? "." + category : "") + ".title") ?
-							configBase.modID + ".config.title" :
-							configBase.modID + ".config" + (category.isEmpty() ? "" : "." + category) + ".title")
+					LANG_WRAPPER.langExists(ModInfo.ID + ".config" + (category.isEmpty() ? "." + category : "") + ".title") ?
+							ModInfo.ID + ".config.title" :
+							ModInfo.ID + ".config" + (category.isEmpty() ? "" : "." + category) + ".title")
 			);
 			this.configBase = configBase;
 			this.parent = parent;
 			this.category = category;
-			this.translationPrefix = configBase.modID + ".config.";
+			this.translationPrefix = ModInfo.ID + ".config.";
 		}
 		
 		
@@ -179,7 +179,7 @@ public class ClassicConfigGUI
 			super.init();
 			if (!this.reload)
 			{
-				ConfigBase.INSTANCE.configFileINSTANCE.loadFromFile();
+				ConfigBase.INSTANCE.configFileHandler.loadFromFile();
 			}
 			
 			// Changelog button
@@ -226,7 +226,7 @@ public class ClassicConfigGUI
 					ConfigScreenConfigs.OPTION_FIELD_WIDTH, ConfigScreenConfigs.OPTION_FIELD_HEIGHT,
 					(button) -> 
 					{
-						ConfigBase.INSTANCE.configFileINSTANCE.loadFromFile();
+						ConfigBase.INSTANCE.configFileHandler.loadFromFile();
 						Objects.requireNonNull(this.minecraft).setScreen(this.parent);
 					}));
 			
@@ -237,7 +237,7 @@ public class ClassicConfigGUI
 							ConfigScreenConfigs.OPTION_FIELD_WIDTH, ConfigScreenConfigs.OPTION_FIELD_HEIGHT, 
 					(button) -> 
 					{
-						ConfigBase.INSTANCE.configFileINSTANCE.saveToFile();
+						ConfigBase.INSTANCE.configFileHandler.saveToFile();
 						Objects.requireNonNull(this.minecraft).setScreen(this.parent);
 					}));
 			
@@ -323,7 +323,7 @@ public class ClassicConfigGUI
 							new AbstractMap.SimpleEntry<Button.OnPress, Function<Object, Component>>(
 									(button) ->
 									{
-										button.active = !configEntry.apiValuePresent();
+										button.active = !configEntry.apiIsOverriding();
 										
 										configEntry.uiSetWithoutSaving(!(Boolean) configEntry.get());
 										button.setMessage(func.apply(configEntry.get()));
@@ -481,7 +481,7 @@ public class ClassicConfigGUI
 						ConfigScreenConfigs.RESET_BUTTON_WIDTH, ConfigScreenConfigs.RESET_BUTTON_HEIGHT,
 						btnAction);
 				
-				if (configEntry.apiValuePresent())
+				if (configEntry.apiIsOverriding())
 				{
 					resetButton.active = false;
 					resetButton.setMessage(Translatable("distanthorizons.general.apiOverride").withStyle(ChatFormatting.DARK_GRAY));
@@ -523,7 +523,7 @@ public class ClassicConfigGUI
 							widget.getKey());
 					
 					// deactivate the button if the API is overriding it
-					button.active = !configEntry.apiValuePresent();
+					button.active = !configEntry.apiIsOverriding();
 					
 					
 					this.configListWidget.addButton(this, configEntry,
@@ -572,7 +572,7 @@ public class ClassicConfigGUI
 						ConfigScreenConfigs.CATEGORY_BUTTON_WIDTH, ConfigScreenConfigs.CATEGORY_BUTTON_HEIGHT,
 						((button) ->
 						{
-							ConfigBase.INSTANCE.configFileINSTANCE.saveToFile();
+							ConfigBase.INSTANCE.configFileHandler.saveToFile();
 							Objects.requireNonNull(this.minecraft).setScreen(ClassicConfigGUI.getScreen(this.configBase, this, configCategory.getDestination()));
 						}));
 				this.configListWidget.addButton(this, configType, widget, null, null, null);
@@ -674,7 +674,8 @@ public class ClassicConfigGUI
 			
 			this.configListWidget.render(matrices, mouseX, mouseY, delta); // Render buttons
 			
-			// Render title
+			
+			// Render config title
 			this.DhDrawCenteredString(matrices, this.font, this.title, 
 					this.width / 2, 15, 
 					#if MC_VER < MC_1_21_6 
@@ -684,27 +685,23 @@ public class ClassicConfigGUI
 					#endif);
 			
 			
-			// auto updater?
-			if (this.configBase.modID.equals("distanthorizons"))
+			// render DH version
+			this.DhDrawString(matrices, this.font, TextOrLiteral(ModInfo.VERSION), 2, this.height - 10, 
+					#if MC_VER < MC_1_21_6
+					0xAAAAAA // RGB white
+					#else
+					0xFFAAAAAA // ARGB white
+					#endif);
+			
+			// If the update is pending, display this message to inform the user that it will apply when the game restarts
+			if (SelfUpdater.deleteOldJarOnJvmShutdown)
 			{
-				// Display version
-				this.DhDrawString(matrices, this.font, TextOrLiteral(ModInfo.VERSION), 2, this.height - 10, 
-						#if MC_VER < MC_1_21_6
-						0xAAAAAA // RGB white
-						#else
-						0xFFAAAAAA // ARGB white
-						#endif);
-				
-				// If the update is pending, display this message to inform the user that it will apply when the game restarts
-				if (SelfUpdater.deleteOldJarOnJvmShutdown)
-				{
-					this.DhDrawString(matrices, this.font, Translatable(this.configBase.modID + ".updater.waitingForClose"), 4, this.height - 38, 
+				this.DhDrawString(matrices, this.font, Translatable(ModInfo.ID + ".updater.waitingForClose"), 4, this.height - 42, 
 						#if MC_VER < MC_1_21_6
 						0xFFFFFF // RGB white
-						#else 
+						#else
 						0xFFFFFFFF // ARGB white
 						#endif);
-				}
 			}
 			
 			
@@ -740,7 +737,7 @@ public class ClassicConfigGUI
 			boolean apiOverrideActive = false;
 			if (dhConfigType instanceof ConfigEntry)
 			{
-				apiOverrideActive = ((ConfigEntry)dhConfigType).apiValuePresent();
+				apiOverrideActive = ((ConfigEntry)dhConfigType).apiIsOverriding();
 			}
 			
 			Component name = Translatable(this.translationPrefix + (dhConfigType.category.isEmpty() ? "" : dhConfigType.category + ".") + dhConfigType.getName());
@@ -780,7 +777,7 @@ public class ClassicConfigGUI
 		@Override
 		public void onClose()
 		{
-			ConfigBase.INSTANCE.configFileINSTANCE.saveToFile();
+			ConfigBase.INSTANCE.configFileHandler.saveToFile();
 			Objects.requireNonNull(this.minecraft).setScreen(this.parent);
 			
 			CONFIG_CORE_INTERFACE.onScreenChangeListenerList.forEach((listener) -> listener.run());
