@@ -133,10 +133,11 @@ public class ClassicConfigGUI
 	{
 		private static final ILangWrapper LANG_WRAPPER = SingletonInjector.INSTANCE.get(ILangWrapper.class);
 		
+		private static final String TRANSLATION_PREFIX = ModInfo.ID + ".config.";
+		
 		
 		private final ConfigBase configBase;
 		
-		private final String translationPrefix;
 		private final Screen parent;
 		private final String category;
 		private ConfigListWidget configListWidget;
@@ -160,7 +161,6 @@ public class ClassicConfigGUI
 			this.configBase = configBase;
 			this.parent = parent;
 			this.category = category;
-			this.translationPrefix = ModInfo.ID + ".config.";
 		}
 		
 		
@@ -278,7 +278,7 @@ public class ClassicConfigGUI
 		}
 		private void addMenuItem(AbstractConfigType configType)
 		{
-			trySetupConfigEntry(configType, this.translationPrefix);
+			trySetupConfigEntry(configType);
 			
 			if (this.tryCreateInputField(configType)) return;
 			if (this.tryCreateCategoryButton(configType)) return;
@@ -290,7 +290,7 @@ public class ClassicConfigGUI
 			LOGGER.warn("Config [" + configType.getNameWCategory() + "] failed to show. Please try something like changing its type.");
 		}
 		
-		private static void trySetupConfigEntry(AbstractConfigType configType, String translationPrefix)
+		private static void trySetupConfigEntry(AbstractConfigType configType)
 		{
 			configType.guiValue = new EntryInfo();
 			Class<?> fieldClass = configType.getType();
@@ -333,7 +333,7 @@ public class ClassicConfigGUI
 				{
 					// For enum
 					List<?> values = Arrays.asList(configEntry.getType().getEnumConstants());
-					Function<Object, Component> func = (value) -> Translatable(translationPrefix + "enum." + fieldClass.getSimpleName() + "." + configEntry.get().toString());
+					Function<Object, Component> func = (value) -> Translatable(TRANSLATION_PREFIX + "enum." + fieldClass.getSimpleName() + "." + configEntry.get().toString());
 					((EntryInfo) configEntry.guiValue).widget = new AbstractMap.SimpleEntry<Button.OnPress, Function<Object, Component>>((button) ->
 					{
 						// get the currently selected enum and enum index
@@ -513,7 +513,7 @@ public class ClassicConfigGUI
 					Map.Entry<Button.OnPress, Function<Object, Component>> widget = (Map.Entry<Button.OnPress, Function<Object, Component>>) ((EntryInfo) configEntry.guiValue).widget;
 					if (configEntry.getType().isEnum())
 					{
-						widget.setValue((value) -> Translatable(this.translationPrefix + "enum." + configEntry.getType().getSimpleName() + "." + configEntry.get().toString()));
+						widget.setValue((value) -> Translatable(TRANSLATION_PREFIX + "enum." + configEntry.getType().getSimpleName() + "." + configEntry.get().toString()));
 					}
 					
 					Button button = MakeBtn(
@@ -612,7 +612,7 @@ public class ClassicConfigGUI
 				Component textComponent = this.GetTranslatableTextComponentForConfig(configUiComment);
 				if (configUiComment.parentConfigPath != null)
 				{
-					textComponent = Translatable(this.translationPrefix + configUiComment.parentConfigPath);
+					textComponent = Translatable(TRANSLATION_PREFIX + configUiComment.parentConfigPath);
 				}
 				
 				this.configListWidget.addButton(this, configType, null, null, null, textComponent);
@@ -651,7 +651,7 @@ public class ClassicConfigGUI
 		}
 		
 		private Component GetTranslatableTextComponentForConfig(AbstractConfigType configType)
-		{ return Translatable(this.translationPrefix + configType.getNameWCategory());}
+		{ return Translatable(TRANSLATION_PREFIX + configType.getNameWCategory());}
 		
 		
 		
@@ -740,8 +740,8 @@ public class ClassicConfigGUI
 				apiOverrideActive = ((ConfigEntry)dhConfigType).apiIsOverriding();
 			}
 			
-			Component name = Translatable(this.translationPrefix + (dhConfigType.category.isEmpty() ? "" : dhConfigType.category + ".") + dhConfigType.getName());
-			String key = this.translationPrefix + (dhConfigType.category.isEmpty() ? "" : dhConfigType.category + ".") + dhConfigType.getName() + ".@tooltip";
+			Component name = Translatable(TRANSLATION_PREFIX + (dhConfigType.category.isEmpty() ? "" : dhConfigType.category + ".") + dhConfigType.getName());
+			String key = TRANSLATION_PREFIX + (dhConfigType.category.isEmpty() ? "" : dhConfigType.category + ".") + dhConfigType.getName() + ".@tooltip";
 			
 			if (apiOverrideActive)
 			{
