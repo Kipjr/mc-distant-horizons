@@ -29,6 +29,9 @@ import com.seibel.distanthorizons.common.wrappers.gui.updater.ChangelogScreen;
 import com.seibel.distanthorizons.core.config.types.enums.EConfigCommentTextPosition;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.updater.SelfUpdater;
+import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
+import com.seibel.distanthorizons.core.logging.SpamReducedLogger;
+import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.AnnotationUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.config.IConfigGui;
 import com.seibel.distanthorizons.core.wrapperInterfaces.config.ILangWrapper;
@@ -79,6 +82,7 @@ import static com.seibel.distanthorizons.common.wrappers.gui.GuiHelper.Translata
 public class ClassicConfigGUI
 {
 	private static final Logger LOGGER = LogManager.getLogger();
+	public static final SpamReducedLogger SPAM_LOGGER = new SpamReducedLogger(4);
 	
 	public static final ConfigCoreInterface CONFIG_CORE_INTERFACE = new ConfigCoreInterface();
 	
@@ -627,10 +631,11 @@ public class ClassicConfigGUI
 			if (configType instanceof ConfigUISpacer)
 			{
 				Button spacerButton = MakeBtn(Translatable("distanthorizons.general.spacer"),
-						0, 0,
+						10, 10, // having too small of a size causes division by 0 errors in older MC versions (IE 1.20.1)
 						1, 1,
 						(button) -> {});
 				
+				spacerButton.visible = false;
 				this.configListWidget.addButton(this, configType, spacerButton, null, null, null);
 				
 				return true;
@@ -919,58 +924,60 @@ public class ClassicConfigGUI
 		public void render(GuiGraphics matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
 		#endif
 		{
-			if (this.button != null)
+			try
 			{
-				SetY(this.button, y);
-				this.button.render(matrices, mouseX, mouseY, tickDelta);
-			}
-			
-			if (this.resetButton != null)
-			{
-				SetY(this.resetButton, y);
-				this.resetButton.render(matrices, mouseX, mouseY, tickDelta);
-			}
-			
-			if (this.indexButton != null)
-			{
-				SetY(this.indexButton, y);
-				this.indexButton.render(matrices, mouseX, mouseY, tickDelta);
-			}
-			
-			if (this.text != null)
-			{
-				int translatedLength = textRenderer.width(this.text);
+				if (this.button != null)
+				{
+					SetY(this.button, y);
+					this.button.render(matrices, mouseX, mouseY, tickDelta);
+				}
 				
-				int textXPos;
-				if (this.textPosition == EConfigCommentTextPosition.RIGHT_JUSTIFIED)
+				if (this.resetButton != null)
 				{
-					// text right justified aligned against the buttons
-					textXPos = this.gui.width
-							- translatedLength
-							- ConfigScreenConfigs.SPACE_BETWEEN_TEXT_AND_OPTION_FIELD 
-							- ConfigScreenConfigs.SPACE_FROM_RIGHT_SCREEN 
-							- ConfigScreenConfigs.OPTION_FIELD_WIDTH 
-							- ConfigScreenConfigs.BUTTON_WIDTH_SPACING 
-							- ConfigScreenConfigs.RESET_BUTTON_WIDTH;
+					SetY(this.resetButton, y);
+					this.resetButton.render(matrices, mouseX, mouseY, tickDelta);
 				}
-				else if (this.textPosition == EConfigCommentTextPosition.CENTERED_OVER_BUTTONS)
+				
+				if (this.indexButton != null)
 				{
-					// have button centered relative to a category button
-					textXPos = this.gui.width
-							- (translatedLength/2)
-							- (ConfigScreenConfigs.CATEGORY_BUTTON_WIDTH/2)
-							- ConfigScreenConfigs.SPACE_FROM_RIGHT_SCREEN;
+					SetY(this.indexButton, y);
+					this.indexButton.render(matrices, mouseX, mouseY, tickDelta);
 				}
-				else if (this.textPosition == EConfigCommentTextPosition.CENTER_OF_SCREEN)
+				
+				if (this.text != null)
 				{
-					// have button centered in the screen
-					textXPos = (this.gui.width / 2)
-							- (translatedLength/2);
-				}
-				else
-				{
-					throw new UnsupportedOperationException("No text position render defined for ["+this.textPosition+"]");
-				}
+					int translatedLength = textRenderer.width(this.text);
+					
+					int textXPos;
+					if (this.textPosition == EConfigCommentTextPosition.RIGHT_JUSTIFIED)
+					{
+						// text right justified aligned against the buttons
+						textXPos = this.gui.width
+								- translatedLength
+								- ConfigScreenConfigs.SPACE_BETWEEN_TEXT_AND_OPTION_FIELD
+								- ConfigScreenConfigs.SPACE_FROM_RIGHT_SCREEN
+								- ConfigScreenConfigs.OPTION_FIELD_WIDTH
+								- ConfigScreenConfigs.BUTTON_WIDTH_SPACING
+								- ConfigScreenConfigs.RESET_BUTTON_WIDTH;
+					}
+					else if (this.textPosition == EConfigCommentTextPosition.CENTERED_OVER_BUTTONS)
+					{
+						// have button centered relative to a category button
+						textXPos = this.gui.width
+								- (translatedLength / 2)
+								- (ConfigScreenConfigs.CATEGORY_BUTTON_WIDTH / 2)
+								- ConfigScreenConfigs.SPACE_FROM_RIGHT_SCREEN;
+					}
+					else if (this.textPosition == EConfigCommentTextPosition.CENTER_OF_SCREEN)
+					{
+						// have button centered in the screen
+						textXPos = (this.gui.width / 2)
+								- (translatedLength / 2);
+					}
+					else
+					{
+						throw new UnsupportedOperationException("No text position render defined for [" + this.textPosition + "]");
+					}
 				
 				
                 #if MC_VER < MC_1_20_1
@@ -979,16 +986,22 @@ public class ClassicConfigGUI
 					textXPos, y + 5, 
 					0xFFFFFF);
 				#elif MC_VER < MC_1_21_6
-				matrices.drawString(textRenderer, 
-					this.text, 
-					textXPos, y + 5, 
-					0xFFFFFF);
+					matrices.drawString(textRenderer,
+							this.text,
+							textXPos, y + 5,
+							0xFFFFFF);
 				#else
 				matrices.drawString(textRenderer, 
 						this.text,
 						textXPos, y + 5, 
 						0xFFFFFFFF);
 				#endif
+				}
+			}
+			catch (Exception e)
+			{
+				// should prevent crashing the game if there's an issue
+				SPAM_LOGGER.error("Unexpected gui rendering issue: ["+e.getMessage()+"]", e);
 			}
 		}
 		
