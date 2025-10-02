@@ -1,7 +1,5 @@
 package com.seibel.distanthorizons.neoforge.wrappers;
 
-import com.mojang.blaze3d.opengl.GlTexture;
-import com.mojang.blaze3d.textures.GpuTexture;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import net.minecraft.client.Minecraft;
@@ -9,6 +7,8 @@ import org.apache.logging.log4j.Logger;
 
 #if MC_VER < MC_1_21_9
 #else
+import com.mojang.blaze3d.opengl.GlTexture;
+import com.mojang.blaze3d.textures.GpuTexture;
 import net.neoforged.neoforge.client.blaze3d.validation.ValidationGpuTexture;
 #endif
 
@@ -54,6 +54,7 @@ public class NeoforgeMinecraftRenderWrapper extends MinecraftRenderWrapper
 		}
 		#endif
 	}
+	
 	@Override
 	public int getColorTextureId()
 	{
@@ -85,4 +86,7 @@ public class NeoforgeMinecraftRenderWrapper extends MinecraftRenderWrapper
 		}
 		#endif
 	}
+	
+	
+	
 }

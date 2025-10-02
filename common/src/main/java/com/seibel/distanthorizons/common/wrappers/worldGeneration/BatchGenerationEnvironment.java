@@ -76,9 +76,11 @@ import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.nbt.CompoundTag;
 import org.apache.logging.log4j.LogManager;
 
-#if MC_VER >= MC_1_19_4
-import net.minecraft.core.registries.Registries;
+#if MC_VER <= MC_1_17_1
+#elif MC_VER <= MC_1_19_2
+import net.minecraft.core.Registry;
 #else
+import net.minecraft.core.registries.Registries;
 #endif
 
 #if MC_VER <= MC_1_20_4

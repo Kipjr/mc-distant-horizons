@@ -26,7 +26,6 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRen
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import net.minecraft.client.renderer.LightTexture;
 
-import net.neoforged.neoforge.client.blaze3d.validation.ValidationGpuTexture;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -38,9 +37,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.mojang.blaze3d.platform.NativeImage;
 #elif MC_VER < MC_1_21_5
 import com.mojang.blaze3d.pipeline.TextureTarget;
-#else
+#elif MC_VER < MC_1_21_9
 import com.mojang.blaze3d.opengl.GlTexture;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTexture;
+#else
+import net.neoforged.neoforge.client.blaze3d.validation.ValidationGpuTexture;
+import com.mojang.blaze3d.opengl.GlTexture;
 import com.mojang.blaze3d.textures.GpuTexture;
 #endif
 
