@@ -35,8 +35,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 
 import it.unimi.dsi.fastutil.shorts.ShortList;
-import net.minecraft.core.DefaultedMappedRegistry;
-import net.minecraft.core.IdMapper;
 import net.minecraft.core.Registry;
 #if MC_VER >= MC_1_19_4
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -47,7 +45,6 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.datafix.fixes.ChunkHeightAndBiomeFix;
 import net.minecraft.world.level.*;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
