@@ -32,7 +32,6 @@ import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
 import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
-import com.seibel.distanthorizons.core.pos.DhSectionPos;
 import com.seibel.distanthorizons.core.util.objects.EventTimer;
 import com.seibel.distanthorizons.core.util.LodUtil;
 import com.seibel.distanthorizons.core.util.gridList.ArrayGridList;
@@ -80,7 +79,6 @@ import org.apache.logging.log4j.LogManager;
 #if MC_VER >= MC_1_19_4
 import net.minecraft.core.registries.Registries;
 #else
-import net.minecraft.core.Registry;
 #endif
 
 #if MC_VER <= MC_1_20_4
@@ -575,7 +573,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 				if (Config.Common.LodBuilding.pullLightingForPregeneratedChunks.get())
 				{
 					// attempt to get chunk lighting
-					ChunkLoader.CombinedChunkLightStorage combinedLights = ChunkLoader.readLight(newChunk, chunkData);
+					ChunkFileReader.CombinedChunkLightStorage combinedLights = ChunkFileReader.readLight(newChunk, chunkData);
 					if (combinedLights != null)
 					{
 						chunkSkyLightingByDhPos.put(dhChunkPos, combinedLights.skyLightStorage);
@@ -705,7 +703,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 				LOAD_LOGGER.debug("DistantHorizons: Loading chunk [" + chunkPos + "] from disk.");
 				
 				@Nullable
-				ChunkAccess chunk = ChunkLoader.read(level, chunkPos, chunkData);
+				ChunkAccess chunk = ChunkFileReader.read(level, chunkPos, chunkData);
 				if (chunk != null)
 				{
 					if (Config.Common.LodBuilding.assumePreExistingChunksAreFinished.get())
