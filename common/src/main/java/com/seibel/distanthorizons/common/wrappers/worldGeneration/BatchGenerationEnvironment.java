@@ -116,8 +116,10 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 	
 	#if MC_VER < MC_1_21_5
 	private static final TicketType<ChunkPos> DH_SERVER_GEN_TICKET = TicketType.create("dh_server_gen_ticket", Comparator.comparingLong(ChunkPos::toLong));
-	#else
+	#elif MC_VER < MC_1_21_9
 	private static final TicketType DH_SERVER_GEN_TICKET = new TicketType(/* timeout, 0 = disabled*/0L, /* persist */ false, TicketType.TicketUse.LOADING);
+	#else
+	private static final TicketType DH_SERVER_GEN_TICKET = new TicketType(/* timeout, 0 = disabled*/0L, /* flags */0);
 	#endif
 	
 	private static final IModChecker MOD_CHECKER = SingletonInjector.INSTANCE.get(IModChecker.class);
@@ -745,8 +747,10 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, level.registryAccess().registryOrThrow(Registries.BIOME), null);
 		#elif MC_VER < MC_1_21_3
 		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, level.registryAccess().registryOrThrow(Registries.BIOME), null);
-		#else
+		#elif MC_VER < MC_1_21_9
 		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, level.registryAccess().lookupOrThrow(Registries.BIOME), null);
+		#else
+		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, null, null);
 		#endif
 	}
 	

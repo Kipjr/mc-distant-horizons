@@ -39,7 +39,11 @@ public class MinecraftScreen
 		protected ConfigScreenRenderer(Screen parent, AbstractScreen screen, String translationName)
 		{
 			super(translate(translationName));
+			#if MC_VER < MC_1_21_9
 			screen.minecraftWindow = Minecraft.getInstance().getWindow().getWindow();
+			#else
+			screen.minecraftWindow = Minecraft.getInstance().getWindow().handle();
+			#endif
 			this.parent = parent;
 			this.screen = screen;
 		}

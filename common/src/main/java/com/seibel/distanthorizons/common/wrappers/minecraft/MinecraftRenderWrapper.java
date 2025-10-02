@@ -23,8 +23,11 @@ import java.awt.Color;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.mojang.blaze3d.opengl.GlTexture;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTexture;
 import com.seibel.distanthorizons.common.wrappers.WrapperFactory;
 import com.seibel.distanthorizons.common.wrappers.misc.LightMapWrapper;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
@@ -72,25 +75,21 @@ import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.Logger;
 import org.joml.Vector4f;
 
-#if MC_VER >= MC_1_21_5
+#if MC_VER >= MC_1_21_5 && MC_VER < MC_1_21_9
 import com.mojang.blaze3d.opengl.GlTexture;
+#else
 #endif
 
 /**
  * A singleton that contains everything
  * related to rendering in Minecraft.
- *
- * @author James Seibel
- * @version 12-12-2021
  */
-//@Environment(EnvType.CLIENT)
 public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 {
 	public static final MinecraftRenderWrapper INSTANCE = new MinecraftRenderWrapper();
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
 	private static final Minecraft MC = Minecraft.getInstance();
-	private static final IWrapperFactory FACTORY = WrapperFactory.INSTANCE;
 	
 	private static final IOptifineAccessor OPTIFINE_ACCESSOR = ModAccessorInjector.INSTANCE.get(IOptifineAccessor.class);
 	
@@ -300,7 +299,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 		return height;
 	}
 	
-	private RenderTarget getRenderTarget() { return MC.getMainRenderTarget(); }
+	protected RenderTarget getRenderTarget() { return MC.getMainRenderTarget(); }
 	
 	@Override
 	public boolean mcRendersToFrameBuffer()
@@ -348,19 +347,39 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	{
 		#if MC_VER < MC_1_21_5
 		return this.getRenderTarget().getDepthTextureId();
-		#else
+		#elif MC_VER < MC_1_21_9
 		try
-		{
+		{		
 			GlTexture glTexture = (GlTexture) this.getRenderTarget().getDepthTexture();
 			if (glTexture == null)
 			{
 				// shouldn't happen, but just in case
 				return 0;
 			}
-			
+
 			return glTexture.glId();
+			
 		}
-		catch (ClassCastException e)
+		catch (Exception e)
+		{
+			// only log this error once per session
+			if (!this.depthTextureCastFailLogged)
+			{
+				this.depthTextureCastFailLogged = true;
+				LOGGER.error("Unable to cast render Target depth texture to GlTexture. MC or a rendering mod may have changed the object type.", e);
+			}
+			return 0;
+		}
+		#else
+		try
+		{
+			throw new UnsupportedOperationException("Fabric get texture ID not implemented yet");
+			
+			//GpuTexture depthTex = this.getRenderTarget().getDepthTexture();
+			//int id = ((GlTexture)depthTex.getClass().getMethod("getRealTexture").invoke(depthTex)).glId();
+			//return id;
+		}
+		catch (Exception e)
 		{
 			// only log this error once per session
 			if (!this.depthTextureCastFailLogged)
@@ -377,7 +396,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	{
 		#if MC_VER < MC_1_21_5
 		return this.getRenderTarget().getColorTextureId();
-		#else
+		#elif MC_VER < MC_1_21_9
 		try
 		{
 			GlTexture glTexture = (GlTexture) this.getRenderTarget().getColorTexture();
@@ -389,7 +408,26 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 			
 			return glTexture.glId();
 		}
-		catch (ClassCastException e)
+		catch (Exception e)
+		{
+			// only log this error once per session
+			if (!this.colorTextureCastFailLogged)
+			{
+				this.colorTextureCastFailLogged = true;
+				LOGGER.error("Unable to cast render Target color texture to GlTexture. MC or a rendering mod may have changed the object type.", e);
+			}
+			return 0;
+		}
+		#else
+		try
+		{
+			throw new UnsupportedOperationException("Fabric get texture ID not implemented yet");
+			
+			//GpuTexture colorTex = this.getRenderTarget().getColorTexture();
+			//int id = ((GlTexture)colorTex.getClass().getMethod("getRealTexture").invoke(colorTex)).glId();
+			//return id;
+		}
+		catch (Exception e)
 		{
 			// only log this error once per session
 			if (!this.colorTextureCastFailLogged)
@@ -405,13 +443,21 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public int getTargetFrameBufferViewportWidth()
 	{
+		#if MC_VER < MC_1_21_9
 		return this.getRenderTarget().viewWidth;
+		#else
+		return this.getRenderTarget().width;
+		#endif
 	}
 	
 	@Override
 	public int getTargetFrameBufferViewportHeight()
 	{
+		#if MC_VER < MC_1_21_9
 		return this.getRenderTarget().viewHeight;
+		#else
+		return this.getRenderTarget().height;
+		#endif
 	}
 	
 	@Override
