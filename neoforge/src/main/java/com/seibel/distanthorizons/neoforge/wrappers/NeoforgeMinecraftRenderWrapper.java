@@ -16,7 +16,7 @@ import java.lang.invoke.MethodHandles;
 
 public class NeoforgeMinecraftRenderWrapper extends MinecraftRenderWrapper
 {
-	public static final MinecraftRenderWrapper INSTANCE = new MinecraftRenderWrapper();
+	public static final NeoforgeMinecraftRenderWrapper INSTANCE = new NeoforgeMinecraftRenderWrapper();
 	
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
 	private static final Minecraft MC = Minecraft.getInstance();
