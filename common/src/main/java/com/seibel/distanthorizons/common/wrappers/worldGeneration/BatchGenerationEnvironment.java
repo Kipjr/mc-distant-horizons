@@ -63,10 +63,7 @@ import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepSurfa
 
 import net.minecraft.server.level.*;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.chunk.ProtoChunk;
-import net.minecraft.world.level.chunk.UpgradeData;
+import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.chunk.storage.IOWorker;
 import net.minecraft.world.level.chunk.storage.RegionFileStorage;
 import net.minecraft.world.level.levelgen.DebugLevelSource;
@@ -750,7 +747,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		#elif MC_VER < MC_1_21_9
 		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, level.registryAccess().lookupOrThrow(Registries.BIOME), null);
 		#else
-		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, null, null);
+		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, PalettedContainerFactory.create(level.registryAccess()), null);
 		#endif
 	}
 	

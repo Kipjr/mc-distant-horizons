@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
+import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -306,10 +307,22 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 			return;
 		}
 		
+		if (!GLProxy.hasInstance())
+		{
+			// rendering setup hasn't finished
+			return;
+		}
+		
         #if MC_VER < MC_1_19_2
 		player.sendMessage(new TextComponent(string), getPlayer().getUUID());
-        #else
+        #elif MC_VER < MC_1_21_9
 		player.displayClientMessage(net.minecraft.network.chat.Component.translatable(string), /*isOverlay*/false);
+		#else
+		
+		GLProxy.getInstance().queueRunningOnRenderThread(() -> 
+		{
+			player.displayClientMessage(net.minecraft.network.chat.Component.translatable(string), /*isOverlay*/false);
+		});
         #endif
 	}
 	
