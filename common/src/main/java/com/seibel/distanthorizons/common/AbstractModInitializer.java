@@ -5,6 +5,7 @@ import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiAfterDh
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeDhInitEvent;
 import com.seibel.distanthorizons.common.commands.CommandInitializer;
 import com.seibel.distanthorizons.common.wrappers.DependencySetup;
+import com.seibel.distanthorizons.common.wrappers.gui.DebugScreenEntry;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftServerWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
@@ -82,6 +83,8 @@ public abstract class AbstractModInitializer
 		logModIncompatibilityWarnings(); // needs to be called after config loading
 		
 		LOGGER.info(ModInfo.READABLE_NAME + " client Initialized.");
+		
+		DebugScreenEntry.register();
 		
 		this.subscribeClientStartedEvent(this::postInit);
 	}
