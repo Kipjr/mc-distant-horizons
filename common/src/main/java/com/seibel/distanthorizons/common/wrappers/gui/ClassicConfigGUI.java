@@ -111,9 +111,8 @@ public class ClassicConfigGUI
 		
 	}
 	
-	/**
-	 * The terribly coded old stuff
-	 */
+	// TODO
+	/** The terribly coded old stuff */
 	public static class EntryInfo
 	{
 		Object widget;
@@ -870,6 +869,7 @@ public class ClassicConfigGUI
 		private final EConfigCommentTextPosition textPosition;
 		
 		public static final Map<AbstractWidget, Component> TEXT_BY_WIDGET = new HashMap<>();
+		// TODO we should just use a wrapper or something
 		public static final Map<AbstractWidget, ButtonEntry> BUTTON_BY_WIDGET = new HashMap<>();
 		
 		

@@ -19,12 +19,10 @@
 
 package com.seibel.distanthorizons.common.wrappers.block;
 
-import com.seibel.distanthorizons.core.util.LodUtil;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Cursor3D;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.*;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -40,10 +38,9 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class TintGetterOverrideSmooth implements BlockAndTintGetter
+public class TintGetterOverrideSmooth extends AbstractDhTintGetter
 {
-	LevelReader parent;
-	public int smoothingRange;
+	private final LevelReader parent;
 	
 	
 	
@@ -51,10 +48,10 @@ public class TintGetterOverrideSmooth implements BlockAndTintGetter
 	// constructor //
 	//=============//
 	
-	public TintGetterOverrideSmooth(LevelReader parent, int smoothingRange)
-	{
+	public TintGetterOverrideSmooth(LevelReader parent, BiomeWrapper biomeWrapper, FullDataSourceV2 fullDataSource)
+	{ 
+		super(biomeWrapper, fullDataSource); 
 		this.parent = parent;
-		this.smoothingRange = smoothingRange;
 	}
 	
 	
@@ -62,41 +59,6 @@ public class TintGetterOverrideSmooth implements BlockAndTintGetter
 	//=========//
 	// methods //
 	//=========//
-	
-	private Biome _getBiome(BlockPos pos)
-	{
-		#if MC_VER >= MC_1_18_2
-		return this.parent.getBiome(pos).value();
-		#else
-		return parent.getBiome(pos);
-		#endif
-	}
-	
-	public int calculateBlockTint(BlockPos blockPos, ColorResolver colorResolver)
-	{
-		int i = smoothingRange;
-		if (i == 0)
-			return colorResolver.getColor(_getBiome(blockPos), blockPos.getX(), blockPos.getZ());
-		int j = (i * 2 + 1) * (i * 2 + 1);
-		int k = 0;
-		int l = 0;
-		int m = 0;
-		Cursor3D cursor3D = new Cursor3D(blockPos.getX() - i, blockPos.getY(), blockPos.getZ() - i, blockPos.getX() + i, blockPos.getY(), blockPos.getZ() + i);
-		BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
-		while (cursor3D.advance())
-		{
-			mutableBlockPos.set(cursor3D.nextX(), cursor3D.nextY(), cursor3D.nextZ());
-			int n = colorResolver.getColor(this._getBiome(mutableBlockPos), mutableBlockPos.getX(), mutableBlockPos.getZ());
-			
-			k += (n & 0xFF0000) >> 16;
-			l += (n & 0xFF00) >> 8;
-			m += n & 0xFF;
-		}
-		return (k / j & 0xFF) << 16 | (l / j & 0xFF) << 8 | m / j & 0xFF;
-	}
-	
-	@Override
-	public int getBlockTint(BlockPos blockPos, ColorResolver colorResolver) { return this.calculateBlockTint(blockPos, colorResolver); }
 	
 	@Override
 	public float getShade(Direction direction, boolean bl) { return this.parent.getShade(direction, bl); }
@@ -185,7 +147,7 @@ public class TintGetterOverrideSmooth implements BlockAndTintGetter
 	public int getMinSection() { return this.parent.getMinSection(); }
 	#else
 	@Override
-	public int getMinSectionY() { return BlockAndTintGetter.super.getMinSectionY(); }	
+	public int getMinSectionY() { return super.getMinSectionY(); }	
 	#endif
 	
 	#if MC_VER < MC_1_21_3
@@ -211,4 +173,7 @@ public class TintGetterOverrideSmooth implements BlockAndTintGetter
 	@Override
 	public int getSectionYFromSectionIndex(int i) { return this.parent.getSectionYFromSectionIndex(i); }
     #endif
+	
+	
+	
 }

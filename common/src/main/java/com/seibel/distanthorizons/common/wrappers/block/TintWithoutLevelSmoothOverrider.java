@@ -19,86 +19,30 @@
 
 package com.seibel.distanthorizons.common.wrappers.block;
 
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.level.BlockAndTintGetter;
-import net.minecraft.world.level.ColorResolver;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.material.FluidState;
 import org.jetbrains.annotations.Nullable;
 
-#if MC_VER >= MC_1_18_2
-import net.minecraft.core.Holder;
-#endif
-
-public class TintWithoutLevelSmoothOverrider implements BlockAndTintGetter
+public class TintWithoutLevelSmoothOverrider extends AbstractDhTintGetter
 {
-	final BiomeWrapper biome;
-	public int smoothingRange;
-	
-	
 	
 	//=============//
 	// constructor //
 	//=============//
 	
-	public TintWithoutLevelSmoothOverrider(BiomeWrapper biome, int smoothingRange)
-	{
-		this.biome = biome;
-		this.smoothingRange = smoothingRange;
-	}
+	public TintWithoutLevelSmoothOverrider(BiomeWrapper biomeWrapper, FullDataSourceV2 fullDataSource)
+	{ super(biomeWrapper, fullDataSource); }
 	
 	
 	
 	//=========//
 	// methods //
 	//=========//
-	
-	@Override
-	public int getBlockTint(BlockPos blockPos, ColorResolver colorResolver)
-	{
-		return colorResolver.getColor(_unwrap(biome.biome), blockPos.getX(), blockPos.getZ());
-	}
-	private Biome _unwrap(#if MC_VER >= MC_1_18_2 Holder<Biome> #else Biome #endif biome)
-	{
-		#if MC_VER >= MC_1_18_2
-		return biome.value();
-		#else
-		return biome;
-		#endif
-	}
-
-//    public int calculateBlockTint(BlockPos blockPos, ColorResolver colorResolver)
-//    {
-//        int i = smoothingRange;
-//        if (i == 0)
-//            return colorResolver.getColor(_getBiome(blockPos), blockPos.getX(), blockPos.getZ());
-//        int j = (i * 2 + 1) * (i * 2 + 1);
-//        int k = 0;
-//        int l = 0;
-//        int m = 0;
-//        Cursor3D cursor3D = new Cursor3D(blockPos.getX() - i, blockPos.getY(), blockPos.getZ() - i, blockPos.getX() + i, blockPos.getY(), blockPos.getZ() + i);
-//        BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
-//        while (cursor3D.advance())
-//        {
-//            mutableBlockPos.set(cursor3D.nextX(), cursor3D.nextY(), cursor3D.nextZ());
-//            int n;
-//            if (LodCommonMain.forgeMethodCaller != null) {
-//                n = LodCommonMain.forgeMethodCaller.colorResolverGetColor(colorResolver, _getBiome(mutableBlockPos),
-//                        mutableBlockPos.getX(), mutableBlockPos.getZ());
-//            } else {
-//                n = colorResolver.getColor(_getBiome(mutableBlockPos), mutableBlockPos.getX(), mutableBlockPos.getZ());
-//            }
-//
-//            k += (n & 0xFF0000) >> 16;
-//            l += (n & 0xFF00) >> 8;
-//            m += n & 0xFF;
-//        }
-//        return (k / j & 0xFF) << 16 | (l / j & 0xFF) << 8 | m / j & 0xFF;
-//    }
 	
 	@Override
 	public float getShade(Direction direction, boolean shade)

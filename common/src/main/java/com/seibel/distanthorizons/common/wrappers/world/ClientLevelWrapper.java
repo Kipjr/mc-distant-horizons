@@ -7,6 +7,7 @@ import com.seibel.distanthorizons.common.wrappers.block.BiomeWrapper;
 import com.seibel.distanthorizons.common.wrappers.block.BlockStateWrapper;
 import com.seibel.distanthorizons.common.wrappers.block.ClientBlockStateColorCache;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.level.*;
 import com.seibel.distanthorizons.core.level.IServerKeyedClientLevel;
@@ -176,13 +177,13 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	//====================//
 	
 	@Override
-	public int getBlockColor(DhBlockPos pos, IBiomeWrapper biome, IBlockStateWrapper blockWrapper)
+	public int getBlockColor(DhBlockPos pos, IBiomeWrapper biome, FullDataSourceV2 fullDataSource, IBlockStateWrapper blockWrapper)
 	{
 		ClientBlockStateColorCache blockColorCache = this.blockCache.computeIfAbsent(
 				((BlockStateWrapper) blockWrapper).blockState,
 				this.cachedBlockColorCacheFunction);
 		
-		return blockColorCache.getColor((BiomeWrapper) biome, pos);
+		return blockColorCache.getColor((BiomeWrapper) biome, fullDataSource, pos);
 	}
 	/** used by {@link ClientLevelWrapper#cachedBlockColorCacheFunction} */
 	private ClientBlockStateColorCache createBlockColorCache(BlockState block) { return new ClientBlockStateColorCache(block, this); }
@@ -205,7 +206,7 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 			}
 		}
 		
-		return this.getBlockColor(DhBlockPos.ZERO,BiomeWrapper.EMPTY_WRAPPER, this.dirtBlockWrapper);
+		return this.getBlockColor(DhBlockPos.ZERO, BiomeWrapper.EMPTY_WRAPPER, null, this.dirtBlockWrapper);
 	}
 	
 	@Override
@@ -225,7 +226,7 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 			}
 		}
 		
-		return this.getBlockColor(DhBlockPos.ZERO, BiomeWrapper.EMPTY_WRAPPER, this.waterBlockWrapper);
+		return this.getBlockColor(DhBlockPos.ZERO, BiomeWrapper.EMPTY_WRAPPER, null, this.waterBlockWrapper);
 	}
 	
 	@Override 
