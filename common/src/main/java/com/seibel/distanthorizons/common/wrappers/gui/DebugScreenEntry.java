@@ -1,5 +1,8 @@
 package com.seibel.distanthorizons.common.wrappers.gui;
 
+#if MC_VER < MC_1_21_9
+// not supported for older MC versions
+#else
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 
@@ -14,7 +17,13 @@ import net.minecraft.client.gui.components.debug.DebugScreenEntries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
+#endif
 
+#if MC_VER < MC_1_21_9
+// not supported for older MC versions
+public class DebugScreenEntry
+{}
+#else
 public class DebugScreenEntry implements net.minecraft.client.gui.components.debug.DebugScreenEntry
 {
 	public static void register()
@@ -77,3 +86,4 @@ public class DebugScreenEntry implements net.minecraft.client.gui.components.deb
 		return true;
 	}
 }
+#endif
