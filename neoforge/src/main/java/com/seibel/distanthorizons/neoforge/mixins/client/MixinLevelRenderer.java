@@ -92,9 +92,20 @@ public class MixinLevelRenderer
 	#if MC_VER < MC_1_21_6
 	@Inject(at = @At("HEAD"), method = "renderSectionLayer", cancellable = true)
 	private void renderChunkLayer(RenderType renderType, double x, double y, double z, Matrix4f modelViewMatrix, Matrix4f projectionMatrix, CallbackInfo callback)
+	#elif MC_VER < MC_1_21_9
+	@Inject(at = @At("HEAD"), method = "renderLevel", cancellable = true)
+	private void onRenderLevel(
+			GraphicsResourceAllocator resourceAllocator, DeltaTracker deltaTracker, 
+			boolean renderBlockOutline, Camera camera, 
+			Matrix4f positionMatrix, Matrix4f projectionMatrix, GpuBufferSlice gpuBufferSlice, 
+			Vector4f skyColor, boolean thinFog, CallbackInfo callback)
 	#else
 	@Inject(at = @At("HEAD"), method = "renderLevel", cancellable = true)
-	private void onRenderLevel(GraphicsResourceAllocator resourceAllocator, DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, Matrix4f positionMatrix, Matrix4f projectionMatrix, GpuBufferSlice gpuBufferSlice, Vector4f skyColor, boolean thinFog, CallbackInfo callback)
+	private void renderLevel(
+			GraphicsResourceAllocator resourceAllocator, DeltaTracker deltaTracker, 
+			boolean renderBlockOutline, Camera camera, 
+			Matrix4f positionMatrix, Matrix4f projectionMatrix, Matrix4f idkMatrix, GpuBufferSlice gpuBufferSlice, 
+			Vector4f skyColor, boolean thinFog, CallbackInfo callback)
     #endif
 	{
 		#if MC_VER < MC_1_21_6
@@ -169,11 +180,6 @@ public class MixinLevelRenderer
 			);
 		}
 		#endif
-		
-		if (Config.Client.Advanced.Debugging.lodOnlyMode.get())
-		{
-			callback.cancel();
-		}
 	}
 	
 	

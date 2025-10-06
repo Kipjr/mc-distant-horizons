@@ -50,6 +50,9 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import com.seibel.distanthorizons.common.wrappers.DependencySetupDoneCheck;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepBiomes;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepFeatures;
@@ -60,10 +63,7 @@ import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepSurfa
 
 import net.minecraft.server.level.*;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.chunk.ProtoChunk;
-import net.minecraft.world.level.chunk.UpgradeData;
+import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.chunk.storage.IOWorker;
 import net.minecraft.world.level.chunk.storage.RegionFileStorage;
 import net.minecraft.world.level.levelgen.DebugLevelSource;
@@ -73,19 +73,17 @@ import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.nbt.CompoundTag;
 import org.apache.logging.log4j.LogManager;
 
-#if MC_VER >= MC_1_19_4
-import net.minecraft.core.registries.Registries;
-#else
+#if MC_VER <= MC_1_17_1
+#elif MC_VER <= MC_1_19_2
 import net.minecraft.core.Registry;
+#else
+import net.minecraft.core.registries.Registries;
 #endif
 
 #if MC_VER <= MC_1_20_4
 import net.minecraft.world.level.chunk.ChunkStatus;
-import org.jetbrains.annotations.Nullable;
 #else
 import net.minecraft.world.level.chunk.status.ChunkStatus;
-
-import javax.annotation.Nullable;
 #endif
 
 /*
@@ -115,8 +113,10 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 	
 	#if MC_VER < MC_1_21_5
 	private static final TicketType<ChunkPos> DH_SERVER_GEN_TICKET = TicketType.create("dh_server_gen_ticket", Comparator.comparingLong(ChunkPos::toLong));
-	#else
+	#elif MC_VER < MC_1_21_9
 	private static final TicketType DH_SERVER_GEN_TICKET = new TicketType(/* timeout, 0 = disabled*/0L, /* persist */ false, TicketType.TicketUse.LOADING);
+	#else
+	private static final TicketType DH_SERVER_GEN_TICKET = new TicketType(/* timeout, 0 = disabled*/0L, /* flags */0);
 	#endif
 	
 	private static final IModChecker MOD_CHECKER = SingletonInjector.INSTANCE.get(IModChecker.class);
@@ -174,6 +174,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 	// constructors //
 	//==============//
 	
+	@NotNull
 	public static final ImmutableMap<EDhApiWorldGenerationStep, Integer> WORLD_GEN_CHUNK_BORDER_NEEDED_BY_GEN_STEP;
 	public static final int MAX_WORLD_GEN_CHUNK_BORDER_NEEDED;
 	
@@ -205,11 +206,12 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		builder.put(EDhApiWorldGenerationStep.LIGHT, 0);
 		WORLD_GEN_CHUNK_BORDER_NEEDED_BY_GEN_STEP = builder.build();
 		
-		// TODO this is a test to see if the additional boarder is actually necessary or not.
-		//  If world generators end up having infinite loops or other unexplained issues,
-		//  this should be set back to the commented out logic below
+		// in James' testing as of 2025-09-13 a border here of 2
+		// and a getChunkPosToGenerateStream() radius of 14 provided more accurate
+		// structure generation, however it also caused extreme server lag
+		// a border of 0 here and a getChunkPosToGenerateStream() radius of 8 provided 
+		// good-enough structure generation while not lagging the server
 		MAX_WORLD_GEN_CHUNK_BORDER_NEEDED = 0;
-		//MAX_WORLD_GEN_CHUNK_BORDER_NEEDED = WORLD_GEN_CHUNK_BORDER_NEEDED_BY_GEN_STEP.values().stream().mapToInt(Integer::intValue).max().getAsInt();
 	}
 	
 	public BatchGenerationEnvironment(IDhServerLevel serverlevel)
@@ -387,7 +389,9 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		CompletableFuture.allOf(readFutures).join();
 		
 		// future chain for generation
-		return CompletableFuture.runAsync(() -> 
+		return CompletableFuture.runAsync(() ->
+		{
+			try
 			{
 				// offset 1 chunk in both X and Z direction so we can generate an even number of chunks wide
 				// while still submitting an odd number width to MC's internal generators
@@ -410,10 +414,10 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 						int centerZ = refPosZ + radius + zOffset;
 						
 						// get/create the list of chunks we're going to generate
-						IEmptyChunkRetrievalFunc fallbackFunc = 
+						IEmptyChunkRetrievalFunc fallbackFunc =
 								(chunkPosX, chunkPosZ) -> Objects.requireNonNull(
-											generatedChunkByDhPos.get(new DhChunkPos(chunkPosX, chunkPosZ)), 
-											() -> String.format("Requested chunk [%d, %d] unavailable during world generation", chunkPosX, chunkPosZ));
+										generatedChunkByDhPos.get(new DhChunkPos(chunkPosX, chunkPosZ)),
+										() -> String.format("Requested chunk [%d, %d] unavailable during world generation", chunkPosX, chunkPosZ));
 						
 						ArrayGridList<ChunkAccess> regionChunks = new ArrayGridList<>(
 								refSize,
@@ -435,7 +439,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 								// this method shouldn't be necessary since we're passing in a pre-populated
 								// list of chunks, but just in case
 								fallbackFunc
-							);
+						);
 						lightGetterAdaptor.setRegion(region);
 						genEvent.threadedParam.makeStructFeat(region, this.params);
 						
@@ -524,7 +528,12 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 					genEvent.threadedParam.perf.recordEvent(genEvent.timer);
 					PREF_LOGGER.debugInc(genEvent.timer.toString());
 				}
-			}, executor);
+			}
+			catch (Exception e)
+			{
+				EVENT_LOGGER.error("Unexpected error during world gen for min chunk pos ["+genEvent.minPos+"], error: ["+e.getMessage()+"].", e);
+			}
+		}, executor);
 	}
 	/** @param extraRadius in both the positive and negative directions */
 	private static Stream<ChunkPos> getChunkPosToGenerateStream(int genMinX, int genMinZ, int width, int extraRadius)
@@ -563,7 +572,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 				if (Config.Common.LodBuilding.pullLightingForPregeneratedChunks.get())
 				{
 					// attempt to get chunk lighting
-					ChunkLoader.CombinedChunkLightStorage combinedLights = ChunkLoader.readLight(newChunk, chunkData);
+					ChunkFileReader.CombinedChunkLightStorage combinedLights = ChunkFileReader.readLight(newChunk, chunkData);
 					if (combinedLights != null)
 					{
 						chunkSkyLightingByDhPos.put(dhChunkPos, combinedLights.skyLightStorage);
@@ -693,7 +702,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 				LOAD_LOGGER.debug("DistantHorizons: Loading chunk [" + chunkPos + "] from disk.");
 				
 				@Nullable
-				ChunkAccess chunk = ChunkLoader.read(level, chunkPos, chunkData);
+				ChunkAccess chunk = ChunkFileReader.read(level, chunkPos, chunkData);
 				if (chunk != null)
 				{
 					if (Config.Common.LodBuilding.assumePreExistingChunksAreFinished.get())
@@ -735,8 +744,10 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, level.registryAccess().registryOrThrow(Registries.BIOME), null);
 		#elif MC_VER < MC_1_21_3
 		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, level.registryAccess().registryOrThrow(Registries.BIOME), null);
-		#else
+		#elif MC_VER < MC_1_21_9
 		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, level.registryAccess().lookupOrThrow(Registries.BIOME), null);
+		#else
+		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, PalettedContainerFactory.create(level.registryAccess()), null);
 		#endif
 	}
 	
@@ -1078,8 +1089,8 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		}
 	}
 	private static <T> ArrayGridList<T> GetCutoutFrom(ArrayGridList<T> total, int border) { return new ArrayGridList<>(total, border, total.gridSize - border); }
-	//private static <T> ArrayGridList<T> GetCutoutFrom(ArrayGridList<T> total, EDhApiWorldGenerationStep step) { return GetCutoutFrom(total, MaxBorderNeeded - WORLD_GEN_CHUNK_BORDER_NEEDED_BY_GEN_STEP.get(step)); }
-	private static <T> ArrayGridList<T> GetCutoutFrom(ArrayGridList<T> total, EDhApiWorldGenerationStep step) { return GetCutoutFrom(total, 0); }
+	private static <T> ArrayGridList<T> GetCutoutFrom(ArrayGridList<T> total, EDhApiWorldGenerationStep step) { return GetCutoutFrom(total, WORLD_GEN_CHUNK_BORDER_NEEDED_BY_GEN_STEP.get(step)); }
+	//private static <T> ArrayGridList<T> GetCutoutFrom(ArrayGridList<T> total, EDhApiWorldGenerationStep step) { return GetCutoutFrom(total, 0); }
 	
 	
 	@Override

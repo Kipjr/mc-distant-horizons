@@ -20,12 +20,13 @@
 package com.seibel.distanthorizons.common.wrappers.worldGeneration.step;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.ThreadedParameters;
 
+import com.seibel.distanthorizons.common.wrappers.worldGeneration.mimicObject.DhLitWorldGenRegion;
+import com.seibel.distanthorizons.core.util.gridList.ArrayGridList;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ProtoChunk;
@@ -40,39 +41,35 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 #endif
 
-public final class StepBiomes
+public final class StepBiomes extends AbstractWorldGenStep
 {
-	public static final ChunkStatus STATUS = ChunkStatus.BIOMES;
-	
 	private final BatchGenerationEnvironment environment;
 	
+	public static final ChunkStatus STATUS = ChunkStatus.BIOMES;
+	
+	
+	
+	//=============//
+	// constructor //
+	//=============//
 	
 	public StepBiomes(BatchGenerationEnvironment batchGenerationEnvironment) { this.environment = batchGenerationEnvironment; }
 	
 	
 	
+	//==================//
+	// abstract methods //
+	//==================//
+	
+	@Override
+	public ChunkStatus getChunkStatus() { return STATUS; }
+	
+	@Override 
 	public void generateGroup(
-			ThreadedParameters tParams, WorldGenRegion worldGenRegion,
-			List<ChunkWrapper> chunkWrappers)
+			ThreadedParameters tParams, DhLitWorldGenRegion worldGenRegion, 
+			ArrayGridList<ChunkWrapper> chunkWrappers)
 	{
-		
-		ArrayList<ChunkAccess> chunksToDo = new ArrayList<>();
-		
-		for (ChunkWrapper chunkWrapper : chunkWrappers)
-		{
-			ChunkAccess chunk = chunkWrapper.getChunk();
-			if (chunkWrapper.getStatus().isOrAfter(STATUS))
-			{
-				// this chunk has already generated this step
-				continue;
-			}
-			else if (chunk instanceof ProtoChunk)
-			{
-				chunkWrapper.trySetStatus(STATUS);
-				chunksToDo.add(chunk);
-			}
-		}
-		
+		ArrayList<ChunkAccess> chunksToDo = this.getChunksToGenerate(chunkWrappers);
 		for (ChunkAccess chunk : chunksToDo)
 		{
 			#if MC_VER < MC_1_18_2

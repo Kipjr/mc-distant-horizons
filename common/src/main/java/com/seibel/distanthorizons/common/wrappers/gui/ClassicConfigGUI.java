@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -27,19 +26,19 @@ import com.seibel.distanthorizons.common.wrappers.gui.updater.ChangelogScreen;
 
 // Minecraft imports
 
+import com.seibel.distanthorizons.core.config.types.enums.EConfigCommentTextPosition;
+import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.jar.updater.SelfUpdater;
+import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
+import com.seibel.distanthorizons.core.logging.SpamReducedLogger;
+import com.seibel.distanthorizons.core.render.renderer.LodRenderer;
 import com.seibel.distanthorizons.core.util.AnnotationUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.config.IConfigGui;
+import com.seibel.distanthorizons.core.wrapperInterfaces.config.ILangWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-#if MC_VER < MC_1_20_1
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.gui.GuiComponent;
-#else
-import net.minecraft.client.gui.GuiGraphics;
-#endif
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
@@ -47,13 +46,22 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.client.resources.language.I18n;    // translation
-#if MC_VER >= MC_1_17_1
-import net.minecraft.client.gui.narration.NarratableEntry;
-#endif
 import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+
+
+#if MC_VER < MC_1_20_1
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.gui.GuiComponent;
+#else
+import net.minecraft.client.gui.GuiGraphics;
+#endif
+
+#if MC_VER >= MC_1_17_1
+import net.minecraft.client.gui.narration.NarratableEntry;
+#endif
 
 import static com.seibel.distanthorizons.common.wrappers.gui.GuiHelper.*;
 import static com.seibel.distanthorizons.common.wrappers.gui.GuiHelper.Translatable;
@@ -65,19 +73,16 @@ import static com.seibel.distanthorizons.common.wrappers.gui.GuiHelper.Translata
  *
  * Note: floats don't work with this system, use doubles.
  *
- * Credits to Motschen
- *
  * @author coolGi
+ * @author Motschen
+ * @author James Seibel
  * @version 5-21-2022
  */
 @SuppressWarnings("unchecked")
 public class ClassicConfigGUI
 {
-	/*
-	    This would be removed later on as it is going to be re-written in java swing
-	 */
-	
 	private static final Logger LOGGER = LogManager.getLogger();
+	public static final SpamReducedLogger SPAM_LOGGER = new SpamReducedLogger(4);
 	
 	public static final ConfigCoreInterface CONFIG_CORE_INTERFACE = new ConfigCoreInterface();
 	
@@ -94,156 +99,82 @@ public class ClassicConfigGUI
 	private static class ConfigScreenConfigs
 	{
 		// This contains all the configs for the configs
-		public static final int SpaceFromRightScreen = 10;
-		public static final int ButtonWidthSpacing = 5;
-		public static final int ResetButtonWidth = 40;
-		public static final int ResetButtonHeight = 20;
+		public static final int SPACE_FROM_RIGHT_SCREEN = 10;
+		public static final int SPACE_BETWEEN_TEXT_AND_OPTION_FIELD = 8;
+		public static final int BUTTON_WIDTH_SPACING = 5;
+		public static final int RESET_BUTTON_WIDTH = 60;
+		public static final int RESET_BUTTON_HEIGHT = 20;
+		public static final int OPTION_FIELD_WIDTH = 150;
+		public static final int OPTION_FIELD_HEIGHT = 20;
+		public static final int CATEGORY_BUTTON_WIDTH = 200;
+		public static final int CATEGORY_BUTTON_HEIGHT = 20;
 		
 	}
 	
-	/**
-	 * The terribly coded old stuff
-	 */
+	// TODO
+	/** The terribly coded old stuff */
 	public static class EntryInfo
 	{
 		Object widget;
 		Map.Entry<EditBox, Component> error;
 		String tempValue;
 		int index;
-		
 	}
 	
-	/**
-	 * creates a text field
-	 */
-	private static void textField(AbstractConfigType info, Function<String, Number> func, Pattern pattern, boolean cast)
-	{
-		((EntryInfo) info.guiValue).widget = (BiFunction<EditBox, Button, Predicate<String>>) (editBox, button) -> stringValue ->
-		{
-			boolean isNumber = (pattern != null);
-			
-			stringValue = stringValue.trim();
-			if (!(stringValue.isEmpty() || !isNumber || pattern.matcher(stringValue).matches()))
-			{
-				return false;
-			}
-			
-			
-			Number value = info.typeIsFloatingPointNumber() ? 0.0 : 0; // different default values are needed so implicit casting works correctly (if not done casting from 0 (an int) to a double will cause an exception)
-			((EntryInfo) info.guiValue).error = null;
-			if (isNumber && !stringValue.isEmpty() && !stringValue.equals("-") && !stringValue.equals("."))
-			{
-				try
-				{
-					value = func.apply(stringValue);
-				}
-				catch (Exception e)
-				{
-					value = null;
-				}
-				
-				byte isValid = ((ConfigEntry) info).isValid(value);
-				switch (isValid)
-				{
-					case 0:
-						((EntryInfo) info.guiValue).error = null; 
-						break;
-					case -1:
-						((EntryInfo) info.guiValue).error = new AbstractMap.SimpleEntry<>(editBox, TextOrTranslatable("§cMinimum length is " + ((ConfigEntry) info).getMin())); 
-						break;
-					case 1:
-						((EntryInfo) info.guiValue).error = new AbstractMap.SimpleEntry<>(editBox, TextOrTranslatable("§cMaximum length is " + ((ConfigEntry) info).getMax())); 
-						break;
-					case 2:
-						((EntryInfo) info.guiValue).error = new AbstractMap.SimpleEntry<>(editBox, TextOrTranslatable("§cValue is invalid")); 
-						break;
-				}
-			}
-			
-			((EntryInfo) info.guiValue).tempValue = stringValue;
-			editBox.setTextColor(((ConfigEntry) info).isValid(value) == 0 ? 0xFFFFFFFF : 0xFFFF7777); // white and red
-//            button.active = entries.stream().allMatch(e -> e.inLimits);
-			
-			
-			if (info.getType() == String.class
-				|| info.getType() == List.class)
-			{
-				((ConfigEntry) info).uiSetWithoutSaving(stringValue);
-			}
-			else if (((ConfigEntry) info).isValid(value) == 0)
-			{
-				if (!cast)
-				{
-					((ConfigEntry) info).uiSetWithoutSaving(value);
-				}
-				else
-				{
-					((ConfigEntry) info).uiSetWithoutSaving(value != null ? value.intValue() : 0);
-				}
-			}
-			
-			return true;
-		};
-	}
+	
 	
 	//==============//
 	// GUI handling //
 	//==============//
 	
-	/**
-	 * if you want to get this config gui's screen call this
-	 */
+	/** if you want to get this config gui's screen call this */
 	public static Screen getScreen(ConfigBase configBase, Screen parent, String category)
-	{
-		return new ConfigScreen(configBase, parent, category);
-	}
+	{ return new ConfigScreen(configBase, parent, category); }
 	
-	/**
-	 * Pain
-	 */
+	/** Pain */
 	private static class ConfigScreen extends DhScreen
 	{
-		protected ConfigScreen(ConfigBase configBase, Screen parent, String category)
-		{
-			super(Translatable(
-					I18n.exists(configBase.modID + ".config" + (category.isEmpty() ? "." + category : "") + ".title") ?
-							configBase.modID + ".config.title" :
-							configBase.modID + ".config" + (category.isEmpty() ? "" : "." + category) + ".title")
-			);
-			this.configBase = configBase;
-			this.parent = parent;
-			this.category = category;
-			this.translationPrefix = configBase.modID + ".config.";
-		}
+		private static final ILangWrapper LANG_WRAPPER = SingletonInjector.INSTANCE.get(ILangWrapper.class);
+		
+		private static final String TRANSLATION_PREFIX = ModInfo.ID + ".config.";
+		
+		
 		private final ConfigBase configBase;
 		
-		private final String translationPrefix;
 		private final Screen parent;
 		private final String category;
-		private ConfigListWidget list;
+		private ConfigListWidget configListWidget;
 		private boolean reload = false;
 		
 		private Button doneButton;
 		
-		// Real Time config update //
-		@Override
-		public void tick()
+		
+		
+		//=============//
+		// constructor //
+		//=============//
+		
+		protected ConfigScreen(ConfigBase configBase, Screen parent, String category)
 		{
-			super.tick();
+			super(Translatable(
+					LANG_WRAPPER.langExists(ModInfo.ID + ".config" + (category.isEmpty() ? "." + category : "") + ".title") ?
+							ModInfo.ID + ".config.title" :
+							ModInfo.ID + ".config" + (category.isEmpty() ? "" : "." + category) + ".title")
+			);
+			this.configBase = configBase;
+			this.parent = parent;
+			this.category = category;
 		}
 		
 		
-		/**
-		 * When you close it, it goes to the previous screen and saves
-		 */
 		@Override
-		public void onClose()
-		{
-			ConfigBase.INSTANCE.configFileINSTANCE.saveToFile();
-			Objects.requireNonNull(this.minecraft).setScreen(this.parent);
-			
-			CONFIG_CORE_INTERFACE.onScreenChangeListenerList.forEach((listener) -> listener.run());
-		}
+		public void tick() { super.tick(); }
+		
+		
+		
+		//==================//
+		// menu UI creation //
+		//==================//
 		
 		@Override
 		protected void init()
@@ -251,11 +182,13 @@ public class ClassicConfigGUI
 			super.init();
 			if (!this.reload)
 			{
-				ConfigBase.INSTANCE.configFileINSTANCE.loadFromFile();
+				ConfigBase.INSTANCE.configFileHandler.loadFromFile();
 			}
 			
 			// Changelog button
-			if (Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get() && !ModInfo.IS_DEV_BUILD) // we only have changelogs for stable builds
+			if (Config.Client.Advanced.AutoUpdater.enableAutoUpdater.get()
+				// we only have changelogs for stable builds		
+				&& !ModInfo.IS_DEV_BUILD)
 			{
 				this.addBtn(new TexturedButtonWidget(
 						// Where the button is on the screen
@@ -264,7 +197,7 @@ public class ClassicConfigGUI
 						20, 20,
 						// texture UV Offset
 						0, 0,
-						// Some textuary stuff
+						// Some texture stuff
 						0, 
 						#if MC_VER < MC_1_21_1
 						new ResourceLocation(ModInfo.ID, "textures/gui/changelog.png"),
@@ -276,9 +209,13 @@ public class ClassicConfigGUI
 						(buttonWidget) -> {
 							ChangelogScreen changelogScreen = new ChangelogScreen(this);
 							if (changelogScreen.usable)
+							{
 								Objects.requireNonNull(this.minecraft).setScreen(changelogScreen);
-							else 
+							}
+							else
+							{
 								LOGGER.warn("Changelog was not able to open");
+							}
 						},
 						// Add a title to the button
 						Translatable(ModInfo.ID + ".updater.title")
@@ -286,38 +223,51 @@ public class ClassicConfigGUI
 			}
 			
 			
-			this.addBtn(MakeBtn(Translatable("distanthorizons.general.cancel"), 
-					this.width / 2 - 154, this.height - 28, 
-					150, 20, 
-					button -> 
+			// back button
+			this.addBtn(MakeBtn(Translatable("distanthorizons.general.back"),
+					(this.width / 2) - 154, this.height - 28,
+					ConfigScreenConfigs.OPTION_FIELD_WIDTH, ConfigScreenConfigs.OPTION_FIELD_HEIGHT,
+					(button) -> 
 					{
-						ConfigBase.INSTANCE.configFileINSTANCE.loadFromFile();
+						ConfigBase.INSTANCE.configFileHandler.loadFromFile();
 						Objects.requireNonNull(this.minecraft).setScreen(this.parent);
 					}));
-			this.doneButton = this.addBtn(MakeBtn(Translatable("distanthorizons.general.done"), this.width / 2 + 4, this.height - 28, 150, 20, (button) -> {
-				ConfigBase.INSTANCE.configFileINSTANCE.saveToFile();
-				Objects.requireNonNull(this.minecraft).setScreen(this.parent);
-			}));
 			
-			this.list = new ConfigListWidget(this.minecraft, this.width * 2, this.height, 32, 32, 25);
+			// done/close button
+			this.doneButton = this.addBtn(
+					MakeBtn(Translatable("distanthorizons.general.done"),
+							(this.width / 2) + 4, this.height - 28,
+							ConfigScreenConfigs.OPTION_FIELD_WIDTH, ConfigScreenConfigs.OPTION_FIELD_HEIGHT, 
+					(button) -> 
+					{
+						ConfigBase.INSTANCE.configFileHandler.saveToFile();
+						Objects.requireNonNull(this.minecraft).setScreen(this.parent);
+					}));
+			
+			this.configListWidget = new ConfigListWidget(this.minecraft, this.width * 2, this.height, 32, 32, 25);
 			
 			#if MC_VER < MC_1_20_6 // no background is rendered in MC 1.20.6+
 			if (this.minecraft != null && this.minecraft.level != null)
-				this.list.setRenderBackground(false);
+			{
+				this.configListWidget.setRenderBackground(false);
+			}
 			#endif
 			
-			this.addWidget(this.list);
+			this.addWidget(this.configListWidget);
 			
 			for (AbstractConfigType info : ConfigBase.INSTANCE.entries)
 			{
 				try
 				{
-					if (info.getCategory().matches(this.category) && info.getAppearance().showInGui)
+					if (info.getCategory().matches(this.category) 
+						&& info.getAppearance().showInGui)
+					{
 						this.addMenuItem(info);
+					}
 				}
 				catch (Exception e)
 				{
-					String message = "ERROR: Failed to show [\" + info.getNameWCategory() + \"], error: ["+e.getMessage()+"]";
+					String message = "ERROR: Failed to show [" + info.getNameWCategory() + "], error: ["+e.getMessage()+"]";
 					if (info.get() != null)
 					{
 						message += " with the value [" + info.get() + "] with type [" + info.getType() + "]";
@@ -327,84 +277,391 @@ public class ClassicConfigGUI
 				}
 			}
 			
-			
-			
 			CONFIG_CORE_INTERFACE.onScreenChangeListenerList.forEach((listener) -> listener.run());
+		}
+		private void addMenuItem(AbstractConfigType configType)
+		{
+			trySetupConfigEntry(configType);
 			
+			if (this.tryCreateInputField(configType)) return;
+			if (this.tryCreateCategoryButton(configType)) return;
+			if (this.tryCreateButton(configType)) return;
+			if (this.tryCreateComment(configType)) return;
+			if (this.tryCreateSpacer(configType)) return;
+			if (this.tryCreateLinkedEntry(configType)) return;
+			
+			LOGGER.warn("Config [" + configType.getNameWCategory() + "] failed to show. Please try something like changing its type.");
 		}
 		
-		private void addMenuItem(AbstractConfigType info)
+		private static void trySetupConfigEntry(AbstractConfigType configType)
 		{
-			initEntry(info, this.translationPrefix);
-			Component name = Translatable(this.translationPrefix + info.getNameWCategory());
+			configType.guiValue = new EntryInfo();
+			Class<?> fieldClass = configType.getType();
 			
-			
-			if (ConfigEntry.class.isAssignableFrom(info.getClass()))
+			if (configType instanceof ConfigEntry)
 			{
-				Button.OnPress btnAction = button -> {
-					((ConfigEntry) info).uiSetWithoutSaving(((ConfigEntry) info).getDefaultValue());
-					((EntryInfo) info.guiValue).index = 0;
+				ConfigEntry configEntry = (ConfigEntry) configType;
+				
+				if (fieldClass == Integer.class)
+				{
+					// For int
+					setupEntryInfoTextField(configEntry, Integer::parseInt, INTEGER_ONLY_REGEX, true);
+				}
+				else if (fieldClass == Double.class)
+				{
+					// For double
+					setupEntryInfoTextField(configEntry, Double::parseDouble, DECIMAL_ONLY_REGEX, false);
+				}
+				else if (fieldClass == String.class || fieldClass == List.class)
+				{
+					// For string or list
+					setupEntryInfoTextField(configEntry, String::length, null, true);
+				}
+				else if (fieldClass == Boolean.class)
+				{
+					// For boolean
+					Function<Object, Component> func = value -> Translatable("distanthorizons.general."+((Boolean) value ? "true" : "false")).withStyle((Boolean) value ? ChatFormatting.GREEN : ChatFormatting.RED);
+					
+					((EntryInfo) configEntry.guiValue).widget =
+							new AbstractMap.SimpleEntry<Button.OnPress, Function<Object, Component>>(
+									(button) ->
+									{
+										button.active = !configEntry.apiIsOverriding();
+										
+										configEntry.uiSetWithoutSaving(!(Boolean) configEntry.get());
+										button.setMessage(func.apply(configEntry.get()));
+									}, func);
+				}
+				else if (fieldClass.isEnum())
+				{
+					// For enum
+					List<?> values = Arrays.asList(configEntry.getType().getEnumConstants());
+					Function<Object, Component> func = (value) -> Translatable(TRANSLATION_PREFIX + "enum." + fieldClass.getSimpleName() + "." + configEntry.get().toString());
+					((EntryInfo) configEntry.guiValue).widget = new AbstractMap.SimpleEntry<Button.OnPress, Function<Object, Component>>((button) ->
+					{
+						// get the currently selected enum and enum index
+						int startingIndex = values.indexOf(configEntry.get());
+						Enum<?> enumValue = (Enum<?>) values.get(startingIndex);
+						
+						// search for the next enum that is selectable
+						int index = startingIndex + 1;
+						index = (index >= values.size()) ? 0 : index;
+						while (index != startingIndex)
+						{
+							enumValue = (Enum<?>) values.get(index);
+							if (!AnnotationUtil.doesEnumHaveAnnotation(enumValue, DisallowSelectingViaConfigGui.class))
+							{
+								// this enum shouldn't be selectable via the UI,
+								// skip it
+								break;
+							}
+							
+							index++;
+							index = (index >= values.size()) ? 0 : index;
+						}
+						
+						if (index == startingIndex)
+						{
+							// none of the enums should be selectable, this is a programmer error
+							enumValue = (Enum<?>) values.get(startingIndex);
+							LOGGER.warn("Enum [" + enumValue.getClass() + "] doesn't contain any values that should be selectable via the UI, sticking to the currently selected value [" + enumValue + "].");
+						}
+						
+						
+						((ConfigEntry<Enum<?>>) configEntry).uiSetWithoutSaving(enumValue);
+						
+						if (configEntry.getApiValue() != null)
+						{
+							button.active = false;
+						}
+						else
+						{
+							button.active = true;
+						}
+						
+						button.setMessage(func.apply(configEntry.get()));
+					}, func);
+				}
+			}
+			
+		}
+		private static void setupEntryInfoTextField(AbstractConfigType info, Function<String, Number> func, Pattern pattern, boolean cast)
+		{
+			((EntryInfo) info.guiValue).widget = (BiFunction<EditBox, Button, Predicate<String>>) (editBox, button) -> stringValue ->
+			{
+				boolean isNumber = (pattern != null);
+				
+				stringValue = stringValue.trim();
+				if (!(stringValue.isEmpty() || !isNumber || pattern.matcher(stringValue).matches()))
+				{
+					return false;
+				}
+				
+				
+				Number value = info.typeIsFloatingPointNumber() ? 0.0 : 0; // different default values are needed so implicit casting works correctly (if not done casting from 0 (an int) to a double will cause an exception)
+				((EntryInfo) info.guiValue).error = null;
+				if (isNumber && !stringValue.isEmpty() && !stringValue.equals("-") && !stringValue.equals("."))
+				{
+					try
+					{
+						value = func.apply(stringValue);
+					}
+					catch (Exception e)
+					{
+						value = null;
+					}
+					
+					byte isValid = ((ConfigEntry) info).isValid(value);
+					switch (isValid)
+					{
+						case 0:
+							((EntryInfo) info.guiValue).error = null;
+							break;
+						case -1:
+							((EntryInfo) info.guiValue).error = new AbstractMap.SimpleEntry<>(editBox, TextOrTranslatable("§cMinimum length is " + ((ConfigEntry) info).getMin()));
+							break;
+						case 1:
+							((EntryInfo) info.guiValue).error = new AbstractMap.SimpleEntry<>(editBox, TextOrTranslatable("§cMaximum length is " + ((ConfigEntry) info).getMax()));
+							break;
+						case 2:
+							((EntryInfo) info.guiValue).error = new AbstractMap.SimpleEntry<>(editBox, TextOrTranslatable("§cValue is invalid"));
+							break;
+					}
+				}
+				
+				((EntryInfo) info.guiValue).tempValue = stringValue;
+				editBox.setTextColor(((ConfigEntry) info).isValid(value) == 0 ? 0xFFFFFFFF : 0xFFFF7777); // white and red
+				
+				
+				if (info.getType() == String.class
+						|| info.getType() == List.class)
+				{
+					((ConfigEntry) info).uiSetWithoutSaving(stringValue);
+				}
+				else if (((ConfigEntry) info).isValid(value) == 0)
+				{
+					if (!cast)
+					{
+						((ConfigEntry) info).uiSetWithoutSaving(value);
+					}
+					else
+					{
+						((ConfigEntry) info).uiSetWithoutSaving(value != null ? value.intValue() : 0);
+					}
+				}
+				
+				return true;
+			};
+		}
+		
+		private boolean tryCreateInputField(AbstractConfigType configType)
+		{
+			if (configType instanceof ConfigEntry)
+			{
+				ConfigEntry configEntry = (ConfigEntry) configType;
+				
+				
+				//==============//
+				// reset button //
+				//==============//
+				
+				Button.OnPress btnAction = (button) ->
+				{
+					configEntry.uiSetWithoutSaving(configEntry.getDefaultValue());
+					((EntryInfo) configEntry.guiValue).index = 0;
 					this.reload = true;
 					Objects.requireNonNull(this.minecraft).setScreen(this);
 				};
-				int posX = this.width - ConfigScreenConfigs.SpaceFromRightScreen - 150 - ConfigScreenConfigs.ButtonWidthSpacing - ConfigScreenConfigs.ResetButtonWidth;
-				int posZ = 0;
 				
-				Button resetButton = MakeBtn(Translatable("distanthorizons.general.reset").withStyle(ChatFormatting.RED), 
-						posX, posZ, ConfigScreenConfigs.ResetButtonWidth, ConfigScreenConfigs.ResetButtonHeight, 
+				int resetButtonPosX = this.width
+						- ConfigScreenConfigs.RESET_BUTTON_WIDTH
+						- ConfigScreenConfigs.SPACE_FROM_RIGHT_SCREEN;
+				int resetButtonPosZ = 0;
+				
+				Button resetButton = MakeBtn(
+						Translatable("distanthorizons.general.reset").withStyle(ChatFormatting.RED),
+						resetButtonPosX, resetButtonPosZ,
+						ConfigScreenConfigs.RESET_BUTTON_WIDTH, ConfigScreenConfigs.RESET_BUTTON_HEIGHT,
 						btnAction);
 				
-				if (((EntryInfo) info.guiValue).widget instanceof Map.Entry)
+				if (configEntry.apiIsOverriding())
 				{
-					Map.Entry<Button.OnPress, Function<Object, Component>> widget = (Map.Entry<Button.OnPress, Function<Object, Component>>) ((EntryInfo) info.guiValue).widget;
-					if (info.getType().isEnum())
+					resetButton.active = false;
+					resetButton.setMessage(Translatable("distanthorizons.general.apiOverride").withStyle(ChatFormatting.DARK_GRAY));
+				}
+				else
+				{
+					resetButton.active = true;
+				}
+				
+				
+				
+				//==============//
+				// option field //
+				//==============//
+				
+				Component textComponent = this.GetTranslatableTextComponentForConfig(configEntry);
+				
+				int optionFieldPosX = this.width
+						- ConfigScreenConfigs.SPACE_FROM_RIGHT_SCREEN
+						- ConfigScreenConfigs.RESET_BUTTON_WIDTH
+						- ConfigScreenConfigs.BUTTON_WIDTH_SPACING
+						- ConfigScreenConfigs.OPTION_FIELD_WIDTH;
+				int optionFieldPosZ = 0;
+				
+				if (((EntryInfo) configEntry.guiValue).widget instanceof Map.Entry)
+				{
+					// enum/multi option input button
+					
+					Map.Entry<Button.OnPress, Function<Object, Component>> widget = (Map.Entry<Button.OnPress, Function<Object, Component>>) ((EntryInfo) configEntry.guiValue).widget;
+					if (configEntry.getType().isEnum())
 					{
-						widget.setValue(value -> Translatable(this.translationPrefix + "enum." + info.getType().getSimpleName() + "." + info.get().toString()));
+						widget.setValue((value) -> Translatable(TRANSLATION_PREFIX + "enum." + configEntry.getType().getSimpleName() + "." + configEntry.get().toString()));
 					}
-					this.list.addButton(MakeBtn(widget.getValue().apply(info.get()), this.width - 150 - ConfigScreenConfigs.SpaceFromRightScreen, 0, 150, 20, widget.getKey()), resetButton, null, name);
-					return;
+					
+					Button button = MakeBtn(
+							widget.getValue().apply(configEntry.get()),
+							optionFieldPosX, optionFieldPosZ,
+							ConfigScreenConfigs.OPTION_FIELD_WIDTH, ConfigScreenConfigs.CATEGORY_BUTTON_HEIGHT,
+							widget.getKey());
+					
+					// deactivate the button if the API is overriding it
+					button.active = !configEntry.apiIsOverriding();
+					
+					
+					this.configListWidget.addButton(this, configEntry,
+							button,
+							resetButton,
+							null,
+							textComponent);
+					
+					return true;
 				}
-				else if (((EntryInfo) info.guiValue).widget != null)
+				else if (((EntryInfo) configEntry.guiValue).widget != null)
 				{
-					EditBox widget = new EditBox(this.font, this.width - 150 - ConfigScreenConfigs.SpaceFromRightScreen + 2, 0, 150 - 4, 20, Translatable("")); 
-					widget.setMaxLength(150);
-					widget.insertText(String.valueOf(info.get()));
-					Predicate<String> processor = ((BiFunction<EditBox, Button, Predicate<String>>) ((EntryInfo) info.guiValue).widget).apply(widget, this.doneButton);
+					// text box input
+					
+					EditBox widget = new EditBox(this.font,
+							optionFieldPosX, optionFieldPosZ,
+							ConfigScreenConfigs.OPTION_FIELD_WIDTH - 4, ConfigScreenConfigs.CATEGORY_BUTTON_HEIGHT,
+							Translatable(""));
+					widget.setMaxLength(ConfigScreenConfigs.OPTION_FIELD_WIDTH);
+					widget.insertText(String.valueOf(configEntry.get()));
+					
+					Predicate<String> processor = ((BiFunction<EditBox, Button, Predicate<String>>) ((EntryInfo) configEntry.guiValue).widget).apply(widget, this.doneButton);
 					widget.setFilter(processor);
-					this.list.addButton(widget, resetButton, null, name);
-					return;
+					
+					this.configListWidget.addButton(this, configEntry, widget, resetButton, null, textComponent);
+					
+					return true;
 				}
-			}
-			if (ConfigCategory.class.isAssignableFrom(info.getClass()))
-			{
-				Button widget = MakeBtn(name, this.width / 2 - 100, this.height - 28, 100 * 2, 20, (button -> {
-					ConfigBase.INSTANCE.configFileINSTANCE.saveToFile();
-					Objects.requireNonNull(this.minecraft).setScreen(ClassicConfigGUI.getScreen(this.configBase, this, ((ConfigCategory) info).getDestination()));
-				}));
-				this.list.addButton(widget, null, null, null);
-				return;
-			}
-			if (ConfigUIButton.class.isAssignableFrom(info.getClass()))
-			{
-				Button widget = MakeBtn(name, this.width / 2 - 100, this.height - 28, 100 * 2, 20, (button -> {
-					((ConfigUIButton) info).runAction();
-				}));
-				this.list.addButton(widget, null, null, null);
-				return;
-			}
-			if (ConfigUIComment.class.isAssignableFrom(info.getClass()))
-			{
-				this.list.addButton(null, null, null, name);
-				return;
-			}
-			if (ConfigUiLinkedEntry.class.isAssignableFrom(info.getClass()))
-			{
-				this.addMenuItem(((ConfigUiLinkedEntry) info).get());
-				return;
 			}
 			
-			LOGGER.warn("Config [" + info.getNameWCategory() + "] failed to show. Please try something like changing its type.");
+			return false;
 		}
+		private boolean tryCreateCategoryButton(AbstractConfigType configType)
+		{
+			if (configType instanceof ConfigCategory)
+			{
+				ConfigCategory configCategory = (ConfigCategory) configType;
+				
+				Component textComponent = this.GetTranslatableTextComponentForConfig(configCategory);
+				
+				int categoryPosX = this.width - ConfigScreenConfigs.CATEGORY_BUTTON_WIDTH - ConfigScreenConfigs.SPACE_FROM_RIGHT_SCREEN;
+				int categoryPosZ = this.height - ConfigScreenConfigs.CATEGORY_BUTTON_HEIGHT; // Note: the posZ value here seems to be ignored
+				
+				Button widget = MakeBtn(textComponent,
+						categoryPosX, categoryPosZ,
+						ConfigScreenConfigs.CATEGORY_BUTTON_WIDTH, ConfigScreenConfigs.CATEGORY_BUTTON_HEIGHT,
+						((button) ->
+						{
+							ConfigBase.INSTANCE.configFileHandler.saveToFile();
+							Objects.requireNonNull(this.minecraft).setScreen(ClassicConfigGUI.getScreen(this.configBase, this, configCategory.getDestination()));
+						}));
+				this.configListWidget.addButton(this, configType, widget, null, null, null);
+				
+				return true;
+			}
+			
+			return false;
+		}
+		private boolean tryCreateButton(AbstractConfigType configType)
+		{
+			if (configType instanceof ConfigUIButton)
+			{
+				ConfigUIButton configUiButton = (ConfigUIButton) configType;
+				
+				Component textComponent = this.GetTranslatableTextComponentForConfig(configUiButton);
+				
+				int buttonPosX = this.width - ConfigScreenConfigs.CATEGORY_BUTTON_WIDTH - ConfigScreenConfigs.SPACE_FROM_RIGHT_SCREEN;
+				
+				Button widget = MakeBtn(textComponent,
+						buttonPosX, this.height - 28,
+						ConfigScreenConfigs.CATEGORY_BUTTON_WIDTH, ConfigScreenConfigs.CATEGORY_BUTTON_HEIGHT,
+						(button) -> ((ConfigUIButton) configType).runAction());
+				this.configListWidget.addButton(this, configType, widget, null, null, null);
+				
+				return true;
+			}
+			
+			return false;
+		}
+		private boolean tryCreateComment(AbstractConfigType configType)
+		{
+			if (configType instanceof ConfigUIComment)
+			{
+				ConfigUIComment configUiComment = (ConfigUIComment) configType;
+			
+				Component textComponent = this.GetTranslatableTextComponentForConfig(configUiComment);
+				if (configUiComment.parentConfigPath != null)
+				{
+					textComponent = Translatable(TRANSLATION_PREFIX + configUiComment.parentConfigPath);
+				}
+				
+				this.configListWidget.addButton(this, configType, null, null, null, textComponent);
+				
+				return true;
+			}
+			
+			return false;
+		}
+		private boolean tryCreateSpacer(AbstractConfigType configType)
+		{
+			if (configType instanceof ConfigUISpacer)
+			{
+				Button spacerButton = MakeBtn(Translatable("distanthorizons.general.spacer"),
+						10, 10, // having too small of a size causes division by 0 errors in older MC versions (IE 1.20.1)
+						1, 1,
+						(button) -> {});
+				
+				spacerButton.visible = false;
+				this.configListWidget.addButton(this, configType, spacerButton, null, null, null);
+				
+				return true;
+			}
+			
+			return false;
+		}
+		private boolean tryCreateLinkedEntry(AbstractConfigType configType)
+		{
+			if (configType instanceof ConfigUiLinkedEntry)
+			{
+				this.addMenuItem(((ConfigUiLinkedEntry) configType).get());
+				
+				return true;
+			}
+			
+			return false;
+		}
+		
+		private Component GetTranslatableTextComponentForConfig(AbstractConfigType configType)
+		{ return Translatable(TRANSLATION_PREFIX + configType.getNameWCategory());}
+		
+		
+		
+		//===========//
+		// rendering //
+		//===========//
 		
 		@Override
         #if MC_VER < MC_1_20_1
@@ -418,168 +675,126 @@ public class ClassicConfigGUI
 			#else
 			super.render(matrices, mouseX, mouseY, delta);
 			#endif
-			this.list.render(matrices, mouseX, mouseY, delta); // Render buttons
 			
-			// Render title
-			this.DhDrawCenteredString(matrices, this.font, this.title, this.width / 2, 15, 
+			this.configListWidget.render(matrices, mouseX, mouseY, delta); // Render buttons
+			
+			
+			// Render config title
+			this.DhDrawCenteredString(matrices, this.font, this.title, 
+					this.width / 2, 15, 
 					#if MC_VER < MC_1_21_6 
 					0xFFFFFF // RGB white
 					#else 
 					0xFFFFFFFF // ARGB white
 					#endif);
 			
-			if (this.configBase.modID.equals("distanthorizons"))
+			
+			// render DH version
+			this.DhDrawString(matrices, this.font, TextOrLiteral(ModInfo.VERSION), 2, this.height - 10, 
+					#if MC_VER < MC_1_21_6
+					0xAAAAAA // RGB white
+					#else
+					0xFFAAAAAA // ARGB white
+					#endif);
+			
+			// If the update is pending, display this message to inform the user that it will apply when the game restarts
+			if (SelfUpdater.deleteOldJarOnJvmShutdown)
 			{
-				// Display version
-				this.DhDrawString(matrices, this.font, TextOrLiteral(ModInfo.VERSION), 2, this.height - 10, 
-						#if MC_VER < MC_1_21_6
-						0xAAAAAA // RGB white
-						#else
-						0xFFAAAAAA // ARGB white
-						#endif);
-				
-				// If the update is pending, display this message to inform the user that it will apply when the game restarts
-				if (SelfUpdater.deleteOldJarOnJvmShutdown)
-				{
-					this.DhDrawString(matrices, this.font, Translatable(this.configBase.modID + ".updater.waitingForClose"), 4, this.height - 38, 
+				this.DhDrawString(matrices, this.font, Translatable(ModInfo.ID + ".updater.waitingForClose"), 4, this.height - 42, 
 						#if MC_VER < MC_1_21_6
 						0xFFFFFF // RGB white
-						#else 
+						#else
 						0xFFFFFFFF // ARGB white
 						#endif);
-				}
 			}
 			
 			
-			// Render the tooltip only if it can find a tooltip in the language file
-			for (AbstractConfigType info : ConfigBase.INSTANCE.entries)
-			{
-				if (info.getCategory().matches(category) && info.getAppearance().showInGui)
-				{
-					if (list.getHoveredButton(mouseX, mouseY).isPresent())
-					{
-						AbstractWidget buttonWidget = list.getHoveredButton(mouseX, mouseY).get();
-						Component text = ButtonEntry.buttonsWithText.get(buttonWidget);
-						if (text == null)
-						{
-							continue;
-						}
-						
-						// A quick fix for tooltips on linked entries
-						AbstractConfigType newInfo = ConfigUiLinkedEntry.class.isAssignableFrom(info.getClass()) ?
-								((ConfigUiLinkedEntry) info).get() :
-								info;
-						
-						Component name = Translatable(this.translationPrefix + (info.category.isEmpty() ? "" : info.category + ".") + info.getName());
-						String key = translationPrefix + (newInfo.category.isEmpty() ? "" : newInfo.category + ".") + newInfo.getName() + ".@tooltip";
-						
-						if (((EntryInfo) newInfo.guiValue).error != null && text.equals(name))
-						{
-							DhRenderTooltip(matrices, font, ((EntryInfo) newInfo.guiValue).error.getValue(), mouseX, mouseY);
-						}
-						else if (I18n.exists(key) && (text != null && text.equals(name)))
-						{
-							List<Component> list = new ArrayList<>();
-							for (String str : I18n.get(key).split("\n"))
-							{
-								list.add(TextOrTranslatable(str));
-							}
-							DhRenderComponentTooltip(matrices, font, list, mouseX, mouseY);
-						}
-					}
-				}
-			}
+			this.renderTooltip(matrices, mouseX, mouseY, delta);
+			
 			#if MC_VER < MC_1_20_2
 			super.render(matrices, mouseX, mouseY, delta);
 			#endif
 		}
 		
-	}
-	
-	
-	
-	
-	
-	private static void initEntry(AbstractConfigType configType, String translationPrefix)
-	{
-		configType.guiValue = new EntryInfo();
-		Class<?> fieldClass = configType.getType();
-		
-		if (ConfigEntry.class.isAssignableFrom(configType.getClass()))
+		#if MC_VER < MC_1_20_1
+		private void renderTooltip(PoseStack matrices, int mouseX, int mouseY, float delta)
+        #else
+		private void renderTooltip(GuiGraphics matrices, int mouseX, int mouseY, float delta)
+		#endif
 		{
-			if (fieldClass == Integer.class)
+			AbstractWidget hoveredWidget = this.configListWidget.getHoveredButton(mouseX, mouseY);
+			if (hoveredWidget == null)
 			{
-				// For int
-				textField(configType, Integer::parseInt, INTEGER_ONLY_REGEX, true);
+				return;
 			}
-			else if (fieldClass == Double.class)
+			
+			
+			Component text = ButtonEntry.TEXT_BY_WIDGET.get(hoveredWidget);
+			ButtonEntry button = ButtonEntry.BUTTON_BY_WIDGET.get(hoveredWidget);
+			
+			
+			// A quick fix for tooltips on linked entries
+			AbstractConfigType dhConfigType = ConfigUiLinkedEntry.class.isAssignableFrom(button.dhConfigType.getClass()) ?
+					((ConfigUiLinkedEntry) button.dhConfigType).get() :
+					button.dhConfigType;
+			
+			boolean apiOverrideActive = false;
+			if (dhConfigType instanceof ConfigEntry)
 			{
-				// For double
-				textField(configType, Double::parseDouble, DECIMAL_ONLY_REGEX, false);
+				apiOverrideActive = ((ConfigEntry)dhConfigType).apiIsOverriding();
 			}
-			else if (fieldClass == String.class || fieldClass == List.class)
+			
+			Component name = Translatable(TRANSLATION_PREFIX + (dhConfigType.category.isEmpty() ? "" : dhConfigType.category + ".") + dhConfigType.getName());
+			String key = TRANSLATION_PREFIX + (dhConfigType.category.isEmpty() ? "" : dhConfigType.category + ".") + dhConfigType.getName() + ".@tooltip";
+			
+			if (apiOverrideActive)
 			{
-				// For string or list
-				textField(configType, String::length, null, true);
+				key = "distanthorizons.general.disabledByApi.@tooltip";
 			}
-			else if (fieldClass == Boolean.class)
+			
+			// display the validation error if present
+			if (((EntryInfo) dhConfigType.guiValue).error != null)
+			{ 
+				this.DhRenderTooltip(matrices, this.font, ((EntryInfo) dhConfigType.guiValue).error.getValue(), mouseX, mouseY);
+			}
+			// display the tooltip if present
+			else if (LANG_WRAPPER.langExists(key))
 			{
-				// For boolean
-				Function<Object, Component> func = value -> Translatable("distanthorizons.general."+((Boolean) value ? "true" : "false")).withStyle((Boolean) value ? ChatFormatting.GREEN : ChatFormatting.RED);
+				List<Component> list = new ArrayList<>();
+				String lang = LANG_WRAPPER.getLang(key);
+				for (String langLine : lang.split("\n"))
+				{
+					list.add(TextOrTranslatable(langLine));
+				}
 				
-				((EntryInfo) configType.guiValue).widget = new AbstractMap.SimpleEntry<Button.OnPress, Function<Object, Component>>(button -> {
-					((ConfigEntry) configType).uiSetWithoutSaving(!(Boolean) configType.get());
-					button.setMessage(func.apply(configType.get()));
-				}, func);
-			}
-			else if (fieldClass.isEnum())
-			{
-				// For enum
-				List<?> values = Arrays.asList(configType.getType().getEnumConstants());
-				Function<Object, Component> func = value -> Translatable(translationPrefix + "enum." + fieldClass.getSimpleName() + "." + configType.get().toString());
-				((EntryInfo) configType.guiValue).widget = new AbstractMap.SimpleEntry<Button.OnPress, Function<Object, Component>>(button -> {
-					
-					// get the currently selected enum and enum index
-					int startingIndex = values.indexOf(configType.get());
-					Enum<?> enumValue = (Enum<?>) values.get(startingIndex);
-					
-					// search for the next enum that is selectable
-					int index = startingIndex + 1;
-					index = (index >= values.size()) ? 0 : index;
-					while (index != startingIndex)
-					{
-						enumValue = (Enum<?>) values.get(index);
-						if (!AnnotationUtil.doesEnumHaveAnnotation(enumValue, DisallowSelectingViaConfigGui.class))
-						{
-							// this enum shouldn't be selectable via the UI,
-							// skip it
-							break;
-						}
-						
-						index++;
-						index = (index >= values.size()) ? 0 : index;
-					}
-					
-					if (index == startingIndex)
-					{
-						// none of the enums should be selectable, this is a programmer error
-						enumValue = (Enum<?>) values.get(startingIndex);
-						LOGGER.warn("Enum [" + enumValue.getClass() + "] doesn't contain any values that should be selectable via the UI, sticking to the currently selected value [" + enumValue + "].");
-					}
-					
-					
-					((ConfigEntry<Enum<?>>) configType).uiSetWithoutSaving(enumValue);
-					button.setMessage(func.apply(configType.get()));
-				}, func);
+				this.DhRenderComponentTooltip(matrices, this.font, list, mouseX, mouseY);
 			}
 		}
-		else if (ConfigCategory.class.isAssignableFrom(configType.getClass()))
+		
+		
+		
+		//==========//
+		// shutdown //
+		//==========//
+		
+		/** When you close it, it goes to the previous screen and saves */
+		@Override
+		public void onClose()
 		{
-//            if (!info.info.getName().equals(""))
-//                info.name = new TranslatableComponent(info.info.getName());
+			ConfigBase.INSTANCE.configFileHandler.saveToFile();
+			Objects.requireNonNull(this.minecraft).setScreen(this.parent);
+			
+			CONFIG_CORE_INTERFACE.onScreenChangeListenerList.forEach((listener) -> listener.run());
 		}
-//        return info;
+		
+		
 	}
+	
+	
+	
+	
+	
+	
 	
 	public static class ConfigListWidget extends ContainerObjectSelectionList<ButtonEntry>
 	{
@@ -592,31 +807,45 @@ public class ClassicConfigGUI
 			#else
 			super(minecraftClient, canvasWidth, canvasHeight - (topMargin + botMargin), topMargin, itemSpacing);
 			#endif
+			
 			this.centerListVertically = false;
-			textRenderer = minecraftClient.font;
+			this.textRenderer = minecraftClient.font;
 		}
 		
-		public void addButton(AbstractWidget button, AbstractWidget resetButton, AbstractWidget indexButton, Component text)
-		{
-			this.addEntry(ButtonEntry.create(button, text, resetButton, indexButton));
-		}
+		public void addButton(ConfigScreen gui, AbstractConfigType dhConfigType, AbstractWidget button, AbstractWidget resetButton, AbstractWidget indexButton, Component text)
+		{ this.addEntry(new ButtonEntry(gui, dhConfigType, button, text, resetButton, indexButton)); }
 		
 		@Override
-		public int getRowWidth()
-		{
-			return 10000;
-		}
+		public int getRowWidth() { return 10_000; }
 		
-		public Optional<AbstractWidget> getHoveredButton(double mouseX, double mouseY)
+		public AbstractWidget getHoveredButton(double mouseX, double mouseY)
 		{
 			for (ButtonEntry buttonEntry : this.children())
 			{
-				if (buttonEntry.button != null && buttonEntry.button.isMouseOver(mouseX, mouseY))
+				AbstractWidget button = buttonEntry.button;
+				if (button != null 
+					&& button.visible)
 				{
-					return Optional.of(buttonEntry.button);
+					#if MC_VER < MC_1_19_4
+					double minX = button.x;
+					double minY = button.y;
+					#else
+					double minX = button.getX();
+					double minY = button.getY();
+					#endif
+					
+					double maxX = minX + button.getWidth();
+					double maxY = minY + button.getHeight();
+					
+					if (mouseX >= minX && mouseX < maxX
+						&& mouseY >= minY && mouseY < maxY)
+					{
+						return button;
+					}
 				}
 			}
-			return Optional.empty();
+			
+			return null;
 		}
 		
 	}
@@ -625,80 +854,176 @@ public class ClassicConfigGUI
 	public static class ButtonEntry extends ContainerObjectSelectionList.Entry<ButtonEntry>
 	{
 		private static final Font textRenderer = Minecraft.getInstance().font;
-		public final AbstractWidget button;
+		
+		private final AbstractWidget button;
+		
+		private final ConfigScreen gui;
+		private final AbstractConfigType dhConfigType;
+		
 		private final AbstractWidget resetButton;
 		private final AbstractWidget indexButton;
 		private final Component text;
 		private final List<AbstractWidget> children = new ArrayList<>();
-		public static final Map<AbstractWidget, Component> buttonsWithText = new HashMap<>();
 		
-		private ButtonEntry(AbstractWidget button, Component text, AbstractWidget resetButton, AbstractWidget indexButton)
+		@NotNull
+		private final EConfigCommentTextPosition textPosition;
+		
+		public static final Map<AbstractWidget, Component> TEXT_BY_WIDGET = new HashMap<>();
+		// TODO we should just use a wrapper or something
+		public static final Map<AbstractWidget, ButtonEntry> BUTTON_BY_WIDGET = new HashMap<>();
+		
+		
+		
+		public ButtonEntry(ConfigScreen gui, AbstractConfigType dhConfigType, 
+				AbstractWidget button, Component text, AbstractWidget resetButton, AbstractWidget indexButton)
 		{
-			buttonsWithText.put(button, text);
+			TEXT_BY_WIDGET.put(button, text);
+			BUTTON_BY_WIDGET.put(button, this);
+			
+			this.gui = gui;
+			this.dhConfigType = dhConfigType;
+			
 			this.button = button;
 			this.resetButton = resetButton;
 			this.text = text;
 			this.indexButton = indexButton;
-			if (button != null)
-				children.add(button);
-			if (resetButton != null)
-				children.add(resetButton);
-			if (indexButton != null)
-				children.add(indexButton);
+			
+			if (button != null) { this.children.add(button); }
+			if (resetButton != null) { this.children.add(resetButton); }
+			if (indexButton != null) { this.children.add(indexButton); }
+			
+			
+			EConfigCommentTextPosition textPosition = null;
+			if (this.dhConfigType instanceof ConfigUIComment)
+			{
+				textPosition = ((ConfigUIComment)this.dhConfigType).textPosition;
+			}
+			
+			if (textPosition == null)
+			{
+				if (this.button != null)
+				{
+					// if a button is present
+					textPosition = EConfigCommentTextPosition.RIGHT_JUSTIFIED;
+				}
+				else
+				{
+					textPosition = EConfigCommentTextPosition.CENTERED_OVER_BUTTONS;
+				}
+			}
+			this.textPosition = textPosition;
+			
 		}
 		
-		public static ButtonEntry create(AbstractWidget button, Component text, AbstractWidget resetButton, AbstractWidget indexButton)
-		{
-			return new ButtonEntry(button, text, resetButton, indexButton);
-		}
+		
 		
 		@Override
         #if MC_VER < MC_1_20_1
 		public void render(PoseStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
-        #else
+        #elif MC_VER < MC_1_21_9
 		public void render(GuiGraphics matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
+		#else
+		public void renderContent(GuiGraphics matrices, int mouseX, int mouseY, boolean hovered, float tickDelta)
 		#endif
 		{
-			if (button != null)
+			try
 			{
-				SetY(button, y);
-				button.render(matrices, mouseX, mouseY, tickDelta);
-			}
-			if (resetButton != null)
-			{
-				SetY(resetButton, y);
-				resetButton.render(matrices, mouseX, mouseY, tickDelta);
-			}
-			if (indexButton != null)
-			{
-				SetY(indexButton, y);
-				indexButton.render(matrices, mouseX, mouseY, tickDelta);
-			}
-			if (text != null && (!text.getString().contains("spacer") || button != null))
-                #if MC_VER < MC_1_20_1
-				GuiComponent.drawString(matrices, textRenderer, text, 12, y + 5, 0xFFFFFF);
-				#elif MC_VER < MC_1_21_6
-				matrices.drawString(textRenderer, this.text, 12, y + 5, 0xFFFFFF);
+				#if MC_VER < MC_1_21_9
 				#else
-				matrices.drawString(textRenderer, this.text, 12, y + 5, 0xFFFFFFFF);
+				int y = this.getY(); // TODO why is the Y value being set during render?
 				#endif
+				
+				if (this.button != null)
+				{
+					SetY(this.button, y);
+					this.button.render(matrices, mouseX, mouseY, tickDelta);
+				}
+				
+				if (this.resetButton != null)
+				{
+					SetY(this.resetButton, y);
+					this.resetButton.render(matrices, mouseX, mouseY, tickDelta);
+				}
+				
+				if (this.indexButton != null)
+				{
+					SetY(this.indexButton, y);
+					this.indexButton.render(matrices, mouseX, mouseY, tickDelta);
+				}
+				
+				if (this.text != null)
+				{
+					int translatedLength = textRenderer.width(this.text);
+					
+					int textXPos;
+					if (this.textPosition == EConfigCommentTextPosition.RIGHT_JUSTIFIED)
+					{
+						// text right justified aligned against the buttons
+						textXPos = this.gui.width
+								- translatedLength
+								- ConfigScreenConfigs.SPACE_BETWEEN_TEXT_AND_OPTION_FIELD
+								- ConfigScreenConfigs.SPACE_FROM_RIGHT_SCREEN
+								- ConfigScreenConfigs.OPTION_FIELD_WIDTH
+								- ConfigScreenConfigs.BUTTON_WIDTH_SPACING
+								- ConfigScreenConfigs.RESET_BUTTON_WIDTH;
+					}
+					else if (this.textPosition == EConfigCommentTextPosition.CENTERED_OVER_BUTTONS)
+					{
+						// have button centered relative to a category button
+						textXPos = this.gui.width
+								- (translatedLength / 2)
+								- (ConfigScreenConfigs.CATEGORY_BUTTON_WIDTH / 2)
+								- ConfigScreenConfigs.SPACE_FROM_RIGHT_SCREEN;
+					}
+					else if (this.textPosition == EConfigCommentTextPosition.CENTER_OF_SCREEN)
+					{
+						// have button centered in the screen
+						textXPos = (this.gui.width / 2)
+								- (translatedLength / 2);
+					}
+					else
+					{
+						throw new UnsupportedOperationException("No text position render defined for [" + this.textPosition + "]");
+					}
+				
+				
+                #if MC_VER < MC_1_20_1
+				GuiComponent.drawString(matrices, textRenderer, 
+					this.text, 
+					textXPos, y + 5, 
+					0xFFFFFF);
+				#elif MC_VER < MC_1_21_6
+					matrices.drawString(textRenderer,
+							this.text,
+							textXPos, y + 5,
+							0xFFFFFF);
+				#else
+				matrices.drawString(textRenderer, 
+						this.text,
+						textXPos, y + 5, 
+						0xFFFFFFFF);
+				#endif
+				}
+			}
+			catch (Exception e)
+			{
+				// should prevent crashing the game if there's an issue
+				SPAM_LOGGER.error("Unexpected gui rendering issue: ["+e.getMessage()+"]", e);
+			}
 		}
 		
 		@Override
-		public List<? extends GuiEventListener> children()
-		{
-			return children;
-		}
+		public @NotNull List<? extends GuiEventListener> children()
+		{ return this.children; }
 		
-		// Only for 1.17 and over
-		// Remove in 1.16 and below
 		#if MC_VER >= MC_1_17_1
 		@Override
-		public List<? extends NarratableEntry> narratables()
-		{
-			return children;
-		}
+		public @NotNull List<? extends NarratableEntry> narratables()
+		{ return this.children; }
 		#endif
+		
+		
+		
 	}
 	
 	

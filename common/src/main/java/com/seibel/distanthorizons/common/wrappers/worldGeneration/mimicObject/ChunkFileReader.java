@@ -89,16 +89,20 @@ import net.minecraft.world.level.material.Fluid;
 import org.jetbrains.annotations.Nullable;
 
 
-public class ChunkLoader
+public class ChunkFileReader
 {
 	private static final AtomicBoolean ZERO_CHUNK_POS_ERROR_LOGGED_REF = new AtomicBoolean(false);
 	
 	
-	#if MC_VER >= MC_1_19_2
+	#if MC_VER >= MC_1_21_9
+	// BLOCK_STATE_CODEC can no longer be statically created since
+	// it needs a level reference
+	#elif MC_VER >= MC_1_19_2
 	private static final Codec<PalettedContainer<BlockState>> BLOCK_STATE_CODEC = PalettedContainer.codecRW(Block.BLOCK_STATE_REGISTRY, BlockState.CODEC, PalettedContainer.Strategy.SECTION_STATES, Blocks.AIR.defaultBlockState());
 	#elif MC_VER >= MC_1_18_2
 	private static final Codec<PalettedContainer<BlockState>> BLOCK_STATE_CODEC = PalettedContainer.codec(Block.BLOCK_STATE_REGISTRY, BlockState.CODEC, PalettedContainer.Strategy.SECTION_STATES, Blocks.AIR.defaultBlockState());
 	#endif
+	
 	private static final String TAG_UPGRADE_DATA = "UpgradeData";
 	private static final String BLOCK_TICKS_TAG_18 = "block_ticks";
 	private static final String FLUID_TICKS_TAG_18 = "fluid_ticks";
@@ -259,6 +263,14 @@ public class ChunkLoader
 	}
 	private static LevelChunkSection[] readSections(LevelAccessor level, ChunkPos chunkPos, CompoundTag chunkData)
 	{
+		#if MC_VER < MC_1_21_9
+		// BLOCK_STATE_CODEC is created statically
+		// TODO clean up this code separation
+		#else
+		final Codec<PalettedContainer<BlockState>> BLOCK_STATE_CODEC = PalettedContainerFactory.create(level.registryAccess()).blockStatesContainerCodec();
+		#endif
+		
+		
 		#if MC_VER >= MC_1_18_2
 		#if MC_VER < MC_1_19_4
 		Registry<Biome> biomes = level.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY);
@@ -276,9 +288,12 @@ public class ChunkLoader
 			#elif MC_VER < MC_1_21_3
 			Codec<PalettedContainer<Holder<Biome>>> biomeCodec = PalettedContainer.codecRW(
 				biomes.asHolderIdMap(), biomes.holderByNameCodec(), PalettedContainer.Strategy.SECTION_BIOMES, biomes.getHolderOrThrow(Biomes.PLAINS));
-			#else
+			#elif MC_VER < MC_1_21_9
 			Codec<PalettedContainer<Holder<Biome>>> biomeCodec = PalettedContainer.codecRW(
 				biomes.asHolderIdMap(), biomes.holderByNameCodec(), PalettedContainer.Strategy.SECTION_BIOMES, biomes.getOrThrow(Biomes.PLAINS));
+			#else
+			Codec<PalettedContainer<Holder<Biome>>> biomeCodec = PalettedContainer.codecRW(
+				biomes.holderByNameCodec(), PalettedContainerFactory.create(level.registryAccess()).biomeStrategy(), biomes.getOrThrow(Biomes.PLAINS));
 			#endif
 		#endif
 		
@@ -348,7 +363,11 @@ public class ChunkLoader
 					}
 					else
 					{
+						#if MC_VER < MC_1_21_9
 						blockStateContainer = new PalettedContainer<BlockState>(Block.BLOCK_STATE_REGISTRY, Blocks.AIR.defaultBlockState(), PalettedContainer.Strategy.SECTION_STATES);
+						#else
+						blockStateContainer = PalettedContainerFactory.create(level.registryAccess()).createForBlockStates();
+						#endif
 					}
 				
 				
@@ -380,13 +399,18 @@ public class ChunkLoader
 					}
 					else
 					{
-						biomeContainer = new PalettedContainer<Holder<Biome>>(biomes.asHolderIdMap(), 
-							#if MC_VER < MC_1_21_3
-							biomes.getHolderOrThrow(Biomes.PLAINS), 
-							#else
+						#if MC_VER < MC_1_21_3
+						biomeContainer = new PalettedContainer<Holder<Biome>>(
+								biomes.asHolderIdMap(), 
+								biomes.getHolderOrThrow(Biomes.PLAINS), PalettedContainer.Strategy.SECTION_BIOMES);
+						#elif MC_VER < MC_1_21_9
+						biomeContainer = new PalettedContainer<Holder<Biome>>(biomes.asHolderIdMap(),
 								biomes.getOrThrow(Biomes.PLAINS),
-							#endif
 								PalettedContainer.Strategy.SECTION_BIOMES);
+						#else
+						biomeContainer = PalettedContainerFactory.create(level.registryAccess()).createForBiomes();
+						#endif
+						
 					}
 				
 					#endif

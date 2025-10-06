@@ -146,12 +146,6 @@ public class MixinLevelRenderer
 		#else
 		// rendering handled via Fabric Api render event
 	    #endif
-		
-		// FIXME completely disables rendering when sodium is installed
-		if (Config.Client.Advanced.Debugging.lodOnlyMode.get())
-		{
-		    callback.cancel();
-		}
     }
 	
 	

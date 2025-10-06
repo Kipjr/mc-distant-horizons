@@ -246,8 +246,7 @@ subprojects { p ->
         // We cannot relocate this library since we call some MC classes that reference it
         implementation("it.unimi.dsi:fastutil:${rootProject.fastutil_version}")
 
-        //forgeShadowMe("com.github.luben:zstd-jni:1.5.7-3")
-        //forgeShadowMe("org.apache.commons:commons-compress:1.27.1")
+        forgeShadowMe("com.github.luben:zstd-jni:1.5.7-4")
         
         // Compression
         forgeShadowMe("org.lz4:lz4-java:${rootProject.lz4_version}") // LZ4

@@ -22,6 +22,7 @@ package com.seibel.distanthorizons.fabric.mixins.client;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import net.minecraft.client.renderer.LightTexture;
 
@@ -73,14 +74,15 @@ public class MixinLightTexture
 		
 		
 		IClientLevelWrapper clientLevel = mc.getWrappedClientLevel();
+		MinecraftRenderWrapper renderWrapper = (MinecraftRenderWrapper)SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 		
 		#if MC_VER < MC_1_21_3
-		MinecraftRenderWrapper.INSTANCE.updateLightmap(this.lightPixels, clientLevel);
+		renderWrapper.updateLightmap(this.lightPixels, clientLevel);
 		#elif MC_VER < MC_1_21_5
-		MinecraftRenderWrapper.INSTANCE.setLightmapId(this.target.getColorTextureId(), clientLevel);
+		renderWrapper.setLightmapId(this.target.getColorTextureId(), clientLevel);
 		#else
 		GlTexture glTexture = (GlTexture) this.texture;
-		MinecraftRenderWrapper.INSTANCE.setLightmapId(glTexture.glId(), clientLevel);
+		renderWrapper.setLightmapId(glTexture.glId(), clientLevel);
 		#endif
 	}
 	

@@ -37,8 +37,10 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 #endif
 
+import java.util.ConcurrentModificationException;
 
-public final class StepFeatures
+
+public final class StepFeatures extends AbstractWorldGenStep
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
@@ -48,10 +50,22 @@ public final class StepFeatures
 	
 	
 	
+	//=============//
+	// constructor //
+	//=============//
+	
 	public StepFeatures(BatchGenerationEnvironment batchGenerationEnvironment) { this.environment = batchGenerationEnvironment; }
 	
 	
 	
+	//==================//
+	// abstract methods //
+	//==================//
+	
+	@Override
+	public ChunkStatus getChunkStatus() { return STATUS; }
+	
+	@Override
 	public void generateGroup(
 			ThreadedParameters tParams, DhLitWorldGenRegion worldGenRegion,
 			ArrayGridList<ChunkWrapper> chunkWrappers)
@@ -87,6 +101,10 @@ public final class StepFeatures
 				#endif
 				
 				Heightmap.primeHeightmaps(chunk, STATUS.heightmapsAfter());
+			}
+			catch (ConcurrentModificationException e) // ReportedException
+			{
+				// TODO
 			}
 			catch (Exception e)
 			{

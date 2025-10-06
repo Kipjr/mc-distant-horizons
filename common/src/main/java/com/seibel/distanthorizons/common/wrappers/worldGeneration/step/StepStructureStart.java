@@ -27,7 +27,9 @@ import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.ThreadedParameters;
 
+import com.seibel.distanthorizons.common.wrappers.worldGeneration.mimicObject.DhLitWorldGenRegion;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.util.gridList.ArrayGridList;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.Level;
@@ -42,7 +44,7 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 #endif
 
 
-public final class StepStructureStart
+public final class StepStructureStart extends AbstractWorldGenStep
 {
 	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	private static final ChunkStatus STATUS = ChunkStatus.STRUCTURE_STARTS;
@@ -52,42 +54,27 @@ public final class StepStructureStart
 	
 	
 	
+	//=============//
+	// constructor //
+	//=============//
+	
 	public StepStructureStart(BatchGenerationEnvironment batchGenerationEnvironment) { this.environment = batchGenerationEnvironment; }
 	
 	
 	
-	public static class StructStartCorruptedException extends RuntimeException
-	{
-		private static final long serialVersionUID = -8987434342051563358L;
-		
-		public StructStartCorruptedException(ArrayIndexOutOfBoundsException e)
-		{
-			super("StructStartCorruptedException");
-			super.initCause(e);
-			fillInStackTrace();
-		}
-		
-	}
+	//==================//
+	// abstract methods //
+	//==================//
 	
+	@Override
+	public ChunkStatus getChunkStatus() { return STATUS; }
+	
+	@Override
 	public void generateGroup(
-			ThreadedParameters tParams, WorldGenRegion worldGenRegion,
-			List<ChunkWrapper> chunkWrappers) throws InterruptedException
+			ThreadedParameters tParams, DhLitWorldGenRegion worldGenRegion,
+			ArrayGridList<ChunkWrapper> chunkWrappers)
 	{
-		ArrayList<ChunkAccess> chunksToDo = new ArrayList<>();
-		
-		for (ChunkWrapper chunkWrapper : chunkWrappers)
-		{
-			ChunkAccess chunk = chunkWrapper.getChunk();
-			if (chunkWrapper.getStatus().isOrAfter(STATUS))
-			{
-				// this chunk has already generated this step
-				continue;
-			}
-			else if (chunk instanceof ProtoChunk)
-			{
-				chunkWrapper.trySetStatus(STATUS);
-			}
-		}
+		ArrayList<ChunkAccess> chunksToDo = this.getChunksToGenerate(chunkWrappers);
 		
 		#if MC_VER < MC_1_19_2
 		if (this.environment.params.worldGenSettings.generateFeatures())
@@ -101,12 +88,6 @@ public final class StepStructureStart
 		#endif
 			for (ChunkAccess chunk : chunksToDo)
 			{
-				// System.out.println("StepStructureStart: "+chunk.getPos());
-				
-				// there are a few cases where the structure generator call may lock up (either due to teleporting or leaving the world).
-				// hopefully allowing interrupts here will prevent that from happening.
-				BatchGenerationEnvironment.throwIfThreadInterrupted();
-				
 				// hopefully this shouldn't cause any performance issues (this step is generally quite quick so hopefully it should be fine)
 				// and should prevent some concurrency issues
 				STRUCTURE_PLACEMENT_LOCK.lock();
@@ -151,8 +132,6 @@ public final class StepStructureStart
 					{
 						// the structure logic failed again, log it and move on
 						LOGGER.error("Unable to create structure starts for " + chunk.getPos() + ". This is an error with MC's world generation. Ignoring and continuing generation. Error: " + secondEx.getMessage()); // don't log the full stack trace since it is long and will generally end up in MC's code
-						
-						//throw new StepStructureStart.StructStartCorruptedException(secondEx);
 					}
 				}
 				

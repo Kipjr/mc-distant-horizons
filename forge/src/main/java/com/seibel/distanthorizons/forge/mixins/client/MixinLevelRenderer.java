@@ -181,12 +181,6 @@ public class MixinLevelRenderer
 					ClientLevelWrapper.getWrapper(this.level)
 			);
 		}
-		
-		
-		if (Config.Client.Advanced.Debugging.lodOnlyMode.get())
-		{
-			callback.cancel();
-		}
 	}
 	
 }

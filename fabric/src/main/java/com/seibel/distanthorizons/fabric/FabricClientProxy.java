@@ -24,26 +24,24 @@ import com.seibel.distanthorizons.common.AbstractPluginPacketSender;
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
-import com.mojang.blaze3d.platform.InputConstants;
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
+import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.ISodiumAccessor;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
-import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.fabric.wrappers.modAccessor.SodiumAccessor;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.client.Minecraft;
@@ -61,7 +59,10 @@ import java.nio.FloatBuffer;
 #endif
 import java.util.HashSet;
 import java.util.concurrent.AbstractExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
+
+#if MC_VER < MC_1_21_9
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+#endif
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.InteractionResult;
@@ -101,6 +102,14 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 	public void registerEvents()
 	{
 		LOGGER.info("Registering Fabric Client Events");
+		
+		
+		#if MC_VER < MC_1_21_9
+		// old versions still run like normal
+		#else
+		if (true)
+			throw new UnsupportedOperationException("DH doesn't support 1.21.9 yet because the Fabric Rendering API is missing required events. Please wait for the Fabric team to update their API.");
+		#endif
 		
 		
 		//========================//
@@ -217,6 +226,8 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		// render event //
 		//==============//
 
+		// TODO wait for fabric to re-add their rendering API
+		#if MC_VER < MC_1_21_9
 		WorldRenderEvents.AFTER_SETUP.register((renderContext) ->
 		{
 			Mat4f projectionMatrix = McObjectConverter.Convert(renderContext.projectionMatrix());
@@ -306,6 +317,7 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 					ClientLevelWrapper.getWrapper(renderContext.world())
 			);
 		});
+		#endif
 		
 		
 		// Debug keyboard event
@@ -355,18 +367,18 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		// Check all keys we need
 		for (int keyCode = GLFW.GLFW_KEY_A; keyCode <= GLFW.GLFW_KEY_Z; keyCode++)
 		{
-			if (InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), keyCode))
-			{
-				currentKeyDown.add(keyCode);
-			}
+			//if (InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), keyCode))
+			//{
+			//	currentKeyDown.add(keyCode);
+			//}
 		}
 		
 		for (int keyCode : KEY_TO_CHECK_FOR)
 		{
-			if (InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), keyCode))
-			{
-				currentKeyDown.add(keyCode);
-			}
+			//if (InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), keyCode))
+			//{
+			//	currentKeyDown.add(keyCode);
+			//}
 		}
 		
 		// Diff and trigger events

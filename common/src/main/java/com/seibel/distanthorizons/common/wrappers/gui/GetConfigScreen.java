@@ -1,40 +1,54 @@
 package com.seibel.distanthorizons.common.wrappers.gui;
 
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.config.ConfigBase;
-import com.seibel.distanthorizons.core.config.gui.ConfigScreen;
 import com.seibel.distanthorizons.core.config.gui.JavaScreenHandlerScreen;
-import com.seibel.distanthorizons.core.config.gui.OpenGLConfigScreen;
 import net.minecraft.client.gui.screens.Screen;
+import org.apache.logging.log4j.Logger;
+
+import java.lang.invoke.MethodHandles;
 
 public class GetConfigScreen
 {
-	public static type useScreen = type.Classic;
+	protected static final Logger LOGGER = DhLoggerBuilder.getLogger();
 	
-	public enum type
+	public static EType useScreen = EType.Classic;
+	
+	public enum EType
 	{
 		Classic,
-		@Deprecated
-		OpenGL, // This was just an attempt, it didn't work out, and we are going to change to javafx soon (as soon as that works)
-		JavaFX;
+		JavaSwing;
 	}
 	
 	public static Screen getScreen(Screen parent)
 	{
-		// Generate the language
-		// This shouldn't be here, but I need a way to test it after Minecraft inits its assets
-		//System.out.println(ConfigBase.INSTANCE.generateLang(false, true));
+		// TODO it'd be nice to have this run automatically on startup
+		//  but this will only work once MC has added our lang file,
+		//  which won't be for sure added until we request a GUI
+		if (ModInfo.IS_DEV_BUILD)
+		{
+			String missingLangEntries = ConfigBase.INSTANCE.generateLang(true, true);
+			
+			// trim to remove any newlines/spaces
+			// that may be present when no lang entries need changing
+			// then we can check length != 0 if any items are missing and need adding 
+			String trimmedMissingEntries = missingLangEntries.trim();
+			if (!trimmedMissingEntries.isEmpty())
+			{
+				LOGGER.warn("One or more language entries is missing:");
+				LOGGER.warn(missingLangEntries);
+			}
+		}
+		
 		
 		switch (useScreen)
 		{
 			case Classic:
 				return ClassicConfigGUI.getScreen(ConfigBase.INSTANCE, parent, "client");
-			case OpenGL:
-				MinecraftScreen.getScreen(parent, new OpenGLConfigScreen(), ModInfo.ID + ".title");
-				return null;
-//            case JavaFX -> MinecraftScreen.getScreen(parent, new JavaScreenHandlerScreen(new JavaScreenHandlerScreen.ExampleScreen()), ModInfo.ID + ".title");
-			case JavaFX:
-				return MinecraftScreen.getScreen(parent, new JavaScreenHandlerScreen(new ConfigScreen()), ModInfo.ID + ".title");
+			case JavaSwing:
+				//return MinecraftScreen.getScreen(parent, new JavaScreenHandlerScreen(new ConfigScreen()), ModInfo.ID + ".title");
+				return MinecraftScreen.getScreen(parent, new JavaScreenHandlerScreen(new JavaScreenHandlerScreen.ExampleScreen()), ModInfo.ID + ".title");
 			default:
 				throw new IllegalArgumentException("No config screen implementation defined for ["+useScreen+"].");
 		}

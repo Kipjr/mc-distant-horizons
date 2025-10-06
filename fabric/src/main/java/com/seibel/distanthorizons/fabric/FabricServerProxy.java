@@ -1,5 +1,7 @@
 package com.seibel.distanthorizons.fabric;
 
+import com.seibel.distanthorizons.api.DhApi;
+import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiChunkProcessingEvent;
 import com.seibel.distanthorizons.api.methods.events.DhApiEventRegister;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiLevelLoadEvent;
 import com.seibel.distanthorizons.common.AbstractModInitializer;
@@ -7,7 +9,6 @@ import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.misc.ServerPlayerWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
-import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
 import com.seibel.distanthorizons.core.api.internal.ServerApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.common.AbstractPluginPacketSender;
@@ -15,6 +16,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.ILevelWrapper;
+import com.seibel.distanthorizons.fabric.testing.TestChunkInputReplacerEvent;
 import com.seibel.distanthorizons.fabric.testing.TestWorldGenBindingEvent;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
@@ -36,8 +38,6 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 #else
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
 #endif
-
-import java.util.function.Supplier;
 
 /**
  * This handles all events sent to the server,
@@ -97,10 +97,11 @@ public class FabricServerProxy implements AbstractModInitializer.IEventProxy
 		ServerTickEvents.END_SERVER_TICK.register((server) -> SERVER_API.serverTickEvent());
 		
 		
-		// can be enabled to test world gen overrides without having to build a separate API project 
+		// can be enabled to test overrides/events without having to build a separate API project 
 		if (false)
 		{
 			DhApiEventRegister.on(DhApiLevelLoadEvent.class, new TestWorldGenBindingEvent());
+			DhApi.events.bind(DhApiChunkProcessingEvent.class, new TestChunkInputReplacerEvent());
 		}
 		
 		

@@ -22,15 +22,18 @@ package com.seibel.distanthorizons.neoforge;
 import com.mojang.brigadier.CommandDispatcher;
 import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.common.wrappers.gui.GetConfigScreen;
+import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.ServerApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.network.messages.AbstractNetworkMessage;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IPluginPacketSender;
 import com.seibel.distanthorizons.core.wrapperInterfaces.misc.IServerPlayerWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IModChecker;
 import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IOptifineAccessor;
 import com.seibel.distanthorizons.coreapi.ModInfo;
+import com.seibel.distanthorizons.neoforge.wrappers.NeoforgeMinecraftRenderWrapper;
 import com.seibel.distanthorizons.neoforge.wrappers.modAccessor.ModChecker;
 import com.seibel.distanthorizons.neoforge.wrappers.modAccessor.OptifineAccessor;
 import net.minecraft.commands.CommandSourceStack;
@@ -125,6 +128,10 @@ public class NeoforgeMain extends AbstractModInitializer
 	{
 		SingletonInjector.INSTANCE.bind(IModChecker.class, ModChecker.INSTANCE);
 		SingletonInjector.INSTANCE.bind(IPluginPacketSender.class, new NeoforgePluginPacketSender());
+		
+		// replace MC RenderWrapper with more specific neoforge version
+		SingletonInjector.INSTANCE.unbind(IMinecraftRenderWrapper.class, MinecraftRenderWrapper.INSTANCE); // TODO replace with a replaceOrBind for simplicity
+		SingletonInjector.INSTANCE.bind(IMinecraftRenderWrapper.class, NeoforgeMinecraftRenderWrapper.INSTANCE);
 	}
 	
 	@Override

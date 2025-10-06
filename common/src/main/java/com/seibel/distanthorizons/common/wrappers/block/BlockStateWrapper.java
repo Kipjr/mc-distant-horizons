@@ -81,6 +81,7 @@ public class BlockStateWrapper implements IBlockStateWrapper
 	public static final BlockStateWrapper AIR = new BlockStateWrapper(null, null);
 	
 	public static final String DIRT_RESOURCE_LOCATION_STRING = "minecraft:dirt";
+	public static final String WATER_RESOURCE_LOCATION_STRING = "minecraft:water";
 	
 	public static HashSet<IBlockStateWrapper> rendererIgnoredBlocks = null;
 	public static HashSet<IBlockStateWrapper> rendererIgnoredCaveBlocks = null;
