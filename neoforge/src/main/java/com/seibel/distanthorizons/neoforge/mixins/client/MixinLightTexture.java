@@ -24,6 +24,7 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
+import com.seibel.distanthorizons.neoforge.wrappers.NeoforgeTextureUnwrapper;
 import net.minecraft.client.renderer.LightTexture;
 
 import org.spongepowered.asm.mixin.Final;
@@ -85,8 +86,7 @@ public class MixinLightTexture
 		GlTexture glTexture = (GlTexture) this.texture;
 		renderWrapper.setLightmapId(glTexture.glId(), clientLevel);
 		#else
-		ValidationGpuTexture gpuTexture = (ValidationGpuTexture) this.texture;
-		int id = ((GlTexture)(gpuTexture.getRealTexture())).glId();
+		int id = NeoforgeTextureUnwrapper.getGlTextureIdFromGpuTexture(this.texture);
 		renderWrapper.setLightmapId(id, clientLevel);
 		#endif
 	}
