@@ -8,6 +8,7 @@ accessible field net/minecraft/world/level/biome/BiomeManager biomeZoomSeed J
 # used when rendering
 accessible method net/minecraft/client/renderer/GameRenderer getFov (Lnet/minecraft/client/Camera;FZ)F
 accessible field net/minecraft/client/Minecraft deltaTracker Lnet/minecraft/client/DeltaTracker$Timer;
+accessible field net/minecraft/client/renderer/LevelRenderer level Lnet/minecraft/client/multiplayer/ClientLevel;
 
 
 # used for grabbing vanilla rendered chunks

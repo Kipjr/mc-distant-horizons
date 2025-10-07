@@ -259,7 +259,6 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		});
 		
 		
-		// TODO add to forge and neo
 		WorldRenderEvents.AFTER_ENTITIES.register((renderContext) ->
 		{
 			Mat4f projectionMatrix = McObjectConverter.Convert(renderContext.projectionMatrix());

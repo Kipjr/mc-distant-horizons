@@ -21,10 +21,10 @@ import net.minecraft.world.level.chunk.LevelChunk;
 
 #if MC_VER < MC_1_21_9
 // not supported for older MC versions
-public class DebugScreenEntry
+public class DhDebugScreenEntry
 {}
 #else
-public class DebugScreenEntry implements net.minecraft.client.gui.components.debug.DebugScreenEntry
+public class DhDebugScreenEntry implements net.minecraft.client.gui.components.debug.DebugScreenEntry
 {
 	public static void register()
 	{
@@ -33,7 +33,7 @@ public class DebugScreenEntry implements net.minecraft.client.gui.components.deb
 				// The id, this will be displayed on the options screen
 				ResourceLocation.fromNamespaceAndPath(ModInfo.RESOURCE_NAMESPACE, "distant_horizons"),
 				// The screen entry
-				new DebugScreenEntry()
+				new DhDebugScreenEntry()
 		);
 	}
 	

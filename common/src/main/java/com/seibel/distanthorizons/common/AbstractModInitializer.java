@@ -5,7 +5,7 @@ import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiAfterDh
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeDhInitEvent;
 import com.seibel.distanthorizons.common.commands.CommandInitializer;
 import com.seibel.distanthorizons.common.wrappers.DependencySetup;
-import com.seibel.distanthorizons.common.wrappers.gui.DebugScreenEntry;
+import com.seibel.distanthorizons.common.wrappers.gui.DhDebugScreenEntry;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftServerWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
@@ -87,7 +87,7 @@ public abstract class AbstractModInitializer
 		#if MC_VER < MC_1_21_9
 		// debug screen rendering handled via a mixin
 		#else
-		DebugScreenEntry.register();
+		DhDebugScreenEntry.register();
 		#endif
 		
 		this.subscribeClientStartedEvent(this::postInit);

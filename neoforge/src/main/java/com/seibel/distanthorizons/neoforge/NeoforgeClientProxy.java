@@ -61,13 +61,6 @@ import java.util.concurrent.AbstractExecutorService;
 #endif
 
 
-/**
- * This handles all events sent to the client,
- * and is the starting point for most of the mod.
- *
- * @author James_Seibel
- * @version 2023-7-27
- */
 public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 {
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
@@ -257,11 +250,17 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	@SubscribeEvent
 	public void afterLevelEntityRenderEvent(RenderLevelStageEvent.AfterEntities event)
 	{
+		#if MC_VER < MC_1_21_9
+		IClientLevelWrapper levelWrapper = ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel());
+		#else
+		IClientLevelWrapper levelWrapper = ClientLevelWrapper.getWrapper(event.getLevelRenderer().level);
+		#endif
+		
 		ClientApi.INSTANCE.renderFade(
 				ClientApi.RENDER_STATE.mcModelViewMatrix,
 				ClientApi.RENDER_STATE.mcProjectionMatrix,
 				ClientApi.RENDER_STATE.frameTime,
-				ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel())
+				levelWrapper
 		);
 	}
 	
@@ -269,7 +268,14 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	@SubscribeEvent
 	public void afterLevelTranslucentRenderEvent(RenderLevelStageEvent.AfterTranslucentBlocks event)
 	{
-		ClientApi.INSTANCE.renderDeferredLodsForShaders(ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel()),
+		#if MC_VER < MC_1_21_9
+		IClientLevelWrapper levelWrapper = ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel());
+		#else
+		IClientLevelWrapper levelWrapper = ClientLevelWrapper.getWrapper(event.getLevelRenderer().level);
+		#endif
+		
+		ClientApi.INSTANCE.renderDeferredLodsForShaders(
+				levelWrapper,
 				ClientApi.RENDER_STATE.mcModelViewMatrix,
 				ClientApi.RENDER_STATE.mcProjectionMatrix,
 				ClientApi.RENDER_STATE.frameTime
@@ -279,6 +285,13 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	@SubscribeEvent
 	public void afterLevelRenderEvent(RenderLevelStageEvent.AfterLevel event)
 	{
+		#if MC_VER < MC_1_21_9
+		IClientLevelWrapper levelWrapper = ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel());
+		#else
+		IClientLevelWrapper levelWrapper = ClientLevelWrapper.getWrapper(event.getLevelRenderer().level);
+		#endif
+		
+		
 		try
 		{
 			// should generally only need to be set once per game session
@@ -296,7 +309,7 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 				ClientApi.RENDER_STATE.mcModelViewMatrix,
 				ClientApi.RENDER_STATE.mcProjectionMatrix,
 				ClientApi.RENDER_STATE.frameTime,
-				ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel())
+				levelWrapper
 		);
 	}
 	
