@@ -45,13 +45,8 @@ public class MixinChunkSectionsToRender
 	
 	// needs to fire at HEAD otherwise it will be canceled by Sodium
 	@Inject(at = @At("HEAD"), method = "renderGroup")
-	private void renderGroup(ChunkSectionLayerGroup chunkSectionLayerGroup, CallbackInfo ci)
+	private void renderDeferredLayer(ChunkSectionLayerGroup chunkSectionLayerGroup, CallbackInfo ci)
 	{
-		if (!ClientApi.RENDER_STATE.canRender()) // TODO is this needed?
-		{
-			return;
-		}
-		
 		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, Minecraft.getInstance().levelRenderer.level);
 		
 		
@@ -63,8 +58,23 @@ public class MixinChunkSectionsToRender
 		{
 			ClientApi.INSTANCE.renderDeferredLodsForShaders();
 		}
-		
 	}
+	
+	// canceled by sodium, but there isn't a better way to handle it right now
+	// https://github.com/CaffeineMC/sodium/blob/dev/common/src/main/java/net/caffeinemc/mods/sodium/mixin/core/render/world/ChunkSectionsToRenderMixin.java
+	@Inject(at = @At("RETURN"), method = "renderGroup")
+	private void renderOpaqueFade(ChunkSectionLayerGroup chunkSectionLayerGroup, CallbackInfo ci)
+	{
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, Minecraft.getInstance().levelRenderer.level);
+		
+		
+		if (chunkSectionLayerGroup == ChunkSectionLayerGroup.OPAQUE)
+		{
+			ClientApi.INSTANCE.renderFadeOpaque();
+		}
+	}
+	
+	
 }
 
 #endif
