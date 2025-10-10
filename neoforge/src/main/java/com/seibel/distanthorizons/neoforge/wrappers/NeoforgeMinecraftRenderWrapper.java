@@ -5,7 +5,7 @@ import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import net.minecraft.client.Minecraft;
 import org.apache.logging.log4j.Logger;
 
-#if MC_VER < MC_1_21_9
+#if MC_VER < MC_1_21_10
 #else
 import com.mojang.blaze3d.opengl.GlTexture;
 import com.mojang.blaze3d.textures.GpuTexture;
@@ -26,7 +26,7 @@ public class NeoforgeMinecraftRenderWrapper extends MinecraftRenderWrapper
 	@Override
 	public int getDepthTextureId()
 	{
-		#if MC_VER < MC_1_21_9
+		#if MC_VER < MC_1_21_10
 		// no special handling required,
 		// both neo/fabric uses the same back end objects
 		return super.getDepthTextureId();
@@ -53,7 +53,7 @@ public class NeoforgeMinecraftRenderWrapper extends MinecraftRenderWrapper
 	@Override
 	public int getColorTextureId()
 	{
-		#if MC_VER < MC_1_21_9
+		#if MC_VER < MC_1_21_10
 		// no special handling required,
 		// both neo/fabric uses the same back end objects
 		return super.getColorTextureId();

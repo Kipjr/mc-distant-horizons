@@ -59,24 +59,31 @@ If you still need help with compiling, please read the Readme.md
 
 
 /** Loads the VersionProperties fiel for the currently selected Minecraft version. */
-def loadProperties() {
+def loadProperties() 
+{
     def defaultMcVersion = "1.20.1" // 1.20.1 is our current most stable version so we use that if no version was defined
 
     def mcVersion = ""
     def mcVers = fileTree("versionProperties").files.name // Get all the files in "versionProperties"
-    for (int i = 0; i < mcVers.size(); i++) {
-        mcVers[i] = mcVers[i].replaceAll("\\.properties", "") // As we are getting the file names, we should remove the ".properties" at the end to get the versions
+    for (int i = 0; i < mcVers.size(); i++) 
+    {
+        String version = mcVers[i];
+        version = version.replaceAll("\\.properties", "") // As we are getting the file names, we should remove the ".properties" at the end to get the versions
+        mcVers[i] = version;
     }
 
-    mcVers.sort() // Sort so it always goes from oldest to newest
+    mcVers.sort((a,b) -> sortSemanticVersionOldestToNewest(a,b)) // Sort so it always goes from oldest to newest
 
     int mcIndex = -1
     println "Avalible MC versions: ${mcVers}"
-    if (hasProperty("mcVer")) {
+    if (hasProperty("mcVer")) 
+    {
         mcVersion = mcVer
         mcIndex = mcVers.indexOf(mcVer)
     }
-    if (mcIndex == -1) {
+    
+    if (mcIndex == -1) 
+    {
         println "No mcVer set or the set mcVer is invalid! Defaulting to ${defaultMcVersion}."
         println "Tip: Use -PmcVer=\"${defaultMcVersion}\" in cmd arg to set mcVer."
         mcVersion = defaultMcVersion
@@ -95,6 +102,35 @@ def loadProperties() {
     gradle.ext.mcVers = mcVers
     gradle.ext.mcIndex = mcIndex
 }
+/** 
+ * input format: "major.minor.patch"
+ * needed so we can sort versions with different length strings
+ * IE: 1.21.1 should come before 1.21.10
+ */
+private static int sortSemanticVersionOldestToNewest(String version1, String version2) 
+{
+    String[] parts1 = version1.split("\\.");
+    String[] parts2 = version2.split("\\.");
+    
+    int major1 = Integer.parseInt(parts1[0]);
+    int major2 = Integer.parseInt(parts2[0]);
+    if (major1 != major2) 
+    {
+        return Integer.compare(major1, major2);
+    }
+    
+    int minor1 = Integer.parseInt(parts1[1]);
+    int minor2 = Integer.parseInt(parts2[1]);
+    if (minor1 != minor2) 
+    {
+        return Integer.compare(minor1, minor2);
+    }
+    
+    int patch1 = Integer.parseInt(parts1[2]);
+    int patch2 = Integer.parseInt(parts2[2]);
+    return Integer.compare(patch1, patch2);
+}
+
 loadProperties()
 
 

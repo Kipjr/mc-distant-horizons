@@ -38,7 +38,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.mojang.blaze3d.platform.NativeImage;
 #elif MC_VER < MC_1_21_5
 import com.mojang.blaze3d.pipeline.TextureTarget;
-#elif MC_VER < MC_1_21_9
+#elif MC_VER < MC_1_21_10
 import com.mojang.blaze3d.opengl.GlTexture;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
@@ -82,7 +82,7 @@ public class MixinLightTexture
 		renderWrapper.updateLightmap(this.lightPixels, clientLevel);
 		#elif MC_VER < MC_1_21_5
 		renderWrapper.setLightmapId(this.target.getColorTextureId(), clientLevel);
-		#elif MC_VER < MC_1_21_9
+		#elif MC_VER < MC_1_21_10
 		GlTexture glTexture = (GlTexture) this.texture;
 		renderWrapper.setLightmapId(glTexture.glId(), clientLevel);
 		#else

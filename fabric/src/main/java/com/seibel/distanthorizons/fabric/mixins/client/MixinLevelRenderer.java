@@ -102,7 +102,7 @@ public class MixinLevelRenderer
 			method = "Lnet/minecraft/client/renderer/LevelRenderer;renderSectionLayer(Lnet/minecraft/client/renderer/RenderType;DDDLorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V",
 			cancellable = true)
 	private void renderChunkLayer(RenderType renderType, double x, double y, double z, Matrix4f projectionMatrix, Matrix4f frustumMatrix, CallbackInfo callback)
-	#elif MC_VER < MC_1_21_9
+	#elif MC_VER < MC_1_21_10
 	@Inject(at = @At("HEAD"), method = "prepareChunkRenders", cancellable = true)
 	private void prepareChunkRenders(Matrix4fc projectionMatrix, double d, double e, double f, CallbackInfoReturnable<ChunkSectionsToRender> callback)
 	#else
@@ -127,7 +127,7 @@ public class MixinLevelRenderer
 		// get the matrices directly from MC
 		ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(modelViewMatrixStack.last().pose());
 		ClientApi.RENDER_STATE.mcProjectionMatrix = McObjectConverter.Convert(projectionMatrix);
-		#elif MC_VER < MC_1_21_9
+		#elif MC_VER < MC_1_21_10
 		// MC combined the model view and projection matricies
 	    ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(projectionMatrix);
 	    ClientApi.RENDER_STATE.mcProjectionMatrix = new Mat4f();
@@ -155,7 +155,7 @@ public class MixinLevelRenderer
 		{
 		    ClientApi.INSTANCE.renderDeferredLodsForShaders();
 	    }
-		#elif MC_VER < MC_1_21_9
+		#elif MC_VER < MC_1_21_10
 	    // rendering handled via Fabric Api render event
 		#else
 		// handled here and in MixinChunkSectionsToRender

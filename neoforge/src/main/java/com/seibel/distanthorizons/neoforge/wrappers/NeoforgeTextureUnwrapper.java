@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.neoforge.wrappers;
 
-#if MC_VER < MC_1_21_9
+#if MC_VER < MC_1_21_10
 public class NeoforgeTextureUnwrapper
 { /* not needed for older MC versions */ }
 #else

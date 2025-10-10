@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.common.wrappers.gui;
 
-#if MC_VER < MC_1_21_9
+#if MC_VER < MC_1_21_10
 // not supported for older MC versions
 #else
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
@@ -19,7 +19,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
 #endif
 
-#if MC_VER < MC_1_21_9
+#if MC_VER < MC_1_21_10
 // not supported for older MC versions
 public class DhDebugScreenEntry
 {}

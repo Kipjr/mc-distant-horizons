@@ -19,7 +19,7 @@
 
 package com.seibel.distanthorizons.fabric.mixins.client;
 
-#if MC_VER < MC_1_21_9
+#if MC_VER < MC_1_21_10
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 

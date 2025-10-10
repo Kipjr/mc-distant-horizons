@@ -12,7 +12,7 @@ import java.util.List;
 @Mixin(DebugScreenOverlay.class)
 public class MixinDebugScreenOverlay
 {
-	#if MC_VER < MC_1_21_9
+	#if MC_VER < MC_1_21_10
 	@Inject(method = "getSystemInformation", at = @At("RETURN"))
 	private void addCustomF3(CallbackInfoReturnable<List<String>> cir)
 	{

@@ -60,7 +60,7 @@ import java.nio.FloatBuffer;
 import java.util.HashSet;
 import java.util.concurrent.AbstractExecutorService;
 
-#if MC_VER < MC_1_21_9
+#if MC_VER < MC_1_21_10
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 #endif
 
@@ -220,7 +220,7 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		//==============//
 
 		// TODO wait for fabric to re-add their rendering API
-		#if MC_VER < MC_1_21_9
+		#if MC_VER < MC_1_21_10
 		WorldRenderEvents.AFTER_SETUP.register((renderContext) ->
 		{
 			ClientApi.RENDER_STATE.mcProjectionMatrix = McObjectConverter.Convert(renderContext.projectionMatrix());

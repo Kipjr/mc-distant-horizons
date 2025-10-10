@@ -42,8 +42,10 @@ def writeBuildGradlePredefine(List<String> mcVers, int mcIndex)
         String verStr = mcVers[i].replace(".", "_");
         sb.append("MC_" + verStr + "=" + i.toString() + "\n");
         
-        if (mcIndex == i)
+        if (mcIndex == i) 
+        {
             sb.append("MC_VER=" + i.toString() + "\n");
+        }
     }
     
 

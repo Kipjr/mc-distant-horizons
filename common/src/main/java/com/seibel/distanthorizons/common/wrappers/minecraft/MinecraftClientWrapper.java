@@ -315,7 +315,7 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 		
         #if MC_VER < MC_1_19_2
 		player.sendMessage(new TextComponent(string), getPlayer().getUUID());
-        #elif MC_VER < MC_1_21_9
+        #elif MC_VER < MC_1_21_10
 		player.displayClientMessage(net.minecraft.network.chat.Component.translatable(string), /*isOverlay*/false);
 		#else
 		
