@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.NativeImage;
-import com.seibel.distanthorizons.common.wrappers.WrapperFactory;
 import com.seibel.distanthorizons.common.wrappers.misc.LightMapWrapper;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 
@@ -72,7 +71,7 @@ import net.minecraft.world.phys.Vec3;
 import org.apache.logging.log4j.Logger;
 import org.joml.Vector4f;
 
-#if MC_VER >= MC_1_21_5 && MC_VER < MC_1_21_9
+#if MC_VER >= MC_1_21_5
 import com.mojang.blaze3d.opengl.GlTexture;
 #else
 #endif
@@ -344,7 +343,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	{
 		#if MC_VER < MC_1_21_5
 		return this.getRenderTarget().getDepthTextureId();
-		#elif MC_VER < MC_1_21_9
+		#else
 		try
 		{		
 			GlTexture glTexture = (GlTexture) this.getRenderTarget().getDepthTexture();
@@ -367,25 +366,6 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 			}
 			return 0;
 		}
-		#else
-		try
-		{
-			throw new UnsupportedOperationException("Fabric get texture ID not implemented yet");
-			
-			//GpuTexture depthTex = this.getRenderTarget().getDepthTexture();
-			//int id = ((GlTexture)depthTex.getClass().getMethod("getRealTexture").invoke(depthTex)).glId();
-			//return id;
-		}
-		catch (Exception e)
-		{
-			// only log this error once per session
-			if (!this.depthTextureCastFailLogged)
-			{
-				this.depthTextureCastFailLogged = true;
-				LOGGER.error("Unable to cast render Target depth texture to GlTexture. MC or a rendering mod may have changed the object type.", e);
-			}
-			return 0;
-		}
 		#endif
 	}
 	@Override
@@ -393,7 +373,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	{
 		#if MC_VER < MC_1_21_5
 		return this.getRenderTarget().getColorTextureId();
-		#elif MC_VER < MC_1_21_9
+		#else
 		try
 		{
 			GlTexture glTexture = (GlTexture) this.getRenderTarget().getColorTexture();
@@ -404,25 +384,6 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 			}
 			
 			return glTexture.glId();
-		}
-		catch (Exception e)
-		{
-			// only log this error once per session
-			if (!this.colorTextureCastFailLogged)
-			{
-				this.colorTextureCastFailLogged = true;
-				LOGGER.error("Unable to cast render Target color texture to GlTexture. MC or a rendering mod may have changed the object type.", e);
-			}
-			return 0;
-		}
-		#else
-		try
-		{
-			throw new UnsupportedOperationException("Fabric get texture ID not implemented yet");
-			
-			//GpuTexture colorTex = this.getRenderTarget().getColorTexture();
-			//int id = ((GlTexture)colorTex.getClass().getMethod("getRealTexture").invoke(colorTex)).glId();
-			//return id;
 		}
 		catch (Exception e)
 		{

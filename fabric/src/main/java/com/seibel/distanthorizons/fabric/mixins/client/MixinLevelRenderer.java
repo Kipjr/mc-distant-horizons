@@ -31,8 +31,19 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 #else
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.framegraph.FrameGraphBuilder;
+import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
+import net.minecraft.client.Camera;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.chunk.ChunkSectionsToRender;
+import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.state.LevelRenderState;
+import net.minecraft.util.profiling.ProfilerFiller;
+import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
+import org.joml.Vector4f;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 #endif
 
@@ -41,11 +52,9 @@ import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import com.seibel.distanthorizons.fabric.FabricClientProxy;
 import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import net.minecraft.client.Minecraft;
-import com.seibel.distanthorizons.core.config.Config;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LevelRenderer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -55,6 +64,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 
 import org.apache.logging.log4j.Logger;
+
 
 
 @Mixin(LevelRenderer.class)
@@ -92,9 +102,16 @@ public class MixinLevelRenderer
 			method = "Lnet/minecraft/client/renderer/LevelRenderer;renderSectionLayer(Lnet/minecraft/client/renderer/RenderType;DDDLorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V",
 			cancellable = true)
 	private void renderChunkLayer(RenderType renderType, double x, double y, double z, Matrix4f projectionMatrix, Matrix4f frustumMatrix, CallbackInfo callback)
-	#else
+	#elif MC_VER < MC_1_21_9
 	@Inject(at = @At("HEAD"), method = "prepareChunkRenders", cancellable = true)
 	private void prepareChunkRenders(Matrix4fc projectionMatrix, double d, double e, double f, CallbackInfoReturnable<ChunkSectionsToRender> callback)
+	#else
+	@Inject(at = @At("HEAD"), method = "renderLevel")
+	private void renderLevel(
+			GraphicsResourceAllocator resourceAllocator, DeltaTracker deltaTracker,
+			boolean renderBlockOutline, Camera camera,
+			Matrix4f positionMatrix, Matrix4f projectionMatrix, Matrix4f idkMatrix, GpuBufferSlice gpuBufferSlice,
+			Vector4f skyColor, boolean thinFog, CallbackInfo callback)
     #endif
     {
 		#if MC_VER == MC_1_16_5
@@ -110,11 +127,14 @@ public class MixinLevelRenderer
 		// get the matrices directly from MC
 		ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(modelViewMatrixStack.last().pose());
 		ClientApi.RENDER_STATE.mcProjectionMatrix = McObjectConverter.Convert(projectionMatrix);
-		#else
-	    // MC combined the model view and projection matricies
+		#elif MC_VER < MC_1_21_9
+		// MC combined the model view and projection matricies
 	    ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(projectionMatrix);
 	    ClientApi.RENDER_STATE.mcProjectionMatrix = new Mat4f();
 	    ClientApi.RENDER_STATE.mcProjectionMatrix.setIdentity();
+		#else
+	    ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(positionMatrix);
+	    ClientApi.RENDER_STATE.mcProjectionMatrix = McObjectConverter.Convert(projectionMatrix);
 		#endif
 	    
 		// TODO move this into a common place
@@ -126,27 +146,60 @@ public class MixinLevelRenderer
 	    ClientApi.RENDER_STATE.frameTime = Minecraft.getInstance().deltaTracker.getRealtimeDeltaTicks();
 		#endif
 	    
+	    ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, this.level);
 	    
-	    //LOGGER.info("\n\n" +
-		//	    "Level Mixin\n" +
-		//	    "Mc MVM: \n" + mcModelViewMatrix.toString() + "\n" +
-		//	    "Mc Proj: \n" + mcProjectionMatrix.toString()
-	    //);
 	    
 	    
 	    #if MC_VER < MC_1_21_6
 	    if (renderType.equals(RenderType.translucent())) 
 		{
-		    ClientApi.INSTANCE.renderDeferredLodsForShaders(ClientLevelWrapper.getWrapper(this.level),
-				    ClientApi.RENDER_STATE.mcModelViewMatrix,
-				    ClientApi.RENDER_STATE.mcProjectionMatrix,
-				    ClientApi.RENDER_STATE.frameTime
-				    );
+		    ClientApi.INSTANCE.renderDeferredLodsForShaders();
 	    }
+		#elif MC_VER < MC_1_21_9
+	    // rendering handled via Fabric Api render event
 		#else
-		// rendering handled via Fabric Api render event
+		// handled here and in MixinChunkSectionsToRender
 	    #endif
     }
+	
+	
+	
+	#if MC_VER < MC_1_21_6
+	// rendering handled via Fabric Api render event
+	#else
+	@Inject(at = @At("HEAD"), method = "prepareChunkRenders")
+	private void prepareChunkRenders(Matrix4fc modelViewMatrix, double d, double e, double f, CallbackInfoReturnable<ChunkSectionsToRender> callback)
+	{
+		ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(modelViewMatrix);
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, this.level);
+		
+		// only crash during development
+		if (ModInfo.IS_DEV_BUILD)
+		{
+			ClientApi.RENDER_STATE.canRenderOrThrow();
+		}
+		
+		ClientApi.INSTANCE.renderLods();
+		
+	}
+	
+	@Inject(at = @At("RETURN"), method = "renderLevel")
+	private void postRenderLevel(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean bl, Camera camera, Matrix4f matrix4f, Matrix4f matrix4f2, Matrix4f matrix4f3, GpuBufferSlice gpuBufferSlice, Vector4f vector4f, boolean bl2, CallbackInfo ci)
+	{
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, this.level);
+		ClientApi.RENDER_STATE.frameTime = deltaTracker.getGameTimeDeltaTicks();
+		
+		// only crash during development
+		if (ModInfo.IS_DEV_BUILD)
+		{
+			ClientApi.RENDER_STATE.canRenderOrThrow();
+		}
+		
+		ClientApi.INSTANCE.renderFade();
+		
+	}
+	
+	#endif
 	
 	
 	

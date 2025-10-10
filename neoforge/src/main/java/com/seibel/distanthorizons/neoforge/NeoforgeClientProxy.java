@@ -251,17 +251,12 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	public void afterLevelEntityRenderEvent(RenderLevelStageEvent.AfterEntities event)
 	{
 		#if MC_VER < MC_1_21_9
-		IClientLevelWrapper levelWrapper = ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel());
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, (ClientLevel)event.getLevel());
 		#else
-		IClientLevelWrapper levelWrapper = ClientLevelWrapper.getWrapper(event.getLevelRenderer().level);
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, event.getLevelRenderer().level);
 		#endif
 		
-		ClientApi.INSTANCE.renderFade(
-				ClientApi.RENDER_STATE.mcModelViewMatrix,
-				ClientApi.RENDER_STATE.mcProjectionMatrix,
-				ClientApi.RENDER_STATE.frameTime,
-				levelWrapper
-		);
+		ClientApi.INSTANCE.renderFade();
 	}
 	
 	
@@ -269,26 +264,21 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	public void afterLevelTranslucentRenderEvent(RenderLevelStageEvent.AfterTranslucentBlocks event)
 	{
 		#if MC_VER < MC_1_21_9
-		IClientLevelWrapper levelWrapper = ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel());
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, (ClientLevel)event.getLevel());
 		#else
-		IClientLevelWrapper levelWrapper = ClientLevelWrapper.getWrapper(event.getLevelRenderer().level);
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, event.getLevelRenderer().level);
 		#endif
 		
-		ClientApi.INSTANCE.renderDeferredLodsForShaders(
-				levelWrapper,
-				ClientApi.RENDER_STATE.mcModelViewMatrix,
-				ClientApi.RENDER_STATE.mcProjectionMatrix,
-				ClientApi.RENDER_STATE.frameTime
-		);
+		ClientApi.INSTANCE.renderDeferredLodsForShaders();
 	}
 	
 	@SubscribeEvent
 	public void afterLevelRenderEvent(RenderLevelStageEvent.AfterLevel event)
 	{
 		#if MC_VER < MC_1_21_9
-		IClientLevelWrapper levelWrapper = ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel());
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, (ClientLevel)event.getLevel());
 		#else
-		IClientLevelWrapper levelWrapper = ClientLevelWrapper.getWrapper(event.getLevelRenderer().level);
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, event.getLevelRenderer().level);
 		#endif
 		
 		
@@ -305,23 +295,10 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 		}
 		
 		
-		ClientApi.INSTANCE.renderFadeOpaque(
-				ClientApi.RENDER_STATE.mcModelViewMatrix,
-				ClientApi.RENDER_STATE.mcProjectionMatrix,
-				ClientApi.RENDER_STATE.frameTime,
-				levelWrapper
-		);
+		ClientApi.INSTANCE.renderFadeOpaque();
 	}
 	
 	#endif
-	
-	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	private static LevelAccessor GetEventLevel(LevelEvent e) { return e.getLevel(); }
 	
 	
 	
