@@ -183,22 +183,6 @@ public class MixinLevelRenderer
 		
 	}
 	
-	@Inject(at = @At("RETURN"), method = "renderLevel")
-	private void postRenderLevel(GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean bl, Camera camera, Matrix4f matrix4f, Matrix4f matrix4f2, Matrix4f matrix4f3, GpuBufferSlice gpuBufferSlice, Vector4f vector4f, boolean bl2, CallbackInfo ci)
-	{
-		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, this.level);
-		ClientApi.RENDER_STATE.frameTime = deltaTracker.getGameTimeDeltaTicks();
-		
-		// only crash during development
-		if (ModInfo.IS_DEV_BUILD)
-		{
-			ClientApi.RENDER_STATE.canRenderOrThrow();
-		}
-		
-		ClientApi.INSTANCE.renderFade();
-		
-	}
-	
 	#endif
 	
 	

@@ -148,7 +148,7 @@ public class MixinLevelRenderer
 		}
 		else if (renderType.equals(RenderType.tripwire()))
 		{
-			ClientApi.INSTANCE.renderFade();
+			ClientApi.INSTANCE.renderFadeTransparent();
 		}
 		#endif
 	}

@@ -293,7 +293,7 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 			ClientApi.INSTANCE.renderDeferredLodsForShaders(ClientLevelWrapper.getWrapper();
 			#endif
 			
-			this.clientApi.renderFade();
+			this.clientApi.renderFadeTransparent();
 		});
 		#endif
 		

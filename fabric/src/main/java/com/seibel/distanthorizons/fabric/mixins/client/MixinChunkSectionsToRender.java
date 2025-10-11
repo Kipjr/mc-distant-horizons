@@ -43,36 +43,25 @@ public class MixinChunkSectionsToRender
 {
 	
 	
-	// needs to fire at HEAD otherwise it will be canceled by Sodium
-	@Inject(at = @At("HEAD"), method = "renderGroup")
+	// needs to fire at HEAD with a lower than normal order (less than 1000)
+	// otherwise it will be canceled by Sodium
+	@Inject(at = @At("HEAD"), method = "renderGroup", order = 800)
 	private void renderDeferredLayer(ChunkSectionLayerGroup chunkSectionLayerGroup, CallbackInfo ci)
 	{
 		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, Minecraft.getInstance().levelRenderer.level);
 		
 		
-		if (chunkSectionLayerGroup == ChunkSectionLayerGroup.OPAQUE)
+		if (chunkSectionLayerGroup == ChunkSectionLayerGroup.TRANSLUCENT)
+		{
+			ClientApi.INSTANCE.renderFadeTransparent();
+			ClientApi.INSTANCE.renderDeferredLodsForShaders();
+		}
+		else if (chunkSectionLayerGroup == ChunkSectionLayerGroup.TRIPWIRE)
 		{
 			ClientApi.INSTANCE.renderFadeOpaque();
-		}
-		else if (chunkSectionLayerGroup == ChunkSectionLayerGroup.TRANSLUCENT)
-		{
-			ClientApi.INSTANCE.renderDeferredLodsForShaders();
 		}
 	}
 	
-	// canceled by sodium, but there isn't a better way to handle it right now
-	// https://github.com/CaffeineMC/sodium/blob/dev/common/src/main/java/net/caffeinemc/mods/sodium/mixin/core/render/world/ChunkSectionsToRenderMixin.java
-	@Inject(at = @At("RETURN"), method = "renderGroup")
-	private void renderOpaqueFade(ChunkSectionLayerGroup chunkSectionLayerGroup, CallbackInfo ci)
-	{
-		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, Minecraft.getInstance().levelRenderer.level);
-		
-		
-		if (chunkSectionLayerGroup == ChunkSectionLayerGroup.OPAQUE)
-		{
-			ClientApi.INSTANCE.renderFadeOpaque();
-		}
-	}
 	
 	
 }
