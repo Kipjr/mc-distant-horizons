@@ -76,10 +76,15 @@ dependencies {
     // Fabric API
     addModJar(fabricApi.module("fabric-api-base", rootProject.fabric_api_version))
     addModJar(fabricApi.module("fabric-lifecycle-events-v1", rootProject.fabric_api_version))
-    if (buildVersionBefore(minecraft_version, "1.21.10"))
+    if (buildVersionBefore(minecraft_version, "1.21.10")) 
+    {
         addModJar(fabricApi.module("fabric-resource-loader-v0", rootProject.fabric_api_version))
+    }
     else // > 1.21.10
+    {
+        addModJar(fabricApi.module("fabric-resource-loader-v0", rootProject.fabric_api_version))
         addModJar(fabricApi.module("fabric-resource-loader-v1", rootProject.fabric_api_version))
+    }
     addModJar(fabricApi.module("fabric-events-interaction-v0", rootProject.fabric_api_version))
     addModJar(fabricApi.module("fabric-rendering-v1", rootProject.fabric_api_version))
     addModJar(fabricApi.module("fabric-networking-api-v1", rootProject.fabric_api_version))
