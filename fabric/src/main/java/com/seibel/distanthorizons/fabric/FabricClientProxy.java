@@ -290,7 +290,7 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 			#if MC_VER < MC_1_21_6
 			// rendered in MixinLevelRenderer
 			#else
-			ClientApi.INSTANCE.renderDeferredLodsForShaders(ClientLevelWrapper.getWrapper();
+			ClientApi.INSTANCE.renderDeferredLodsForShaders();
 			#endif
 			
 			this.clientApi.renderFadeTransparent();
