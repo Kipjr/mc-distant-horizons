@@ -20,7 +20,6 @@
 package com.seibel.distanthorizons.common.wrappers.block;
 
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
-import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
@@ -464,7 +463,7 @@ public class ClientBlockStateColorCache
 	// public getter //
 	//===============//
 	
-	public int getColor(BiomeWrapper biome, FullDataSourceV2 fullDataSource, DhBlockPos pos)
+	public int getColor(BiomeWrapper biomeWrapper, FullDataSourceV2 fullDataSource, DhBlockPos pos)
 	{
 		// only get the tint if the block needs to be tinted
 		if (!this.needPostTinting)
@@ -490,14 +489,14 @@ public class ClientBlockStateColorCache
 				{
 					tintColor = Minecraft.getInstance().getBlockColors()
 							.getColor(this.blockState, 
-									new TintWithoutLevelSmoothOverrider(biome, fullDataSource), // TODO can this object be cached?
+									new TintWithoutLevelOverrider(biomeWrapper, fullDataSource, this.clientLevelWrapper), // TODO can this object be cached?
 									McObjectConverter.Convert(pos), 
 									this.tintIndex);
 				}
 				catch (UnsupportedOperationException e)
 				{
 					// this exception generally occurs if the tint requires other blocks besides itself
-					LOGGER.debug("Unable to use ["+TintWithoutLevelSmoothOverrider.class.getSimpleName()+"] to get the block tint for block: [" + this.blockState + "] and biome: [" + biome + "] at pos: " + pos + ". Error: [" + e.getMessage() + "]. Attempting to use backup method...", e);
+					LOGGER.debug("Unable to use ["+ TintWithoutLevelOverrider.class.getSimpleName()+"] to get the block tint for block: [" + this.blockState + "] and biome: [" + biomeWrapper + "] at pos: " + pos + ". Error: [" + e.getMessage() + "]. Attempting to use backup method...", e);
 					BLOCK_STATES_THAT_NEED_LEVEL.add(this.blockState);
 				}
 			}
@@ -509,7 +508,7 @@ public class ClientBlockStateColorCache
 				// specifically oceans don't render correctly
 				tintColor = Minecraft.getInstance().getBlockColors()
 						.getColor(this.blockState, 
-								new TintGetterOverrideSmooth(this.level, biome, fullDataSource), // TODO can this object be cached?
+								new TintGetterOverride(this.level, biomeWrapper, fullDataSource, this.clientLevelWrapper), // TODO can this object be cached?
 								McObjectConverter.Convert(pos), 
 								this.tintIndex);
 			}
@@ -519,7 +518,7 @@ public class ClientBlockStateColorCache
 			// only display the error once per block/biome type to reduce log spam
 			if (!BROKEN_BLOCK_STATES.contains(this.blockState))
 			{
-				LOGGER.warn("Failed to get block color for block: [" + this.blockState + "] and biome: [" + biome + "] at pos: " + pos + ". Error: ["+e.getMessage() + "]. Note: future errors for this block/biome will be ignored.", e);
+				LOGGER.warn("Failed to get block color for block: [" + this.blockState + "] and biome: [" + biomeWrapper + "] at pos: " + pos + ". Error: ["+e.getMessage() + "]. Note: future errors for this block/biome will be ignored.", e);
 				BROKEN_BLOCK_STATES.add(this.blockState);
 			}
 		}

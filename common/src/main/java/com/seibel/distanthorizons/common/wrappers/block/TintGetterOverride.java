@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.common.wrappers.block;
 
 import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.*;
@@ -38,7 +39,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class TintGetterOverrideSmooth extends AbstractDhTintGetter
+public class TintGetterOverride extends AbstractDhTintGetter
 {
 	private final LevelReader parent;
 	
@@ -48,9 +49,9 @@ public class TintGetterOverrideSmooth extends AbstractDhTintGetter
 	// constructor //
 	//=============//
 	
-	public TintGetterOverrideSmooth(LevelReader parent, BiomeWrapper biomeWrapper, FullDataSourceV2 fullDataSource)
+	public TintGetterOverride(LevelReader parent, BiomeWrapper biomeWrapper, FullDataSourceV2 fullDataSource, IClientLevelWrapper clientLevelWrapper)
 	{ 
-		super(biomeWrapper, fullDataSource); 
+		super(biomeWrapper, fullDataSource, clientLevelWrapper); 
 		this.parent = parent;
 	}
 	
