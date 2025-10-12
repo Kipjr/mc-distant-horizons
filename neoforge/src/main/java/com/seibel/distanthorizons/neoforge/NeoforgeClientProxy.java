@@ -149,8 +149,6 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 			}
 			
 			// executor to prevent locking up the render/event thread
-			// if the getChunk() takes longer than expected 
-			// (which can be caused by certain mods) 
 			AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 			if (executor != null)
 			{
@@ -176,8 +174,6 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 			}
 			
 			// executor to prevent locking up the render/event thread
-			// if the getChunk() takes longer than expected 
-			// (which can be caused by certain mods) 
 			AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 			if (executor != null)
 			{

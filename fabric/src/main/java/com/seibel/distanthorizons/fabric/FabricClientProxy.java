@@ -130,8 +130,16 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		{
 			if (MC.clientConnectedToDedicatedServer())
 			{
-				IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper(level);
-				SharedApi.INSTANCE.chunkLoadEvent(new ChunkWrapper(chunk, wrappedLevel), wrappedLevel);
+				// executor to prevent locking up the render/event thread
+				AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
+				if (executor != null)
+				{
+					executor.execute(() ->
+					{
+						IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper(level);
+						SharedApi.INSTANCE.chunkLoadEvent(new ChunkWrapper(chunk, wrappedLevel), wrappedLevel);
+					});
+				}
 			}
 		});
 		
@@ -145,8 +153,6 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 				if (SharedApi.isChunkAtBlockPosAlreadyUpdating(blockPos.getX(), blockPos.getZ()))
 				{
 					// executor to prevent locking up the render/event thread
-					// if the getChunk() takes longer than expected 
-					// (which can be caused by certain mods) 
 					AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 					if (executor != null)
 					{
@@ -185,8 +191,6 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 					if (SharedApi.isChunkAtBlockPosAlreadyUpdating(hitResult.getBlockPos().getX(), hitResult.getBlockPos().getZ()))
 					{
 						// executor to prevent locking up the render/event thread
-						// if the getChunk() takes longer than expected 
-						// (which can be caused by certain mods) 
 						AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 						if (executor != null)
 						{

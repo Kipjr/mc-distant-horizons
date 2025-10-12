@@ -29,6 +29,7 @@ import net.minecraft.client.renderer.LightTexture;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -61,28 +62,40 @@ public class MixinLightTexture
 	private GpuTexture texture;
 	#endif
 	
+	@Unique
+	private MinecraftRenderWrapper renderWrapper = null;
+	
 	
 	
 	@Inject(method = "updateLightTexture(F)V", at = @At("RETURN"))
 	public void updateLightTexture(float partialTicks, CallbackInfo ci)
 	{
 		IMinecraftClientWrapper mc = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-		if (mc == null || mc.getWrappedClientLevel() == null)
+		if (mc == null)
 		{
 			return;
 		}
 		
-		
 		IClientLevelWrapper clientLevel = mc.getWrappedClientLevel();
-		MinecraftRenderWrapper renderWrapper = (MinecraftRenderWrapper)SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+		if (clientLevel == null)
+		{
+			return;
+		}
+		
+		// lazy initialization to make sure we don't call this too early
+		if (this.renderWrapper == null)
+		{
+			this.renderWrapper = (MinecraftRenderWrapper)SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
+		}
+		
 		
 		#if MC_VER < MC_1_21_3
-		renderWrapper.updateLightmap(this.lightPixels, clientLevel);
+		this.renderWrapper.updateLightmap(this.lightPixels, clientLevel);
 		#elif MC_VER < MC_1_21_5
-		renderWrapper.setLightmapId(this.target.getColorTextureId(), clientLevel);
+		this.renderWrapper.setLightmapId(this.target.getColorTextureId(), clientLevel);
 		#else
 		GlTexture glTexture = (GlTexture) this.texture;
-		renderWrapper.setLightmapId(glTexture.glId(), clientLevel);
+		this.renderWrapper.setLightmapId(glTexture.glId(), clientLevel);
 		#endif
 	}
 	
