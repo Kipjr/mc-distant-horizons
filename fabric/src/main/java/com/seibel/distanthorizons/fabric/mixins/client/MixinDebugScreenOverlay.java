@@ -20,7 +20,7 @@ public class MixinDebugScreenOverlay
 		F3Screen.addStringToDisplay(messages);
 	}
 	#else
-	// handled by DhDebugScreenEntry for MC versions after 1.21.9
+	// handled by DhDebugScreenEntry for MC versions after 1.21.10
 	#endif
 	
 }
