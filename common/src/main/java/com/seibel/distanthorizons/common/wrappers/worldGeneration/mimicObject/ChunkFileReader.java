@@ -94,7 +94,7 @@ public class ChunkFileReader
 	private static final AtomicBoolean ZERO_CHUNK_POS_ERROR_LOGGED_REF = new AtomicBoolean(false);
 	
 	
-	#if MC_VER >= MC_1_21_10
+	#if MC_VER >= MC_1_21_9
 	// BLOCK_STATE_CODEC can no longer be statically created since
 	// it needs a level reference
 	#elif MC_VER >= MC_1_19_2
@@ -263,7 +263,7 @@ public class ChunkFileReader
 	}
 	private static LevelChunkSection[] readSections(LevelAccessor level, ChunkPos chunkPos, CompoundTag chunkData)
 	{
-		#if MC_VER < MC_1_21_10
+		#if MC_VER < MC_1_21_9
 		// BLOCK_STATE_CODEC is created statically
 		// TODO clean up this code separation
 		#else
@@ -288,7 +288,7 @@ public class ChunkFileReader
 			#elif MC_VER < MC_1_21_3
 			Codec<PalettedContainer<Holder<Biome>>> biomeCodec = PalettedContainer.codecRW(
 				biomes.asHolderIdMap(), biomes.holderByNameCodec(), PalettedContainer.Strategy.SECTION_BIOMES, biomes.getHolderOrThrow(Biomes.PLAINS));
-			#elif MC_VER < MC_1_21_10
+			#elif MC_VER < MC_1_21_9
 			Codec<PalettedContainer<Holder<Biome>>> biomeCodec = PalettedContainer.codecRW(
 				biomes.asHolderIdMap(), biomes.holderByNameCodec(), PalettedContainer.Strategy.SECTION_BIOMES, biomes.getOrThrow(Biomes.PLAINS));
 			#else
@@ -363,7 +363,7 @@ public class ChunkFileReader
 					}
 					else
 					{
-						#if MC_VER < MC_1_21_10
+						#if MC_VER < MC_1_21_9
 						blockStateContainer = new PalettedContainer<BlockState>(Block.BLOCK_STATE_REGISTRY, Blocks.AIR.defaultBlockState(), PalettedContainer.Strategy.SECTION_STATES);
 						#else
 						blockStateContainer = PalettedContainerFactory.create(level.registryAccess()).createForBlockStates();
@@ -403,7 +403,7 @@ public class ChunkFileReader
 						biomeContainer = new PalettedContainer<Holder<Biome>>(
 								biomes.asHolderIdMap(), 
 								biomes.getHolderOrThrow(Biomes.PLAINS), PalettedContainer.Strategy.SECTION_BIOMES);
-						#elif MC_VER < MC_1_21_10
+						#elif MC_VER < MC_1_21_9
 						biomeContainer = new PalettedContainer<Holder<Biome>>(biomes.asHolderIdMap(),
 								biomes.getOrThrow(Biomes.PLAINS),
 								PalettedContainer.Strategy.SECTION_BIOMES);

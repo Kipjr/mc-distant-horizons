@@ -401,7 +401,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public int getTargetFrameBufferViewportWidth()
 	{
-		#if MC_VER < MC_1_21_10
+		#if MC_VER < MC_1_21_9
 		return this.getRenderTarget().viewWidth;
 		#else
 		return this.getRenderTarget().width;
@@ -411,7 +411,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public int getTargetFrameBufferViewportHeight()
 	{
-		#if MC_VER < MC_1_21_10
+		#if MC_VER < MC_1_21_9
 		return this.getRenderTarget().viewHeight;
 		#else
 		return this.getRenderTarget().height;

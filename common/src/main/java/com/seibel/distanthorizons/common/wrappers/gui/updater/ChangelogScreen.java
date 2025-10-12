@@ -262,7 +262,7 @@ public class ChangelogScreen extends DhScreen
 		@Override
 		public void render(PoseStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
 		{ GuiComponent.drawString(matrices, textRenderer, text, 12, y + 5, 0xFFFFFF); }
-		#elif MC_VER < MC_1_21_10
+		#elif MC_VER < MC_1_21_9
 		@Override
 		public void render(GuiGraphics matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
 		{ matrices.drawString(textRenderer, this.text, 12, y + 5, 0xFFFFFF); }

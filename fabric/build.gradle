@@ -19,7 +19,9 @@ loom {
                     "-Dminecraft.api.session.host=https://nope.invalid",
                     "-Dminecraft.api.services.host=https://nope.invalid",
                     // https://netty.io/wiki/reference-counted-objects.html#leak-detection-levels
-                    "-Dio.netty.leakDetection.level=advanced"
+                    "-Dio.netty.leakDetection.level=advanced",
+                    "-XX:+UseZGC",
+                    "-XX:+ZGenerational"
             )
             programArgs("--username", "Dev")
         }

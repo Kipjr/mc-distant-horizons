@@ -920,7 +920,7 @@ public class ClassicConfigGUI
 		@Override
         #if MC_VER < MC_1_20_1
 		public void render(PoseStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
-        #elif MC_VER < MC_1_21_10
+        #elif MC_VER < MC_1_21_9
 		public void render(GuiGraphics matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
 		#else
 		public void renderContent(GuiGraphics matrices, int mouseX, int mouseY, boolean hovered, float tickDelta)
@@ -928,7 +928,7 @@ public class ClassicConfigGUI
 		{
 			try
 			{
-				#if MC_VER < MC_1_21_10
+				#if MC_VER < MC_1_21_9
 				#else
 				int y = this.getY(); // TODO why is the Y value being set during render?
 				#endif

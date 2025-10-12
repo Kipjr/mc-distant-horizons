@@ -83,7 +83,7 @@ public class MixinLevelRenderer
 	#if MC_VER < MC_1_21_6
 	@Inject(at = @At("HEAD"), method = "renderSectionLayer")
 	private void renderChunkLayer(RenderType renderType, double x, double y, double z, Matrix4f modelViewMatrix, Matrix4f projectionMatrix, CallbackInfo callback)
-	#elif MC_VER < MC_1_21_10
+	#elif MC_VER < MC_1_21_9
 	@Inject(at = @At("HEAD"), method = "renderLevel")
 	private void onRenderLevel(
 			GraphicsResourceAllocator resourceAllocator, DeltaTracker deltaTracker, 

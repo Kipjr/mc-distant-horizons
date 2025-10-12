@@ -1,6 +1,6 @@
 package com.seibel.distanthorizons.neoforge.mixins.client;
 
-#if MC_VER < MC_1_21_10
+#if MC_VER < MC_1_21_9
 import com.seibel.distanthorizons.core.logging.f3.F3Screen;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,7 +18,7 @@ import net.minecraft.client.gui.components.DebugScreenOverlay;
 public class MixinDebugScreenOverlay
 {
 	
-	#if MC_VER < MC_1_21_10
+	#if MC_VER < MC_1_21_9
 	@Inject(method = "getSystemInformation", at = @At("RETURN"))
 	private void addCustomF3(CallbackInfoReturnable<List<String>> cir)
 	{
