@@ -67,6 +67,7 @@ public abstract class AbstractModInitializer
 	public void onInitializeClient()
 	{
 		DependencySetup.createClientBindings();
+		this.createInitialClientBindings();
 		
 		LOGGER.info("Initializing " + ModInfo.READABLE_NAME + " client, firing DhApiBeforeDhInitEvent...");
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDhInitEvent.class, null);
