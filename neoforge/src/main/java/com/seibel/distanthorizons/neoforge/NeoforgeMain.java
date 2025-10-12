@@ -124,11 +124,14 @@ public class NeoforgeMain extends AbstractModInitializer
 	protected IEventProxy createServerProxy(boolean isDedicated) { return new NeoforgeServerProxy(isDedicated); }
 	
 	@Override
-	protected void createInitialBindings()
+	protected void createInitialSharedBindings()
 	{
 		SingletonInjector.INSTANCE.bind(IModChecker.class, ModChecker.INSTANCE);
 		SingletonInjector.INSTANCE.bind(IPluginPacketSender.class, new NeoforgePluginPacketSender());
-		
+	}
+	@Override
+	protected void createInitialClientBindings()
+	{
 		// replace MC RenderWrapper with more specific neoforge version
 		SingletonInjector.INSTANCE.unbind(IMinecraftRenderWrapper.class, MinecraftRenderWrapper.INSTANCE); // TODO replace with a replaceOrBind for simplicity
 		SingletonInjector.INSTANCE.bind(IMinecraftRenderWrapper.class, NeoforgeMinecraftRenderWrapper.INSTANCE);

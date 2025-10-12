@@ -46,7 +46,8 @@ public abstract class AbstractModInitializer
 	// abstract methods //
 	//==================//
 	
-	protected abstract void createInitialBindings();
+	protected abstract void createInitialSharedBindings();
+	protected abstract void createInitialClientBindings();
 	protected abstract IEventProxy createClientProxy();
 	protected abstract IEventProxy createServerProxy(boolean isDedicated);
 	protected abstract void initializeModCompat();
@@ -140,7 +141,7 @@ public abstract class AbstractModInitializer
 	{
 		DependencySetup.createSharedBindings();
 		SharedApi.init();
-		this.createInitialBindings();
+		this.createInitialSharedBindings();
 	}
 	
 	private void logBuildInfo()

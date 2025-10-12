@@ -71,11 +71,14 @@ public class FabricMain extends AbstractModInitializer implements ClientModIniti
 	
 	
 	@Override
-	protected void createInitialBindings()
+	protected void createInitialSharedBindings()
 	{
 		SingletonInjector.INSTANCE.bind(IModChecker.class, ModChecker.INSTANCE);
 		SingletonInjector.INSTANCE.bind(IPluginPacketSender.class, new FabricPluginPacketSender());
 	}
+	@Override
+	protected void createInitialClientBindings() { /* no additional setup needed currently */ }
+	
 	
 	@Override
 	protected IEventProxy createClientProxy() { return new FabricClientProxy(); }
