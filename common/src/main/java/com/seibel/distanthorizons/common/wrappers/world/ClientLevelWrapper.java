@@ -99,6 +99,11 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	@Nullable
 	public static IClientLevelWrapper getWrapperIfDifferent(@Nullable IClientLevelWrapper levelWrapper, @NotNull ClientLevel level)
 	{
+		if (KEYED_CLIENT_LEVEL_MANAGER.isEnabled() && KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel() != levelWrapper)
+		{
+			return getWrapper(level);
+		}
+		
 		ClientLevelWrapper clientLevelWrapper = (ClientLevelWrapper)levelWrapper;
 		if (clientLevelWrapper == null
 			|| clientLevelWrapper.level != level)
