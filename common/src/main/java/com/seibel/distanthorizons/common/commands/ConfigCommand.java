@@ -3,8 +3,8 @@ package com.seibel.distanthorizons.common.commands;
 import com.mojang.brigadier.arguments.*;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.seibel.distanthorizons.core.config.ConfigBase;
-import com.seibel.distanthorizons.core.config.types.AbstractConfigType;
+import com.seibel.distanthorizons.core.config.ConfigHandler;
+import com.seibel.distanthorizons.core.config.types.AbstractConfigBase;
 import com.seibel.distanthorizons.core.config.types.ConfigEntry;
 import net.minecraft.commands.CommandSourceStack;
 
@@ -43,7 +43,7 @@ public class ConfigCommand extends AbstractCommand
 		LiteralArgumentBuilder<CommandSourceStack> builder = literal("config");
 		HashSet<String> addedCommands = new HashSet<>();
 		
-		for (AbstractConfigType<?, ?> type : ConfigBase.INSTANCE.entries)
+		for (AbstractConfigBase<?> type : ConfigHandler.INSTANCE.configBaseList)
 		{
 			// Skip non-config entries
 			if (!(type instanceof ConfigEntry))

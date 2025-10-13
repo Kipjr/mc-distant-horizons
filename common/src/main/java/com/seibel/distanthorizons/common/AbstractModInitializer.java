@@ -10,7 +10,7 @@ import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftServerWrapp
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.config.ConfigBase;
+import com.seibel.distanthorizons.core.config.ConfigHandler;
 import com.seibel.distanthorizons.core.config.eventHandlers.presets.ThreadPresetConfigEventHandler;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -170,7 +170,7 @@ public abstract class AbstractModInitializer
 	
 	private void initConfig()
 	{
-		ConfigBase.RunFirstTimeSetup();
+		ConfigHandler.tryRunFirstTimeSetup();
 		Config.completeDelayedSetup();
 	}
 	
@@ -192,6 +192,12 @@ public abstract class AbstractModInitializer
 	{
 		LOGGER.info("Running Delayed setup...");
 		this.runDelayedSetup();
+		
+		if (ConfigHandler.INSTANCE == null)
+		{
+			throw new IllegalStateException("Config was not initialized. Make sure to call LodCommonMain.initConfig() before calling this method.");
+		}
+		
 		LOGGER.info("Delayed setup complete, firing DhApiAfterDhInitEvent event...");
 		
 		// should be fired after all delayed setup so singletons and config can be accessed

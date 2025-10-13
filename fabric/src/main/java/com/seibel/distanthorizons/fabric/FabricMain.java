@@ -20,10 +20,8 @@
 package com.seibel.distanthorizons.fabric;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.seibel.distanthorizons.api.enums.config.EDhApiMcRenderingFadeMode;
 import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -156,11 +154,6 @@ public class FabricMain extends AbstractModInitializer implements ClientModIniti
 			ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class).setFogOcclusion(false);
 		}
 		#endif
-		
-		if (ConfigBase.INSTANCE == null)
-		{
-			throw new IllegalStateException("Config was not initialized. Make sure to call LodCommonMain.initConfig() before calling this method.");
-		}
 	}
 	
 }
