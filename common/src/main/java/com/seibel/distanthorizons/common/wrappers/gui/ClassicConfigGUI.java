@@ -7,12 +7,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 import com.seibel.distanthorizons.api.enums.config.DisallowSelectingViaConfigGui;
+import com.seibel.distanthorizons.common.wrappers.gui.config.ConfigGuiInfo;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.config.ConfigHandler;
 import com.seibel.distanthorizons.core.config.types.*;
@@ -103,16 +103,6 @@ public class ClassicConfigGUI
 		
 	}
 	
-	// TODO
-	/** The terribly coded old stuff */
-	public static class EntryInfo
-	{
-		Object widget;
-		Map.Entry<EditBox, Component> error;
-		String tempValue;
-		int index;
-	}
-	
 	
 	
 	//==============//
@@ -123,7 +113,6 @@ public class ClassicConfigGUI
 	public static Screen getScreen(Screen parent, String category)
 	{ return new ConfigScreen(parent, category); }
 	
-	/** Pain */
 	private static class ConfigScreen extends DhScreen
 	{
 		private static final ILangWrapper LANG_WRAPPER = SingletonInjector.INSTANCE.get(ILangWrapper.class);
@@ -284,7 +273,7 @@ public class ClassicConfigGUI
 		
 		private static void trySetupConfigEntry(AbstractConfigBase<?> configMenuOption)
 		{
-			configMenuOption.guiValue = new EntryInfo();
+			configMenuOption.guiValue = new ConfigGuiInfo();
 			Class<?> configValueClass = configMenuOption.getType();
 			
 			if (configMenuOption instanceof ConfigEntry)
@@ -320,7 +309,9 @@ public class ClassicConfigGUI
 		}
 		private static void setupTextMenuOption(AbstractConfigBase<?> configMenuOption, Function<String, Number> parsingFunc, @Nullable Pattern pattern, boolean cast)
 		{
-			((EntryInfo) configMenuOption.guiValue).widget = (BiFunction<EditBox, Button, Predicate<String>>) 
+			final ConfigGuiInfo configGuiInfo = ((ConfigGuiInfo) configMenuOption.guiValue);
+			
+			configGuiInfo.tooltipFunction =  
 					(editBox, button) -> 
 					(stringValue) ->
 			{
@@ -334,7 +325,7 @@ public class ClassicConfigGUI
 				
 				
 				Number numberValue = configMenuOption.typeIsFloatingPointNumber() ? 0.0 : 0; // different default values are needed so implicit casting works correctly (if not done casting from 0 (an int) to a double will cause an exception)
-				((EntryInfo) configMenuOption.guiValue).error = null;
+				configGuiInfo.errorMessage = null;
 				if (isNumber 
 					&& !stringValue.isEmpty() 
 					&& !stringValue.equals("-") 
@@ -355,21 +346,20 @@ public class ClassicConfigGUI
 					switch (validity)
 					{
 						case VALID:
-							((EntryInfo) numberConfigEntry.guiValue).error = null;
+							configGuiInfo.errorMessage = null;
 							break;
 						case NUMBER_TOO_LOW:
-							((EntryInfo) numberConfigEntry.guiValue).error = new AbstractMap.SimpleEntry<>(editBox, TextOrTranslatable("§cMinimum length is " + ((ConfigEntry) configMenuOption).getMin()));
+							configGuiInfo.errorMessage = TextOrTranslatable("§cMinimum length is " + numberConfigEntry.getMin());
 							break;
 						case NUMBER_TOO_HIGH:
-							((EntryInfo) numberConfigEntry.guiValue).error = new AbstractMap.SimpleEntry<>(editBox, TextOrTranslatable("§cMaximum length is " + ((ConfigEntry) configMenuOption).getMax()));
+							configGuiInfo.errorMessage = TextOrTranslatable("§cMaximum length is " + numberConfigEntry.getMax());
 							break;
 						case INVALID:
-							((EntryInfo) numberConfigEntry.guiValue).error = new AbstractMap.SimpleEntry<>(editBox, TextOrTranslatable("§cValue is invalid"));
+							configGuiInfo.errorMessage = TextOrTranslatable("§cValue is invalid");
 							break;
 					}
 				}
 				
-				((EntryInfo) configMenuOption.guiValue).tempValue = stringValue;
 				editBox.setTextColor(((ConfigEntry<Number>) configMenuOption).getValidity(numberValue) == EConfigValidity.VALID ? 0xFFFFFFFF : 0xFFFF7777); // white and red
 				
 				
@@ -398,7 +388,9 @@ public class ClassicConfigGUI
 			// For boolean
 			Function<Object, Component> func = value -> Translatable("distanthorizons.general."+((Boolean) value ? "true" : "false")).withStyle((Boolean) value ? ChatFormatting.GREEN : ChatFormatting.RED);
 			
-			((EntryInfo) booleanConfigEntry.guiValue).widget =
+			final ConfigGuiInfo configGuiInfo = ((ConfigGuiInfo) booleanConfigEntry.guiValue);
+			
+			configGuiInfo.buttonOptionMap =
 					new AbstractMap.SimpleEntry<Button.OnPress, Function<Object, Component>>(
 							(button) ->
 							{
@@ -412,8 +404,10 @@ public class ClassicConfigGUI
 		{
 			List<Enum<?>> enumList = Arrays.asList(enumClass.getEnumConstants());
 			
+			final ConfigGuiInfo configGuiInfo = ((ConfigGuiInfo) enumConfigEntry.guiValue);
+			
 			Function<Object, Component> getEnumTranslatableFunc = (value) -> Translatable(TRANSLATION_PREFIX + "enum." + enumClass.getSimpleName() + "." + enumConfigEntry.get().toString());
-			((EntryInfo) enumConfigEntry.guiValue).widget = 
+			configGuiInfo.buttonOptionMap = 
 					new AbstractMap.SimpleEntry<Button.OnPress, Function<Object, Component>>(
 					(button) ->
 			{
@@ -454,11 +448,13 @@ public class ClassicConfigGUI
 			}, getEnumTranslatableFunc);
 		}
 		
-		private boolean tryCreateInputField(AbstractConfigBase<?> configType)
+		private boolean tryCreateInputField(AbstractConfigBase<?> configBase)
 		{
-			if (configType instanceof ConfigEntry)
+			final ConfigGuiInfo configGuiInfo = ((ConfigGuiInfo) configBase.guiValue);
+			
+			if (configBase instanceof ConfigEntry)
 			{
-				ConfigEntry configEntry = (ConfigEntry) configType;
+				ConfigEntry configEntry = (ConfigEntry) configBase;
 				
 				
 				//==============//
@@ -468,7 +464,6 @@ public class ClassicConfigGUI
 				Button.OnPress btnAction = (button) ->
 				{
 					configEntry.uiSetWithoutSaving(configEntry.getDefaultValue());
-					((EntryInfo) configEntry.guiValue).index = 0;
 					this.reload = true;
 					Objects.requireNonNull(this.minecraft).setScreen(this);
 				};
@@ -509,11 +504,11 @@ public class ClassicConfigGUI
 						- ConfigScreenConfigs.OPTION_FIELD_WIDTH;
 				int optionFieldPosZ = 0;
 				
-				if (((EntryInfo) configEntry.guiValue).widget instanceof Map.Entry)
+				if (configGuiInfo.buttonOptionMap != null)
 				{
 					// enum/multi option input button
 					
-					Map.Entry<Button.OnPress, Function<Object, Component>> widget = (Map.Entry<Button.OnPress, Function<Object, Component>>) ((EntryInfo) configEntry.guiValue).widget;
+					Map.Entry<Button.OnPress, Function<Object, Component>> widget = configGuiInfo.buttonOptionMap;
 					if (configEntry.getType().isEnum())
 					{
 						widget.setValue((value) -> Translatable(TRANSLATION_PREFIX + "enum." + configEntry.getType().getSimpleName() + "." + configEntry.get().toString()));
@@ -537,7 +532,7 @@ public class ClassicConfigGUI
 					
 					return true;
 				}
-				else if (((EntryInfo) configEntry.guiValue).widget != null)
+				else
 				{
 					// text box input
 					
@@ -548,7 +543,7 @@ public class ClassicConfigGUI
 					widget.setMaxLength(ConfigScreenConfigs.OPTION_FIELD_WIDTH);
 					widget.insertText(String.valueOf(configEntry.get()));
 					
-					Predicate<String> processor = ((BiFunction<EditBox, Button, Predicate<String>>) ((EntryInfo) configEntry.guiValue).widget).apply(widget, this.doneButton);
+					Predicate<String> processor = configGuiInfo.tooltipFunction.apply(widget, this.doneButton);
 					widget.setFilter(processor);
 					
 					this.configListWidget.addButton(this, configEntry, widget, resetButton, null, textComponent);
@@ -729,33 +724,32 @@ public class ClassicConfigGUI
 			}
 			
 			
-			Component text = ButtonEntry.TEXT_BY_WIDGET.get(hoveredWidget);
 			ButtonEntry button = ButtonEntry.BUTTON_BY_WIDGET.get(hoveredWidget);
 			
 			
 			// A quick fix for tooltips on linked entries
-			AbstractConfigBase dhConfigType = ConfigUiLinkedEntry.class.isAssignableFrom(button.dhConfigType.getClass()) ?
+			AbstractConfigBase<?> configBase = ConfigUiLinkedEntry.class.isAssignableFrom(button.dhConfigType.getClass()) ?
 					((ConfigUiLinkedEntry) button.dhConfigType).get() :
 					button.dhConfigType;
 			
 			boolean apiOverrideActive = false;
-			if (dhConfigType instanceof ConfigEntry)
+			if (configBase instanceof ConfigEntry)
 			{
-				apiOverrideActive = ((ConfigEntry)dhConfigType).apiIsOverriding();
+				apiOverrideActive = ((ConfigEntry<?>)configBase).apiIsOverriding();
 			}
 			
-			Component name = Translatable(TRANSLATION_PREFIX + (dhConfigType.category.isEmpty() ? "" : dhConfigType.category + ".") + dhConfigType.getName());
-			String key = TRANSLATION_PREFIX + (dhConfigType.category.isEmpty() ? "" : dhConfigType.category + ".") + dhConfigType.getName() + ".@tooltip";
+			String key = TRANSLATION_PREFIX + (configBase.category.isEmpty() ? "" : configBase.category + ".") + configBase.getName() + ".@tooltip";
 			
 			if (apiOverrideActive)
 			{
 				key = "distanthorizons.general.disabledByApi.@tooltip";
 			}
 			
-			// display the validation error if present
-			if (((EntryInfo) dhConfigType.guiValue).error != null)
+			// display the validation error tooltip if present
+			final ConfigGuiInfo configGuiInfo = ((ConfigGuiInfo) configBase.guiValue);
+			if (configGuiInfo.errorMessage != null)
 			{ 
-				this.DhRenderTooltip(matrices, this.font, ((EntryInfo) dhConfigType.guiValue).error.getValue(), mouseX, mouseY);
+				this.DhRenderTooltip(matrices, this.font, configGuiInfo.errorMessage, mouseX, mouseY);
 			}
 			// display the tooltip if present
 			else if (LANG_WRAPPER.langExists(key))
@@ -792,9 +786,9 @@ public class ClassicConfigGUI
 	
 	
 	
-	
-	
-	
+	//================//
+	// helper classes //
+	//================//
 	
 	public static class ConfigListWidget extends ContainerObjectSelectionList<ButtonEntry>
 	{
@@ -1028,13 +1022,11 @@ public class ClassicConfigGUI
 	
 	
 	
-	
-	
 	//================//
 	// event handling //
 	//================//
 	
-	private static class ConfigCoreInterface implements IConfigGui
+	public static class ConfigCoreInterface implements IConfigGui
 	{
 		/**
 		 * in the future it would be good to pass in the current page and other variables, 
