@@ -104,13 +104,6 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		LOGGER.info("Registering Fabric Client Events");
 		
 		
-		#if MC_VER < MC_1_21_9
-		// old versions still run like normal
-		#else
-		if (true)
-			throw new UnsupportedOperationException("DH doesn't support 1.21.9 yet because the Fabric Rendering API is missing required events. Please wait for the Fabric team to update their API.");
-		#endif
-		
 		
 		//========================//
 		// register mod accessors //
@@ -137,8 +130,16 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		{
 			if (MC.clientConnectedToDedicatedServer())
 			{
-				IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper(level);
-				SharedApi.INSTANCE.chunkLoadEvent(new ChunkWrapper(chunk, wrappedLevel), wrappedLevel);
+				// executor to prevent locking up the render/event thread
+				AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
+				if (executor != null)
+				{
+					executor.execute(() ->
+					{
+						IClientLevelWrapper wrappedLevel = ClientLevelWrapper.getWrapper(level);
+						SharedApi.INSTANCE.chunkLoadEvent(new ChunkWrapper(chunk, wrappedLevel), wrappedLevel);
+					});
+				}
 			}
 		});
 		
@@ -152,8 +153,6 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 				if (SharedApi.isChunkAtBlockPosAlreadyUpdating(blockPos.getX(), blockPos.getZ()))
 				{
 					// executor to prevent locking up the render/event thread
-					// if the getChunk() takes longer than expected 
-					// (which can be caused by certain mods) 
 					AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 					if (executor != null)
 					{
@@ -192,8 +191,6 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 					if (SharedApi.isChunkAtBlockPosAlreadyUpdating(hitResult.getBlockPos().getX(), hitResult.getBlockPos().getZ()))
 					{
 						// executor to prevent locking up the render/event thread
-						// if the getChunk() takes longer than expected 
-						// (which can be caused by certain mods) 
 						AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 						if (executor != null)
 						{
@@ -230,92 +227,77 @@ public class FabricClientProxy implements AbstractModInitializer.IEventProxy
 		#if MC_VER < MC_1_21_9
 		WorldRenderEvents.AFTER_SETUP.register((renderContext) ->
 		{
-			Mat4f projectionMatrix = McObjectConverter.Convert(renderContext.projectionMatrix());
+			ClientApi.RENDER_STATE.mcProjectionMatrix = McObjectConverter.Convert(renderContext.projectionMatrix());
 			
-			Mat4f modelViewMatrix;
 			#if MC_VER < MC_1_20_6
-			modelViewMatrix = McObjectConverter.Convert(renderContext.matrixStack().last().pose());
+			ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(renderContext.matrixStack().last().pose());
 			#else
-			modelViewMatrix = McObjectConverter.Convert(renderContext.positionMatrix());
+			ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(renderContext.positionMatrix());
 			#endif
 			
+			#if MC_VER < MC_1_21_1
+			ClientApi.RENDER_STATE.frameTime = renderContext.tickDelta();
+			#else
+			ClientApi.RENDER_STATE.frameTime = renderContext.tickCounter().getGameTimeDeltaTicks();
+			#endif
 			
-			//LOGGER.info("\n\n" +
-			//		"Level Render\n" +
-			//		"Mc MVM: \n" + modelViewMatrix.toString() + "\n" +
-			//		"Mc Proj: \n" + projectionMatrix.toString()
-			//);
+			ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, renderContext.world());
 			
 			
-			this.clientApi.renderLods(ClientLevelWrapper.getWrapper(renderContext.world()),
-					modelViewMatrix,
-					projectionMatrix,
-					#if MC_VER < MC_1_21_1
-					renderContext.tickDelta()
-					#else
-					renderContext.tickCounter().getGameTimeDeltaTicks()
-					#endif
-					);
+			this.clientApi.renderLods();
 		});
 		
 		
-		// TODO add to forge and neo
 		WorldRenderEvents.AFTER_ENTITIES.register((renderContext) ->
 		{
-			Mat4f projectionMatrix = McObjectConverter.Convert(renderContext.projectionMatrix());
+			ClientApi.RENDER_STATE.mcProjectionMatrix = McObjectConverter.Convert(renderContext.projectionMatrix());
 			
-			Mat4f modelViewMatrix;
 			#if MC_VER < MC_1_20_6
-			modelViewMatrix = McObjectConverter.Convert(renderContext.matrixStack().last().pose());
+			ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(renderContext.matrixStack().last().pose());
 			#else
-			modelViewMatrix = McObjectConverter.Convert(renderContext.positionMatrix());
+			ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(renderContext.positionMatrix());
 			#endif
 			
-			this.clientApi.renderFadeOpaque(
-					modelViewMatrix,
-					projectionMatrix,
-					#if MC_VER < MC_1_21_1
-					renderContext.tickDelta(),
-					#else
-					renderContext.tickCounter().getGameTimeDeltaTicks(),
-					#endif
-					ClientLevelWrapper.getWrapper(renderContext.world())
-			);
+			#if MC_VER < MC_1_21_1
+			ClientApi.RENDER_STATE.frameTime = renderContext.tickDelta();
+			#else
+			ClientApi.RENDER_STATE.frameTime = renderContext.tickCounter().getGameTimeDeltaTicks();
+			#endif
+			
+			ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, renderContext.world());
+			
+			
+			this.clientApi.renderFadeOpaque();
 		});
 		
-		// TODO add to forge and neo
 		WorldRenderEvents.AFTER_TRANSLUCENT.register((renderContext) ->
 		{
-			Mat4f projectionMatrix = McObjectConverter.Convert(renderContext.projectionMatrix());
+			ClientApi.RENDER_STATE.mcProjectionMatrix = McObjectConverter.Convert(renderContext.projectionMatrix());
 			
-			Mat4f modelViewMatrix;
 			#if MC_VER < MC_1_20_6
-			modelViewMatrix = McObjectConverter.Convert(renderContext.matrixStack().last().pose());
+			ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(renderContext.matrixStack().last().pose());
 			#else
-			modelViewMatrix = McObjectConverter.Convert(renderContext.positionMatrix());
+			ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(renderContext.positionMatrix());
 			#endif
+			
+			#if MC_VER < MC_1_21_1
+			ClientApi.RENDER_STATE.frameTime = renderContext.tickDelta();
+			#else
+			ClientApi.RENDER_STATE.frameTime = renderContext.tickCounter().getGameTimeDeltaTicks();
+			#endif
+			
+			ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, renderContext.world());
+			
+			
 			
 			
 			#if MC_VER < MC_1_21_6
 			// rendered in MixinLevelRenderer
 			#else
-			ClientApi.INSTANCE.renderDeferredLodsForShaders(ClientLevelWrapper.getWrapper(renderContext.world()),
-					ClientApi.RENDER_STATE.mcModelViewMatrix,
-					ClientApi.RENDER_STATE.mcProjectionMatrix,
-					ClientApi.RENDER_STATE.frameTime
-			);
+			ClientApi.INSTANCE.renderDeferredLodsForShaders();
 			#endif
 			
-			this.clientApi.renderFade(
-					modelViewMatrix,
-					projectionMatrix,
-					#if MC_VER < MC_1_21_1
-					renderContext.tickDelta(),
-					#else
-					renderContext.tickCounter().getGameTimeDeltaTicks(),
-					#endif
-					ClientLevelWrapper.getWrapper(renderContext.world())
-			);
+			this.clientApi.renderFadeTransparent();
 		});
 		#endif
 		

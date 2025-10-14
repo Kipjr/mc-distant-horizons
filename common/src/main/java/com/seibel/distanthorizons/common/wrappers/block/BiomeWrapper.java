@@ -103,6 +103,7 @@ public class BiomeWrapper implements IBiomeWrapper
 	// constructors //
 	//==============//
 	
+	// TODO why not just return BiomeWrapper?
 	static public IBiomeWrapper getBiomeWrapper(#if MC_VER < MC_1_18_2 Biome #else Holder<Biome> #endif biome, ILevelWrapper levelWrapper)
 	{
 		if (biome == null)

@@ -21,7 +21,7 @@ package com.seibel.distanthorizons.common.wrappers.minecraft;
 
 #if MC_VER < MC_1_21_5
 import com.mojang.blaze3d.platform.GlStateManager;
-#elif MC_VER >= MC_1_21_5
+#else
 import com.mojang.blaze3d.opengl.GlStateManager;
 #endif
 

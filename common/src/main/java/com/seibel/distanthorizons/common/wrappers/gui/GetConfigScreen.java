@@ -1,13 +1,11 @@
 package com.seibel.distanthorizons.common.wrappers.gui;
 
+import com.seibel.distanthorizons.core.config.ConfigHandler;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.coreapi.ModInfo;
-import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.config.gui.JavaScreenHandlerScreen;
 import net.minecraft.client.gui.screens.Screen;
 import org.apache.logging.log4j.Logger;
-
-import java.lang.invoke.MethodHandles;
 
 public class GetConfigScreen
 {
@@ -28,7 +26,7 @@ public class GetConfigScreen
 		//  which won't be for sure added until we request a GUI
 		if (ModInfo.IS_DEV_BUILD)
 		{
-			String missingLangEntries = ConfigBase.INSTANCE.generateLang(true, true);
+			String missingLangEntries = ConfigHandler.INSTANCE.generateLang(true, true);
 			
 			// trim to remove any newlines/spaces
 			// that may be present when no lang entries need changing
@@ -45,7 +43,7 @@ public class GetConfigScreen
 		switch (useScreen)
 		{
 			case Classic:
-				return ClassicConfigGUI.getScreen(ConfigBase.INSTANCE, parent, "client");
+				return ClassicConfigGUI.getScreen(parent, "client");
 			case JavaSwing:
 				//return MinecraftScreen.getScreen(parent, new JavaScreenHandlerScreen(new ConfigScreen()), ModInfo.ID + ".title");
 				return MinecraftScreen.getScreen(parent, new JavaScreenHandlerScreen(new JavaScreenHandlerScreen.ExampleScreen()), ModInfo.ID + ".title");

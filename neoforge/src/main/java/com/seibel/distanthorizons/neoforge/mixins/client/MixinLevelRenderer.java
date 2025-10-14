@@ -66,15 +66,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * This class is used to mix in DH's rendering code
- * before Minecraft starts rendering blocks.
- * If this wasn't done, and we used Forge's
- * render last event, the LODs would render on top
- * of the normal terrain. <br><br>
- *
- * This is also the mixin for rendering the clouds
- */
 @Mixin(LevelRenderer.class)
 public class MixinLevelRenderer
 {
@@ -90,17 +81,17 @@ public class MixinLevelRenderer
 	
 	
 	#if MC_VER < MC_1_21_6
-	@Inject(at = @At("HEAD"), method = "renderSectionLayer", cancellable = true)
+	@Inject(at = @At("HEAD"), method = "renderSectionLayer")
 	private void renderChunkLayer(RenderType renderType, double x, double y, double z, Matrix4f modelViewMatrix, Matrix4f projectionMatrix, CallbackInfo callback)
 	#elif MC_VER < MC_1_21_9
-	@Inject(at = @At("HEAD"), method = "renderLevel", cancellable = true)
+	@Inject(at = @At("HEAD"), method = "renderLevel")
 	private void onRenderLevel(
 			GraphicsResourceAllocator resourceAllocator, DeltaTracker deltaTracker, 
 			boolean renderBlockOutline, Camera camera, 
 			Matrix4f positionMatrix, Matrix4f projectionMatrix, GpuBufferSlice gpuBufferSlice, 
 			Vector4f skyColor, boolean thinFog, CallbackInfo callback)
 	#else
-	@Inject(at = @At("HEAD"), method = "renderLevel", cancellable = true)
+	@Inject(at = @At("HEAD"), method = "renderLevel")
 	private void renderLevel(
 			GraphicsResourceAllocator resourceAllocator, DeltaTracker deltaTracker, 
 			boolean renderBlockOutline, Camera camera, 
@@ -116,12 +107,6 @@ public class MixinLevelRenderer
 		ClientApi.RENDER_STATE.mcProjectionMatrix = McObjectConverter.Convert(projectionMatrix);
 		#endif
 	
-		//LOGGER.info("\n\n" +
-		//		"Level Mixin\n" +
-		//		"Mc MVM: \n" + ClientApi.RENDER_STATE.mcModelViewMatrix.toString() + "\n" +
-		//		"Mc Proj: \n" + ClientApi.RENDER_STATE.mcProjectionMatrix.toString()
-		//);
-		
 		
 		
 		#if MC_VER < MC_1_21_1
@@ -131,6 +116,8 @@ public class MixinLevelRenderer
 		#else
 		ClientApi.RENDER_STATE.frameTime = Minecraft.getInstance().deltaTracker.getRealtimeDeltaTicks();
 		#endif
+		
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, this.level);
 		
 		
 		#if MC_VER < MC_1_21_6
@@ -144,17 +131,11 @@ public class MixinLevelRenderer
 		// render LODs
 		if (renderType.equals(RenderType.solid()))
 		{
-			ClientApi.INSTANCE.renderLods(ClientLevelWrapper.getWrapper(this.level),
-					ClientApi.RENDER_STATE.mcModelViewMatrix,
-					ClientApi.RENDER_STATE.mcProjectionMatrix,
-					ClientApi.RENDER_STATE.frameTime);
+			ClientApi.INSTANCE.renderLods();
 		} 
 		else if (renderType.equals(RenderType.translucent())) 
 		{
-			ClientApi.INSTANCE.renderDeferredLodsForShaders(ClientLevelWrapper.getWrapper(this.level),
-					ClientApi.RENDER_STATE.mcModelViewMatrix,
-					ClientApi.RENDER_STATE.mcProjectionMatrix,
-					ClientApi.RENDER_STATE.frameTime);
+			ClientApi.INSTANCE.renderDeferredLodsForShaders();
 		}
 		
 		// render fade
@@ -163,21 +144,11 @@ public class MixinLevelRenderer
 		// we need to trigger for the renderType after those passes are done
 		if (renderType.equals(RenderType.cutout()))
 		{
-			ClientApi.INSTANCE.renderFadeOpaque(
-					ClientApi.RENDER_STATE.mcModelViewMatrix,
-					ClientApi.RENDER_STATE.mcProjectionMatrix,
-					ClientApi.RENDER_STATE.frameTime,
-					ClientLevelWrapper.getWrapper(this.level)
-			);
+			ClientApi.INSTANCE.renderFadeOpaque();
 		}
 		else if (renderType.equals(RenderType.tripwire()))
 		{
-			ClientApi.INSTANCE.renderFade(
-					ClientApi.RENDER_STATE.mcModelViewMatrix,
-					ClientApi.RENDER_STATE.mcProjectionMatrix,
-					ClientApi.RENDER_STATE.frameTime,
-					ClientLevelWrapper.getWrapper(this.level)
-			);
+			ClientApi.INSTANCE.renderFadeTransparent();
 		}
 		#endif
 	}
@@ -188,21 +159,19 @@ public class MixinLevelRenderer
 	// formerly handled in renderChunkLayer()
 	
 	#else
-	@Inject(at = @At("HEAD"), method = "prepareChunkRenders", cancellable = true)
+	@Inject(at = @At("HEAD"), method = "prepareChunkRenders")
 	private void renderChunkLayer(Matrix4fc modelViewMatrix, double d, double e, double f, CallbackInfoReturnable<ChunkSectionsToRender> callback)
 	{
 		ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(modelViewMatrix);
-
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, this.level);
+		
 		// only crash during development
 		if (ModInfo.IS_DEV_BUILD)
 		{
 			ClientApi.RENDER_STATE.canRenderOrThrow();
 		}
 		
-		ClientApi.INSTANCE.renderLods(ClientLevelWrapper.getWrapper(this.level), 
-				ClientApi.RENDER_STATE.mcModelViewMatrix, 
-				ClientApi.RENDER_STATE.mcProjectionMatrix, 
-				ClientApi.RENDER_STATE.frameTime);
+		ClientApi.INSTANCE.renderLods();
 	}
 	
 	#endif

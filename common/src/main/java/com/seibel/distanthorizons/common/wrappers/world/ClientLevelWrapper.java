@@ -92,6 +92,29 @@ public class ClientLevelWrapper implements IClientLevelWrapper
 	// instance methods //
 	//==================//
 	
+	/** 
+	 * can be used when speed is important and the same level is likely to be passed in,
+	 * IE rendering.
+	 */
+	@Nullable
+	public static IClientLevelWrapper getWrapperIfDifferent(@Nullable IClientLevelWrapper levelWrapper, @NotNull ClientLevel level)
+	{
+		if (KEYED_CLIENT_LEVEL_MANAGER.isEnabled() && KEYED_CLIENT_LEVEL_MANAGER.getServerKeyedLevel() != levelWrapper)
+		{
+			return getWrapper(level);
+		}
+		
+		ClientLevelWrapper clientLevelWrapper = (ClientLevelWrapper)levelWrapper;
+		if (clientLevelWrapper == null
+			|| clientLevelWrapper.level != level)
+		{
+			return getWrapper(level);
+		}
+		
+		return clientLevelWrapper;
+	}
+	
+	@Nullable
 	public static IClientLevelWrapper getWrapper(@NotNull ClientLevel level) { return getWrapper(level, false); }
 	
 	@Nullable

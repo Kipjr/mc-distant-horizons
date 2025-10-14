@@ -129,34 +129,35 @@ public class MixinLevelRenderer
 		// get the matrices from the OpenGL fixed pipeline
 		float[] mcProjMatrixRaw = new float[16];
 		GL15.glGetFloatv(GL15.GL_PROJECTION_MATRIX, mcProjMatrixRaw);
-		Mat4f mcProjectionMatrix = new Mat4f(mcProjMatrixRaw);
-		mcProjectionMatrix.transpose();
+		ClientApi.RENDER_STATE.mcProjectionMatrix = new Mat4f(mcProjMatrixRaw);
+		ClientApi.RENDER_STATE.mcProjectionMatrix.transpose();
 		
-		Mat4f mcModelViewMatrix = McObjectConverter.Convert(matrixStackIn.last().pose());
+		ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(matrixStackIn.last().pose());
 		
 		#else
 		// get the matrices directly from MC
-		Mat4f mcModelViewMatrix = McObjectConverter.Convert(modelViewMatrixStack.last().pose());
-		Mat4f mcProjectionMatrix = McObjectConverter.Convert(projectionMatrix);
+		ClientApi.RENDER_STATE.mcModelViewMatrix = McObjectConverter.Convert(modelViewMatrixStack.last().pose());
+		ClientApi.RENDER_STATE.mcProjectionMatrix = McObjectConverter.Convert(projectionMatrix);
 		#endif
 		
 		
-		float frameTime;
 		#if MC_VER < MC_1_21_1
-		frameTime = Minecraft.getInstance().getFrameTime();
+		ClientApi.RENDER_STATE.frameTime = Minecraft.getInstance().getFrameTime();
 		#else
-		frameTime = Minecraft.getInstance().getTimer().getRealtimeDeltaTicks();
+		ClientApi.RENDER_STATE.frameTime = Minecraft.getInstance().getTimer().getRealtimeDeltaTicks();
 		#endif
+		
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, this.level);
 		
 		
 		// only render before solid blocks
 		if (renderType.equals(RenderType.solid()))
 		{
-			ClientApi.INSTANCE.renderLods(ClientLevelWrapper.getWrapper(this.level), mcModelViewMatrix, mcProjectionMatrix, frameTime);
+			ClientApi.INSTANCE.renderLods();
 		} 
 		else if (renderType.equals(RenderType.translucent())) 
 		{
-			ClientApi.INSTANCE.renderDeferredLodsForShaders(ClientLevelWrapper.getWrapper(this.level), mcModelViewMatrix, mcProjectionMatrix, frameTime);
+			ClientApi.INSTANCE.renderDeferredLodsForShaders();
 		}
 		
 		// render fade
@@ -165,21 +166,11 @@ public class MixinLevelRenderer
 		// we need to trigger for the renderType after those passes are done
 		if (renderType.equals(RenderType.cutout()))
 		{
-			ClientApi.INSTANCE.renderFadeOpaque(
-					mcModelViewMatrix,
-					mcProjectionMatrix,
-					frameTime,
-					ClientLevelWrapper.getWrapper(this.level)
-			);
+			ClientApi.INSTANCE.renderFadeOpaque();
 		}
 		else if (renderType.equals(RenderType.tripwire()))
 		{
-			ClientApi.INSTANCE.renderFade(
-					mcModelViewMatrix,
-					mcProjectionMatrix,
-					frameTime,
-					ClientLevelWrapper.getWrapper(this.level)
-			);
+			ClientApi.INSTANCE.renderFadeTransparent();
 		}
 	}
 	

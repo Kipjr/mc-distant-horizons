@@ -33,13 +33,8 @@ public class NeoforgeMinecraftRenderWrapper extends MinecraftRenderWrapper
 		#else
 		try
 		{
-			//GpuTexture depthTex = this.getRenderTarget().getDepthTexture();
-			//int id = ((GlTexture)depthTex.getClass().getMethod("getRealTexture").invoke(depthTex)).glId();
-			//return id;
-			
-			ValidationGpuTexture validationTexture = (ValidationGpuTexture) this.getRenderTarget().getDepthTexture();
-			GlTexture glTexture = (GlTexture)validationTexture.getRealTexture();
-			int id = glTexture.glId();
+			GpuTexture gpuTexture = this.getRenderTarget().getDepthTexture();
+			int id = NeoforgeTextureUnwrapper.getGlTextureIdFromGpuTexture(gpuTexture);
 			return id;
 		}
 		catch (Exception e)
@@ -65,13 +60,8 @@ public class NeoforgeMinecraftRenderWrapper extends MinecraftRenderWrapper
 		#else
 		try
 		{
-			//GpuTexture colorTex = this.getRenderTarget().getColorTexture();
-			//int id = ((GlTexture)colorTex.getClass().getMethod("getRealTexture").invoke(colorTex)).glId();
-			//return id;
-			
-			ValidationGpuTexture validationTexture = (ValidationGpuTexture) this.getRenderTarget().getColorTexture();
-			GlTexture glTexture = (GlTexture)validationTexture.getRealTexture();
-			int id = glTexture.glId();
+			GpuTexture gpuTexture = this.getRenderTarget().getColorTexture();
+			int id = NeoforgeTextureUnwrapper.getGlTextureIdFromGpuTexture(gpuTexture);
 			return id;
 		}
 		catch (Exception e)
