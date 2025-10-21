@@ -26,6 +26,8 @@ import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.BatchGenerationEnvironment;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.ThreadedParameters;
 
+import com.seibel.distanthorizons.common.wrappers.worldGeneration.mimicObject.DhLitWorldGenRegion;
+import com.seibel.distanthorizons.core.util.gridList.ArrayGridList;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ProtoChunk;
@@ -37,7 +39,7 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 #endif
 
 
-public final class StepStructureReference
+public final class StepStructureReference extends AbstractWorldGenStep
 {
 	private static final ChunkStatus STATUS = ChunkStatus.STRUCTURE_REFERENCES;
 	
@@ -45,15 +47,26 @@ public final class StepStructureReference
 	
 	
 	
+	//=============//
+	// constructor //
+	//=============//
+	
 	public StepStructureReference(BatchGenerationEnvironment batchGenerationEnvironment) { this.environment = batchGenerationEnvironment; }
 	
 	
 	
+	//==================//
+	// abstract methods //
+	//==================//
+	
+	@Override
+	public ChunkStatus getChunkStatus() { return STATUS; }
+	
+	@Override
 	public void generateGroup(
-			ThreadedParameters tParams, WorldGenRegion worldGenRegion,
-			List<ChunkWrapper> chunkWrappers)
+			ThreadedParameters tParams, DhLitWorldGenRegion worldGenRegion,
+			ArrayGridList<ChunkWrapper> chunkWrappers)
 	{
-		
 		ArrayList<ChunkAccess> chunksToDo = new ArrayList<ChunkAccess>();
 		
 		for (ChunkWrapper chunkWrapper : chunkWrappers)
@@ -67,6 +80,7 @@ public final class StepStructureReference
 			else if (chunk instanceof ProtoChunk)
 			{
 				chunkWrapper.trySetStatus(STATUS);
+				chunksToDo.add(chunk);
 			}
 		}
 		

@@ -59,13 +59,9 @@ public class DependencySetup
 		DependencySetupDoneCheck.isDone = true;
 	}
 	
-	//@Environment(EnvType.SERVER)
 	public static void createServerBindings()
-	{
-		SingletonInjector.INSTANCE.bind(IMinecraftSharedWrapper.class, MinecraftServerWrapper.INSTANCE);
-	}
+	{ SingletonInjector.INSTANCE.bind(IMinecraftSharedWrapper.class, MinecraftServerWrapper.INSTANCE); }
 	
-	//@Environment(EnvType.CLIENT)
 	public static void createClientBindings()
 	{
 		SingletonInjector.INSTANCE.bind(IMinecraftClientWrapper.class, MinecraftClientWrapper.INSTANCE);

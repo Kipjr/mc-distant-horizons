@@ -21,14 +21,14 @@ package com.seibel.distanthorizons.common.wrappers.minecraft;
 
 #if MC_VER < MC_1_21_5
 import com.mojang.blaze3d.platform.GlStateManager;
-#elif MC_VER >= MC_1_21_5
+#else
 import com.mojang.blaze3d.opengl.GlStateManager;
 #endif
 
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftGLWrapper;
 
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.lwjgl.opengl.GL32;
 
 
@@ -54,7 +54,7 @@ public class MinecraftGLWrapper implements IMinecraftGLWrapper
 {
 	public static final MinecraftGLWrapper INSTANCE = new MinecraftGLWrapper();
 	
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	
 	

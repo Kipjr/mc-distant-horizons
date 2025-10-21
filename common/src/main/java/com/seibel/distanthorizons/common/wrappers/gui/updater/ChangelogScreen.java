@@ -14,7 +14,7 @@ import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 
 #if MC_VER >= MC_1_17_1
 import net.minecraft.client.gui.narration.NarratableEntry;
@@ -41,7 +41,7 @@ import java.util.*;
 // TODO: Make this
 public class ChangelogScreen extends DhScreen
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	
 	private Screen parent;
@@ -74,6 +74,7 @@ public class ChangelogScreen extends DhScreen
 		{
 			return;
 		}
+		
 		try
 		{
 			this.setupChangelog(versionID);
@@ -175,9 +176,12 @@ public class ChangelogScreen extends DhScreen
 	{
 		#if MC_VER < MC_1_20_2
 		this.renderBackground(matrices); // Render background
-		#else
+		#elif MC_VER < MC_1_21_6
 		this.renderBackground(matrices, mouseX, mouseY, delta); // Render background
+		#else
+		// background blur is already being rendered, rendering again causes the game to crash
 		#endif
+		
 		if (!this.usable)
 		{
 			return;
@@ -249,42 +253,35 @@ public class ChangelogScreen extends DhScreen
 		private final Component text;
 		private final List<AbstractWidget> children = new ArrayList<>();
 		
-		private ButtonEntry(Component text)
-		{
-			this.text = text;
-		}
+		private ButtonEntry(Component text) { this.text = text; }
 		
 		public static ButtonEntry create(Component text)
-		{
-			return new ButtonEntry(text);
-		}
+		{ return new ButtonEntry(text); }
 		
 		#if MC_VER < MC_1_20_1
 		@Override
 		public void render(PoseStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
-		{
-			GuiComponent.drawString(matrices, textRenderer, text, 12, y + 5, 0xFFFFFF);
-		}
-		#else
+		{ GuiComponent.drawString(matrices, textRenderer, text, 12, y + 5, 0xFFFFFF); }
+		#elif MC_VER < MC_1_21_9
 		@Override
 		public void render(GuiGraphics matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta)
-		{
-			matrices.drawString(textRenderer, this.text, 12, y + 5, 0xFFFFFF);
-		}
+		{ matrices.drawString(textRenderer, this.text, 12, y + 5, 0xFFFFFF); }
+		#else
+		@Override 
+		public void renderContent(GuiGraphics matrices, int y, int x, boolean hovered, float tickDelta)
+		{ matrices.drawString(textRenderer, this.text, 12, y + 5, 0xFFFFFF); }
         #endif
 		
 		@Override
-		public List<? extends GuiEventListener> children()
-		{
-			return this.children;
-		}
+		public List<? extends GuiEventListener> children() { return this.children; }
+		
 		#if MC_VER >= MC_1_17_1
 		@Override
-		public List<? extends NarratableEntry> narratables()
-		{
-			return this.children;
-		}
+		public List<? extends NarratableEntry> narratables() { return this.children; }
 		#endif
+		
+		
+		
 	}
 	
 }

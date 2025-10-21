@@ -21,16 +21,13 @@ package com.seibel.distanthorizons.neoforge;
 
 import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.common.util.ProxyUtil;
-import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftRenderWrapper;
 import com.seibel.distanthorizons.common.wrappers.world.ClientLevelWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
-import com.seibel.distanthorizons.core.util.math.Mat4f;
 import com.seibel.distanthorizons.core.util.threading.ThreadPoolUtil;
-import com.seibel.distanthorizons.core.wrapperInterfaces.chunk.IChunkWrapper;
 
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
@@ -40,13 +37,12 @@ import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.minecraft.world.level.chunk.ChunkAccess;
 
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.lwjgl.glfw.GLFW;
 
 import com.seibel.distanthorizons.common.wrappers.chunk.ChunkWrapper;
@@ -62,21 +58,13 @@ import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 import java.util.concurrent.AbstractExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 #endif
 
 
-/**
- * This handles all events sent to the client,
- * and is the starting point for most of the mod.
- *
- * @author James_Seibel
- * @version 2023-7-27
- */
 public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 {
 	private static final IMinecraftClientWrapper MC = SingletonInjector.INSTANCE.get(IMinecraftClientWrapper.class);
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 
 	
 	
@@ -161,8 +149,6 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 			}
 			
 			// executor to prevent locking up the render/event thread
-			// if the getChunk() takes longer than expected 
-			// (which can be caused by certain mods) 
 			AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 			if (executor != null)
 			{
@@ -188,8 +174,6 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 			}
 			
 			// executor to prevent locking up the render/event thread
-			// if the getChunk() takes longer than expected 
-			// (which can be caused by certain mods) 
 			AbstractExecutorService executor = ThreadPoolUtil.getFileHandlerExecutor();
 			if (executor != null)
 			{
@@ -262,28 +246,38 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 	@SubscribeEvent
 	public void afterLevelEntityRenderEvent(RenderLevelStageEvent.AfterEntities event)
 	{
-		ClientApi.INSTANCE.renderFade(
-				ClientApi.RENDER_STATE.mcModelViewMatrix,
-				ClientApi.RENDER_STATE.mcProjectionMatrix,
-				ClientApi.RENDER_STATE.frameTime,
-				ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel())
-		);
+		#if MC_VER < MC_1_21_9
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, (ClientLevel)event.getLevel());
+		#else
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, event.getLevelRenderer().level);
+		#endif
+		
+		ClientApi.INSTANCE.renderFadeTransparent();
 	}
 	
 	
 	@SubscribeEvent
 	public void afterLevelTranslucentRenderEvent(RenderLevelStageEvent.AfterTranslucentBlocks event)
 	{
-		ClientApi.INSTANCE.renderDeferredLodsForShaders(ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel()),
-				ClientApi.RENDER_STATE.mcModelViewMatrix,
-				ClientApi.RENDER_STATE.mcProjectionMatrix,
-				ClientApi.RENDER_STATE.frameTime
-		);
+		#if MC_VER < MC_1_21_9
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, (ClientLevel)event.getLevel());
+		#else
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, event.getLevelRenderer().level);
+		#endif
+		
+		ClientApi.INSTANCE.renderDeferredLodsForShaders();
 	}
 	
 	@SubscribeEvent
 	public void afterLevelRenderEvent(RenderLevelStageEvent.AfterLevel event)
 	{
+		#if MC_VER < MC_1_21_9
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, (ClientLevel)event.getLevel());
+		#else
+		ClientApi.RENDER_STATE.clientLevelWrapper = ClientLevelWrapper.getWrapperIfDifferent(ClientApi.RENDER_STATE.clientLevelWrapper, event.getLevelRenderer().level);
+		#endif
+		
+		
 		try
 		{
 			// should generally only need to be set once per game session
@@ -297,23 +291,10 @@ public class NeoforgeClientProxy implements AbstractModInitializer.IEventProxy
 		}
 		
 		
-		ClientApi.INSTANCE.renderFadeOpaque(
-				ClientApi.RENDER_STATE.mcModelViewMatrix,
-				ClientApi.RENDER_STATE.mcProjectionMatrix,
-				ClientApi.RENDER_STATE.frameTime,
-				ClientLevelWrapper.getWrapper((ClientLevel)event.getLevel())
-		);
+		ClientApi.INSTANCE.renderFadeOpaque();
 	}
 	
 	#endif
-	
-	
-	
-	//================//
-	// helper methods //
-	//================//
-	
-	private static LevelAccessor GetEventLevel(LevelEvent e) { return e.getLevel(); }
 	
 	
 	

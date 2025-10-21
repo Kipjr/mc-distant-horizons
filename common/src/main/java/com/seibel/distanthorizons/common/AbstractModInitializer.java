@@ -5,11 +5,12 @@ import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiAfterDh
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeDhInitEvent;
 import com.seibel.distanthorizons.common.commands.CommandInitializer;
 import com.seibel.distanthorizons.common.wrappers.DependencySetup;
+import com.seibel.distanthorizons.common.wrappers.gui.DhDebugScreenEntry;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftServerWrapper;
 import com.seibel.distanthorizons.core.api.internal.ClientApi;
 import com.seibel.distanthorizons.core.api.internal.SharedApi;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.config.ConfigBase;
+import com.seibel.distanthorizons.core.config.ConfigHandler;
 import com.seibel.distanthorizons.core.config.eventHandlers.presets.ThreadPresetConfigEventHandler;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
@@ -23,7 +24,7 @@ import com.seibel.distanthorizons.coreapi.ModInfo;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.dedicated.DedicatedServer;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 
 import java.lang.invoke.MethodHandles;
 import java.util.function.Consumer;
@@ -35,7 +36,7 @@ import java.util.function.Supplier;
  */
 public abstract class AbstractModInitializer
 {
-	protected static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
+	protected static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	private CommandInitializer commandInitializer;
 	
@@ -45,7 +46,8 @@ public abstract class AbstractModInitializer
 	// abstract methods //
 	//==================//
 	
-	protected abstract void createInitialBindings();
+	protected abstract void createInitialSharedBindings();
+	protected abstract void createInitialClientBindings();
 	protected abstract IEventProxy createClientProxy();
 	protected abstract IEventProxy createServerProxy(boolean isDedicated);
 	protected abstract void initializeModCompat();
@@ -65,6 +67,7 @@ public abstract class AbstractModInitializer
 	public void onInitializeClient()
 	{
 		DependencySetup.createClientBindings();
+		this.createInitialClientBindings();
 		
 		LOGGER.info("Initializing " + ModInfo.READABLE_NAME + " client, firing DhApiBeforeDhInitEvent...");
 		ApiEventInjector.INSTANCE.fireAllEvents(DhApiBeforeDhInitEvent.class, null);
@@ -82,6 +85,12 @@ public abstract class AbstractModInitializer
 		logModIncompatibilityWarnings(); // needs to be called after config loading
 		
 		LOGGER.info(ModInfo.READABLE_NAME + " client Initialized.");
+		
+		#if MC_VER < MC_1_21_9
+		// debug screen rendering handled via a mixin
+		#else
+		DhDebugScreenEntry.register();
+		#endif
 		
 		this.subscribeClientStartedEvent(this::postInit);
 	}
@@ -133,7 +142,7 @@ public abstract class AbstractModInitializer
 	{
 		DependencySetup.createSharedBindings();
 		SharedApi.init();
-		this.createInitialBindings();
+		this.createInitialSharedBindings();
 	}
 	
 	private void logBuildInfo()
@@ -161,8 +170,9 @@ public abstract class AbstractModInitializer
 	
 	private void initConfig()
 	{
-		ConfigBase.INSTANCE = new ConfigBase(ModInfo.ID, ModInfo.NAME, Config.class, ModInfo.CONFIG_FILE_VERSION);
+		ConfigHandler.tryRunFirstTimeSetup();
 		Config.completeDelayedSetup();
+		DhLogger.runDelayedConfigSetup();
 	}
 	
 	private void checkForUpdates()
@@ -183,6 +193,12 @@ public abstract class AbstractModInitializer
 	{
 		LOGGER.info("Running Delayed setup...");
 		this.runDelayedSetup();
+		
+		if (ConfigHandler.INSTANCE == null)
+		{
+			throw new IllegalStateException("Config was not initialized. Make sure to call LodCommonMain.initConfig() before calling this method.");
+		}
+		
 		LOGGER.info("Delayed setup complete, firing DhApiAfterDhInitEvent event...");
 		
 		// should be fired after all delayed setup so singletons and config can be accessed

@@ -22,7 +22,9 @@ package com.seibel.distanthorizons.neoforge.mixins.client;
 import com.seibel.distanthorizons.common.wrappers.minecraft.MinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftClientWrapper;
+import com.seibel.distanthorizons.core.wrapperInterfaces.minecraft.IMinecraftRenderWrapper;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
+import com.seibel.distanthorizons.neoforge.wrappers.NeoforgeTextureUnwrapper;
 import net.minecraft.client.renderer.LightTexture;
 
 import org.spongepowered.asm.mixin.Final;
@@ -36,9 +38,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.mojang.blaze3d.platform.NativeImage;
 #elif MC_VER < MC_1_21_5
 import com.mojang.blaze3d.pipeline.TextureTarget;
-#else
+#elif MC_VER < MC_1_21_9
 import com.mojang.blaze3d.opengl.GlTexture;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTexture;
+#else
+import net.neoforged.neoforge.client.blaze3d.validation.ValidationGpuTexture;
+import com.mojang.blaze3d.opengl.GlTexture;
 import com.mojang.blaze3d.textures.GpuTexture;
 #endif
 
@@ -70,14 +76,18 @@ public class MixinLightTexture
 		
 		
 		IClientLevelWrapper clientLevel = mc.getWrappedClientLevel();
+		MinecraftRenderWrapper renderWrapper = (MinecraftRenderWrapper)SingletonInjector.INSTANCE.get(IMinecraftRenderWrapper.class);
 		
 		#if MC_VER < MC_1_21_3
-		MinecraftRenderWrapper.INSTANCE.updateLightmap(this.lightPixels, clientLevel);
+		renderWrapper.updateLightmap(this.lightPixels, clientLevel);
 		#elif MC_VER < MC_1_21_5
-		MinecraftRenderWrapper.INSTANCE.setLightmapId(this.target.getColorTextureId(), clientLevel);
-		#else
+		renderWrapper.setLightmapId(this.target.getColorTextureId(), clientLevel);
+		#elif MC_VER < MC_1_21_9
 		GlTexture glTexture = (GlTexture) this.texture;
-		MinecraftRenderWrapper.INSTANCE.setLightmapId(glTexture.glId(), clientLevel);
+		renderWrapper.setLightmapId(glTexture.glId(), clientLevel);
+		#else
+		int id = NeoforgeTextureUnwrapper.getGlTextureIdFromGpuTexture(this.texture);
+		renderWrapper.setLightmapId(id, clientLevel);
 		#endif
 	}
 	

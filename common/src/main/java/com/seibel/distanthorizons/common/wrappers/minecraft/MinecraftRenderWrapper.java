@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.NativeImage;
-import com.seibel.distanthorizons.common.wrappers.WrapperFactory;
 import com.seibel.distanthorizons.common.wrappers.misc.LightMapWrapper;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 
@@ -60,6 +59,12 @@ import com.seibel.distanthorizons.core.wrapperInterfaces.modAccessor.IOptifineAc
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.effect.MobEffects;
+
+import net.minecraft.world.phys.Vec3;
+import com.seibel.distanthorizons.core.logging.DhLogger;
+import org.jetbrains.annotations.NotNull;
+import org.joml.Vector4f;
+
 #if MC_VER < MC_1_17_1
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.Entity;
@@ -68,29 +73,22 @@ import org.lwjgl.opengl.GL15;
 #else
 import net.minecraft.world.level.material.FogType;
 #endif
-import net.minecraft.world.phys.Vec3;
-import org.apache.logging.log4j.Logger;
-import org.joml.Vector4f;
 
 #if MC_VER >= MC_1_21_5
 import com.mojang.blaze3d.opengl.GlTexture;
+#else
 #endif
 
 /**
  * A singleton that contains everything
  * related to rendering in Minecraft.
- *
- * @author James Seibel
- * @version 12-12-2021
  */
-//@Environment(EnvType.CLIENT)
 public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 {
 	public static final MinecraftRenderWrapper INSTANCE = new MinecraftRenderWrapper();
 	
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	private static final Minecraft MC = Minecraft.getInstance();
-	private static final IWrapperFactory FACTORY = WrapperFactory.INSTANCE;
 	
 	private static final IOptifineAccessor OPTIFINE_ACCESSOR = ModAccessorInjector.INSTANCE.get(IOptifineAccessor.class);
 	
@@ -300,7 +298,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 		return height;
 	}
 	
-	private RenderTarget getRenderTarget() { return MC.getMainRenderTarget(); }
+	protected RenderTarget getRenderTarget() { return MC.getMainRenderTarget(); }
 	
 	@Override
 	public boolean mcRendersToFrameBuffer()
@@ -350,17 +348,18 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 		return this.getRenderTarget().getDepthTextureId();
 		#else
 		try
-		{
+		{		
 			GlTexture glTexture = (GlTexture) this.getRenderTarget().getDepthTexture();
 			if (glTexture == null)
 			{
 				// shouldn't happen, but just in case
 				return 0;
 			}
-			
+
 			return glTexture.glId();
+			
 		}
-		catch (ClassCastException e)
+		catch (Exception e)
 		{
 			// only log this error once per session
 			if (!this.depthTextureCastFailLogged)
@@ -389,7 +388,7 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 			
 			return glTexture.glId();
 		}
-		catch (ClassCastException e)
+		catch (Exception e)
 		{
 			// only log this error once per session
 			if (!this.colorTextureCastFailLogged)
@@ -405,17 +404,25 @@ public class MinecraftRenderWrapper implements IMinecraftRenderWrapper
 	@Override
 	public int getTargetFrameBufferViewportWidth()
 	{
+		#if MC_VER < MC_1_21_9
 		return this.getRenderTarget().viewWidth;
+		#else
+		return this.getRenderTarget().width;
+		#endif
 	}
 	
 	@Override
 	public int getTargetFrameBufferViewportHeight()
 	{
+		#if MC_VER < MC_1_21_9
 		return this.getRenderTarget().viewHeight;
+		#else
+		return this.getRenderTarget().height;
+		#endif
 	}
 	
 	@Override
-	public ILightMapWrapper getLightmapWrapper(ILevelWrapper level) { return this.lightmapByDimensionType.get(level.getDimensionType()); }
+	public ILightMapWrapper getLightmapWrapper(@NotNull ILevelWrapper level) { return this.lightmapByDimensionType.get(level.getDimensionType()); }
 	
 	@Override
 	public boolean isFogStateSpecial()

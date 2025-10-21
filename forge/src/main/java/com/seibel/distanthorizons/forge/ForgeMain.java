@@ -86,11 +86,13 @@ public class ForgeMain extends AbstractModInitializer
 	}
 	
 	@Override
-	protected void createInitialBindings()
+	protected void createInitialSharedBindings()
 	{
 		SingletonInjector.INSTANCE.bind(IModChecker.class, ModChecker.INSTANCE);
 		SingletonInjector.INSTANCE.bind(IPluginPacketSender.class, new ForgePluginPacketSender());
 	}
+	@Override
+	protected void createInitialClientBindings() { /* no additional setup needed currently */ }
 	
 	@Override
 	protected IEventProxy createClientProxy() { return new ForgeClientProxy(); }

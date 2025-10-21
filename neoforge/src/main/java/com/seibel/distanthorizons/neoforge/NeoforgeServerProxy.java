@@ -24,7 +24,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.server.ServerAboutToStartEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 
 import java.util.function.Supplier;
 
@@ -40,7 +40,7 @@ public class NeoforgeServerProxy implements AbstractModInitializer.IEventProxy
 	private static LevelAccessor GetEventLevel(LevelEvent e) { return e.getLevel(); }
 	
 	private final ServerApi serverApi = ServerApi.INSTANCE;
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	private final boolean isDedicated;
 	public static Supplier<Boolean> isGenerationThreadChecker = null;
 	
@@ -152,8 +152,12 @@ public class NeoforgeServerProxy implements AbstractModInitializer.IEventProxy
 	private static ServerLevelWrapper getServerLevelWrapper(ServerLevel level) { return ServerLevelWrapper.getWrapper(level); }
 	private static ServerLevelWrapper getServerLevelWrapper(ResourceKey<Level> resourceKey, PlayerEvent event)
 	{
+		#if MC_VER < MC_1_21_9
 		//noinspection DataFlowIssue (possible NPE after getServer())
 		return getServerLevelWrapper(event.getEntity().getServer().getLevel(resourceKey));
+		#else
+		return getServerLevelWrapper(event.getEntity().level().getServer().getLevel(resourceKey));
+		#endif
 	}
 	
 	private static ServerPlayerWrapper getServerPlayerWrapper(PlayerEvent event) { return ServerPlayerWrapper.getWrapper((ServerPlayer) event.getEntity()); }

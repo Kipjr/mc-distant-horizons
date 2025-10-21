@@ -19,10 +19,11 @@
 
 package com.seibel.distanthorizons.common.wrappers.block;
 
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
+import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.*;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -38,9 +39,9 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-public class TintGetterOverrideFast implements BlockAndTintGetter
+public class TintGetterOverride extends AbstractDhTintGetter
 {
-	LevelReader parent;
+	private final LevelReader parent;
 	
 	
 	
@@ -48,25 +49,17 @@ public class TintGetterOverrideFast implements BlockAndTintGetter
 	// constructor //
 	//=============//
 	
-	public TintGetterOverrideFast(LevelReader parent) { this.parent = parent; }
+	public TintGetterOverride(LevelReader parent, BiomeWrapper biomeWrapper, FullDataSourceV2 fullDataSource, IClientLevelWrapper clientLevelWrapper)
+	{ 
+		super(biomeWrapper, fullDataSource, clientLevelWrapper); 
+		this.parent = parent;
+	}
 	
 	
 	
 	//=========//
 	// methods //
 	//=========//
-	
-	private Biome _getBiome(BlockPos pos)
-	{
-		#if MC_VER >= MC_1_18_2
-		return this.parent.getBiome(pos).value();
-		#else
-		return parent.getBiome(pos);
-		#endif
-	}
-	
-	@Override
-	public int getBlockTint(BlockPos blockPos, ColorResolver colorResolver) { return colorResolver.getColor(this._getBiome(blockPos), blockPos.getX(), blockPos.getZ()); }
 	
 	@Override
 	public float getShade(Direction direction, boolean bl) { return this.parent.getShade(direction, bl); }
@@ -87,7 +80,6 @@ public class TintGetterOverrideFast implements BlockAndTintGetter
 	@Nullable
 	public BlockEntity getBlockEntity(BlockPos blockPos) { return this.parent.getBlockEntity(blockPos); }
 	
-	
 	@Override
 	public BlockState getBlockState(BlockPos blockPos) { return this.parent.getBlockState(blockPos); }
 	
@@ -99,26 +91,25 @@ public class TintGetterOverrideFast implements BlockAndTintGetter
 	
 	#if MC_VER < MC_1_21_3
 	@Override
-	public int getMaxLightLevel() { return parent.getMaxLightLevel(); }
+	public int getMaxLightLevel() { return this.parent.getMaxLightLevel(); }
 	#else
 	#endif
 	
 	@Override
-	public Stream<BlockState> getBlockStates(AABB aABB)
-	{ return this.parent.getBlockStates(aABB); }
+	public Stream<BlockState> getBlockStates(AABB aABB) { return this.parent.getBlockStates(aABB); }
 	
 	@Override
-	public BlockHitResult clip(ClipContext clipContext)
-	{ return this.parent.clip(clipContext); }
+	public BlockHitResult clip(ClipContext clipContext) { return this.parent.clip(clipContext); }
 	
 	@Override
 	@Nullable
 	public BlockHitResult clipWithInteractionOverride(Vec3 vec3, Vec3 vec32, BlockPos blockPos, VoxelShape voxelShape, BlockState blockState)
-	{ return this.parent.clipWithInteractionOverride(vec3, vec32, blockPos, voxelShape, blockState); }
+	{
+		return this.parent.clipWithInteractionOverride(vec3, vec32, blockPos, voxelShape, blockState);
+	}
 	
 	@Override
-	public double getBlockFloorHeight(VoxelShape voxelShape, Supplier<VoxelShape> supplier)
-	{ return this.parent.getBlockFloorHeight(voxelShape, supplier); }
+	public double getBlockFloorHeight(VoxelShape voxelShape, Supplier<VoxelShape> supplier) { return this.parent.getBlockFloorHeight(voxelShape, supplier); }
 	
 	@Override
 	public double getBlockFloorHeight(BlockPos blockPos) { return this.parent.getBlockFloorHeight(blockPos); }
@@ -131,20 +122,12 @@ public class TintGetterOverrideFast implements BlockAndTintGetter
 	public int getMaxY() { return this.parent.getMaxY(); }
 	#endif
 	
-	
-	
-	//==============//
-	// post MC 1.17 //
-	//==============//
-	
 	#if MC_VER >= MC_1_17_1
 	@Override
-	public <T extends BlockEntity> Optional<T> getBlockEntity(BlockPos blockPos, BlockEntityType<T> blockEntityType)
-	{ return this.parent.getBlockEntity(blockPos, blockEntityType); }
+	public <T extends BlockEntity> Optional<T> getBlockEntity(BlockPos blockPos, BlockEntityType<T> blockEntityType) { return this.parent.getBlockEntity(blockPos, blockEntityType); }
 	
 	@Override
-	public BlockHitResult isBlockInLine(ClipBlockStateContext clipBlockStateContext)
-	{ return this.parent.isBlockInLine(clipBlockStateContext); }
+	public BlockHitResult isBlockInLine(ClipBlockStateContext clipBlockStateContext) { return this.parent.isBlockInLine(clipBlockStateContext); }
 	
 	@Override
 	public int getHeight() { return this.parent.getHeight(); }
@@ -165,7 +148,7 @@ public class TintGetterOverrideFast implements BlockAndTintGetter
 	public int getMinSection() { return this.parent.getMinSection(); }
 	#else
 	@Override
-	public int getMinSectionY() { return BlockAndTintGetter.super.getMinSectionY(); }	
+	public int getMinSectionY() { return super.getMinSectionY(); }	
 	#endif
 	
 	#if MC_VER < MC_1_21_3
@@ -191,4 +174,7 @@ public class TintGetterOverrideFast implements BlockAndTintGetter
 	@Override
 	public int getSectionYFromSectionIndex(int i) { return this.parent.getSectionYFromSectionIndex(i); }
     #endif
+	
+	
+	
 }

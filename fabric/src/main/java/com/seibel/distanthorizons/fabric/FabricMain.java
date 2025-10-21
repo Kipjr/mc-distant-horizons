@@ -20,10 +20,8 @@
 package com.seibel.distanthorizons.fabric;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.seibel.distanthorizons.api.enums.config.EDhApiMcRenderingFadeMode;
 import com.seibel.distanthorizons.common.AbstractModInitializer;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.config.ConfigBase;
 import com.seibel.distanthorizons.core.dependencyInjection.ModAccessorInjector;
 import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -40,7 +38,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 #if MC_VER >= MC_1_19_2
@@ -66,16 +64,19 @@ public class FabricMain extends AbstractModInitializer implements ClientModIniti
 	private static final ResourceLocation INITIAL_PHASE = new ResourceLocation(ModInfo.RESOURCE_NAMESPACE, ModInfo.DEDICATED_SERVER_INITIAL_PATH);
 	#endif
 	
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
 	
 	
 	@Override
-	protected void createInitialBindings()
+	protected void createInitialSharedBindings()
 	{
 		SingletonInjector.INSTANCE.bind(IModChecker.class, ModChecker.INSTANCE);
 		SingletonInjector.INSTANCE.bind(IPluginPacketSender.class, new FabricPluginPacketSender());
 	}
+	@Override
+	protected void createInitialClientBindings() { /* no additional setup needed currently */ }
+	
 	
 	@Override
 	protected IEventProxy createClientProxy() { return new FabricClientProxy(); }
@@ -153,11 +154,6 @@ public class FabricMain extends AbstractModInitializer implements ClientModIniti
 			ModAccessorInjector.INSTANCE.get(ISodiumAccessor.class).setFogOcclusion(false);
 		}
 		#endif
-		
-		if (ConfigBase.INSTANCE == null)
-		{
-			throw new IllegalStateException("Config was not initialized. Make sure to call LodCommonMain.initConfig() before calling this method.");
-		}
 	}
 	
 }

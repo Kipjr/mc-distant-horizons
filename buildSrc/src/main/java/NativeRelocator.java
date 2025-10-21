@@ -34,7 +34,10 @@ class NativeRelocator
 		{
 			processBuilder.command("powershell", "-ExecutionPolicy", "Bypass", "./prepare.ps1");
 		}
-		else if (os.contains("nix") || os.contains("nux") || os.contains("mac"))
+		else if (os.contains("nix") 
+				|| os.contains("nux") 
+				|| os.contains("mac")
+				|| os.contains("freebsd"))
 		{
 			processBuilder.command("./prepare.sh");
 		}

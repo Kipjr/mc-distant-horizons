@@ -33,6 +33,7 @@ import com.seibel.distanthorizons.common.wrappers.world.ServerLevelWrapper;
 import com.seibel.distanthorizons.core.config.Config;
 import com.seibel.distanthorizons.core.enums.EDhDirection;
 import com.seibel.distanthorizons.core.file.structure.ClientOnlySaveStructure;
+import com.seibel.distanthorizons.core.render.glObject.GLProxy;
 import com.seibel.distanthorizons.core.wrapperInterfaces.world.IClientLevelWrapper;
 import com.seibel.distanthorizons.coreapi.ModInfo;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
@@ -56,7 +57,7 @@ import net.minecraft.network.chat.TextComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.ChunkPos;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.Nullable;
 
 #if MC_VER < MC_1_21_3
@@ -71,7 +72,7 @@ import net.minecraft.util.profiling.Profiler;
  */
 public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecraftSharedWrapper
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger(MethodHandles.lookup().lookupClass().getSimpleName());
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	private static final Minecraft MINECRAFT = Minecraft.getInstance();
 	
 	public static final MinecraftClientWrapper INSTANCE = new MinecraftClientWrapper();
@@ -157,9 +158,17 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 	@Override
 	public boolean hasSinglePlayerServer() { return MINECRAFT.hasSingleplayerServer(); }
 	@Override
-	public boolean clientConnectedToDedicatedServer() { return MINECRAFT.getCurrentServer() != null && !this.hasSinglePlayerServer(); }
+	public boolean clientConnectedToDedicatedServer() 
+	{ 
+		return MINECRAFT.getCurrentServer() != null 
+				&& !this.hasSinglePlayerServer(); 
+	}
 	@Override
-	public boolean connectedToReplay() { return !MINECRAFT.hasSingleplayerServer() && MINECRAFT.getCurrentServer() == null; }
+	public boolean connectedToReplay() 
+	{ 
+		return MINECRAFT.getCurrentServer() == null
+				&& !this.hasSinglePlayerServer() ; 
+	}
 	
 	@Override
 	public String getCurrentServerName() 
@@ -306,10 +315,22 @@ public class MinecraftClientWrapper implements IMinecraftClientWrapper, IMinecra
 			return;
 		}
 		
+		if (!GLProxy.hasInstance())
+		{
+			// rendering setup hasn't finished
+			return;
+		}
+		
         #if MC_VER < MC_1_19_2
 		player.sendMessage(new TextComponent(string), getPlayer().getUUID());
-        #else
+        #elif MC_VER < MC_1_21_9
 		player.displayClientMessage(net.minecraft.network.chat.Component.translatable(string), /*isOverlay*/false);
+		#else
+		
+		GLProxy.getInstance().queueRunningOnRenderThread(() -> 
+		{
+			player.displayClientMessage(net.minecraft.network.chat.Component.translatable(string), /*isOverlay*/false);
+		});
         #endif
 	}
 	

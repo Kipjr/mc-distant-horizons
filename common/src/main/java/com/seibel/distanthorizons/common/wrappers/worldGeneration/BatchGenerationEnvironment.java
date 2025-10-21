@@ -29,8 +29,8 @@ import com.seibel.distanthorizons.core.dependencyInjection.SingletonInjector;
 import com.seibel.distanthorizons.core.generation.DhLightingEngine;
 import com.seibel.distanthorizons.core.level.IDhServerLevel;
 import com.seibel.distanthorizons.core.config.Config;
-import com.seibel.distanthorizons.core.logging.ConfigBasedLogger;
-import com.seibel.distanthorizons.core.logging.ConfigBasedSpamLogger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
+import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.DhChunkPos;
 import com.seibel.distanthorizons.core.util.objects.EventTimer;
 import com.seibel.distanthorizons.core.util.LodUtil;
@@ -50,6 +50,9 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import com.seibel.distanthorizons.common.wrappers.DependencySetupDoneCheck;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepBiomes;
 import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepFeatures;
@@ -60,10 +63,7 @@ import com.seibel.distanthorizons.common.wrappers.worldGeneration.step.StepSurfa
 
 import net.minecraft.server.level.*;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.chunk.ProtoChunk;
-import net.minecraft.world.level.chunk.UpgradeData;
+import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.chunk.storage.IOWorker;
 import net.minecraft.world.level.chunk.storage.RegionFileStorage;
 import net.minecraft.world.level.levelgen.DebugLevelSource;
@@ -71,21 +71,21 @@ import net.minecraft.world.level.levelgen.FlatLevelSource;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.nbt.CompoundTag;
-import org.apache.logging.log4j.LogManager;
 
-#if MC_VER >= MC_1_19_4
-import net.minecraft.core.registries.Registries;
-#else
+#if MC_VER <= MC_1_17_1
+#elif MC_VER <= MC_1_19_2
 import net.minecraft.core.Registry;
+#elif MC_VER <= MC_1_19_4
+import net.minecraft.core.registries.Registries;
+#elif MC_VER < MC_1_21_3
+import net.minecraft.core.registries.Registries;
 #endif
+
 
 #if MC_VER <= MC_1_20_4
 import net.minecraft.world.level.chunk.ChunkStatus;
-import org.jetbrains.annotations.Nullable;
 #else
 import net.minecraft.world.level.chunk.status.ChunkStatus;
-
-import javax.annotation.Nullable;
 #endif
 
 /*
@@ -103,26 +103,32 @@ Lod Generation:          0.269023348s
 */
 public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnvironmentWrapper
 {
-	public static final ConfigBasedSpamLogger PREF_LOGGER =
-			new ConfigBasedSpamLogger(LogManager.getLogger("LodWorldGen"),
-					() -> Config.Common.Logging.logWorldGenPerformance.get(), 1);
-	public static final ConfigBasedLogger EVENT_LOGGER =
-			new ConfigBasedLogger(LogManager.getLogger("LodWorldGen"),
-					() -> Config.Common.Logging.logWorldGenEvent.get());
-	public static final ConfigBasedLogger LOAD_LOGGER =
-			new ConfigBasedLogger(LogManager.getLogger("LodWorldGen"),
-					() -> Config.Common.Logging.logWorldGenLoadEvent.get());
+	public static final DhLogger PREF_LOGGER = new DhLoggerBuilder()
+			.name("LOD World Gen")
+			.fileLevelConfig(Config.Common.Logging.logWorldGenPerformanceToFile)
+			.maxCountPerSecond(1)
+			.build();
+	public static final DhLogger EVENT_LOGGER = new DhLoggerBuilder()
+			.name("LOD World Gen")
+			.fileLevelConfig(Config.Common.Logging.logWorldGenEventToFile)
+			.build();
+	public static final DhLogger CHUNK_LOAD_LOGGER = new DhLoggerBuilder()
+			.name("LOD World Gen")
+			.fileLevelConfig(Config.Common.Logging.logWorldGenChunkLoadEventToFile)
+			.build();
 	
 	#if MC_VER < MC_1_21_5
 	private static final TicketType<ChunkPos> DH_SERVER_GEN_TICKET = TicketType.create("dh_server_gen_ticket", Comparator.comparingLong(ChunkPos::toLong));
-	#else
+	#elif MC_VER < MC_1_21_9
 	private static final TicketType DH_SERVER_GEN_TICKET = new TicketType(/* timeout, 0 = disabled*/0L, /* persist */ false, TicketType.TicketUse.LOADING);
+	#else
+	private static final TicketType DH_SERVER_GEN_TICKET = new TicketType(/* timeout, 0 = disabled*/0L, /* flags */TicketType.FLAG_LOADING);
 	#endif
 	
 	private static final IModChecker MOD_CHECKER = SingletonInjector.INSTANCE.get(IModChecker.class);
 	
 	
-	private final IDhServerLevel serverlevel;
+	private final IDhServerLevel serverLevel;
 	
 	/** 
 	 * will be true if C2ME is installed (since they require us to
@@ -174,6 +180,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 	// constructors //
 	//==============//
 	
+	@NotNull
 	public static final ImmutableMap<EDhApiWorldGenerationStep, Integer> WORLD_GEN_CHUNK_BORDER_NEEDED_BY_GEN_STEP;
 	public static final int MAX_WORLD_GEN_CHUNK_BORDER_NEEDED;
 	
@@ -205,23 +212,24 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		builder.put(EDhApiWorldGenerationStep.LIGHT, 0);
 		WORLD_GEN_CHUNK_BORDER_NEEDED_BY_GEN_STEP = builder.build();
 		
-		// TODO this is a test to see if the additional boarder is actually necessary or not.
-		//  If world generators end up having infinite loops or other unexplained issues,
-		//  this should be set back to the commented out logic below
+		// in James' testing as of 2025-09-13 a border here of 2
+		// and a getChunkPosToGenerateStream() radius of 14 provided more accurate
+		// structure generation, however it also caused extreme server lag
+		// a border of 0 here and a getChunkPosToGenerateStream() radius of 8 provided 
+		// good-enough structure generation while not lagging the server
 		MAX_WORLD_GEN_CHUNK_BORDER_NEEDED = 0;
-		//MAX_WORLD_GEN_CHUNK_BORDER_NEEDED = WORLD_GEN_CHUNK_BORDER_NEEDED_BY_GEN_STEP.values().stream().mapToInt(Integer::intValue).max().getAsInt();
 	}
 	
-	public BatchGenerationEnvironment(IDhServerLevel serverlevel)
+	public BatchGenerationEnvironment(IDhServerLevel serverLevel)
 	{
-		super(serverlevel);
-		this.serverlevel = serverlevel;
+		super(serverLevel);
+		this.serverLevel = serverLevel;
 		
 		EVENT_LOGGER.info("================WORLD_GEN_STEP_INITING=============");
 		
-		serverlevel.getServerLevelWrapper().getDimensionType();
+		serverLevel.getServerLevelWrapper().getDimensionType();
 		
-		ChunkGenerator generator = ((ServerLevelWrapper) (serverlevel.getServerLevelWrapper())).getLevel().getChunkSource().getGenerator();
+		ChunkGenerator generator = ((ServerLevelWrapper) (serverLevel.getServerLevelWrapper())).getLevel().getChunkSource().getGenerator();
 		if (!(generator instanceof NoiseBasedChunkGenerator ||
 				generator instanceof DebugLevelSource ||
 				generator instanceof FlatLevelSource))
@@ -249,7 +257,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 			this.pullExistingChunkUsingMcAsyncMethod = true;
 		}
 		
-		this.params = new GlobalParameters(serverlevel);
+		this.params = new GlobalParameters(serverLevel);
 	}
 	
 	
@@ -309,7 +317,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 					try
 					{
 						event.future.get(); // Should throw exception
-						LodUtil.assertNotReach();
+						LodUtil.assertNotReach("Exceptionally completed world gen Future should have thrown an exception.");
 					}
 					catch (Exception e)
 					{
@@ -387,7 +395,9 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		CompletableFuture.allOf(readFutures).join();
 		
 		// future chain for generation
-		return CompletableFuture.runAsync(() -> 
+		return CompletableFuture.runAsync(() ->
+		{
+			try
 			{
 				// offset 1 chunk in both X and Z direction so we can generate an even number of chunks wide
 				// while still submitting an odd number width to MC's internal generators
@@ -410,10 +420,10 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 						int centerZ = refPosZ + radius + zOffset;
 						
 						// get/create the list of chunks we're going to generate
-						IEmptyChunkRetrievalFunc fallbackFunc = 
+						IEmptyChunkRetrievalFunc fallbackFunc =
 								(chunkPosX, chunkPosZ) -> Objects.requireNonNull(
-											generatedChunkByDhPos.get(new DhChunkPos(chunkPosX, chunkPosZ)), 
-											() -> String.format("Requested chunk [%d, %d] unavailable during world generation", chunkPosX, chunkPosZ));
+										generatedChunkByDhPos.get(new DhChunkPos(chunkPosX, chunkPosZ)),
+										() -> String.format("Requested chunk [%d, %d] unavailable during world generation", chunkPosX, chunkPosZ));
 						
 						ArrayGridList<ChunkAccess> regionChunks = new ArrayGridList<>(
 								refSize,
@@ -435,7 +445,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 								// this method shouldn't be necessary since we're passing in a pre-populated
 								// list of chunks, but just in case
 								fallbackFunc
-							);
+						);
 						lightGetterAdaptor.setRegion(region);
 						genEvent.threadedParam.makeStructFeat(region, this.params);
 						
@@ -461,7 +471,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 							else if (chunk != null)
 							{
 								// wrap the chunk
-								ChunkWrapper chunkWrapper = new ChunkWrapper(chunk, this.serverlevel.getLevelWrapper());
+								ChunkWrapper chunkWrapper = new ChunkWrapper(chunk, this.serverLevel.getLevelWrapper());
 								chunkWrapperList.set(relX, relZ, chunkWrapper);
 								
 								// try setting the wrapper's lighting
@@ -519,12 +529,17 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 				
 				genEvent.timer.complete();
 				genEvent.refreshTimeout();
-				if (PREF_LOGGER.canMaybeLog())
+				if (PREF_LOGGER.canLog())
 				{
 					genEvent.threadedParam.perf.recordEvent(genEvent.timer);
-					PREF_LOGGER.debugInc(genEvent.timer.toString());
+					PREF_LOGGER.debug(genEvent.timer.toString());
 				}
-			}, executor);
+			}
+			catch (Exception e)
+			{
+				EVENT_LOGGER.error("Unexpected error during world gen for min chunk pos ["+genEvent.minPos+"], error: ["+e.getMessage()+"].", e);
+			}
+		}, executor);
 	}
 	/** @param extraRadius in both the positive and negative directions */
 	private static Stream<ChunkPos> getChunkPosToGenerateStream(int genMinX, int genMinZ, int width, int extraRadius)
@@ -563,7 +578,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 				if (Config.Common.LodBuilding.pullLightingForPregeneratedChunks.get())
 				{
 					// attempt to get chunk lighting
-					ChunkLoader.CombinedChunkLightStorage combinedLights = ChunkLoader.readLight(newChunk, chunkData);
+					ChunkFileReader.CombinedChunkLightStorage combinedLights = ChunkFileReader.readLight(newChunk, chunkData);
 					if (combinedLights != null)
 					{
 						chunkSkyLightingByDhPos.put(dhChunkPos, combinedLights.skyLightStorage);
@@ -666,7 +681,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 								actualThrowable = completionException.getCause();
 							}
 							
-							LOAD_LOGGER.warn("DistantHorizons: Couldn't load or make chunk ["+chunkPos+"], error: ["+actualThrowable.getMessage()+"].", actualThrowable);
+							CHUNK_LOAD_LOGGER.warn("DistantHorizons: Couldn't load or make chunk ["+chunkPos+"], error: ["+actualThrowable.getMessage()+"].", actualThrowable);
 							return null;
 						});
 			}
@@ -674,7 +689,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		}
 		catch (Exception e)
 		{
-			LOAD_LOGGER.warn("DistantHorizons: Couldn't load or make chunk [" + chunkPos + "]. Error: [" + e.getMessage() + "].", e);
+			CHUNK_LOAD_LOGGER.warn("DistantHorizons: Couldn't load or make chunk [" + chunkPos + "]. Error: [" + e.getMessage() + "].", e);
 			return CompletableFuture.completedFuture(null);
 		}
 	}
@@ -690,10 +705,10 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		{
 			try
 			{
-				LOAD_LOGGER.debug("DistantHorizons: Loading chunk [" + chunkPos + "] from disk.");
+				CHUNK_LOAD_LOGGER.debug("DistantHorizons: Loading chunk [" + chunkPos + "] from disk.");
 				
 				@Nullable
-				ChunkAccess chunk = ChunkLoader.read(level, chunkPos, chunkData);
+				ChunkAccess chunk = ChunkFileReader.read(level, chunkPos, chunkData);
 				if (chunk != null)
 				{
 					if (Config.Common.LodBuilding.assumePreExistingChunksAreFinished.get())
@@ -712,7 +727,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 			}
 			catch (Exception e)
 			{
-				LOAD_LOGGER.error(
+				CHUNK_LOAD_LOGGER.error(
 						"DistantHorizons: couldn't load or make chunk at [" + chunkPos + "]." +
 								"Please try optimizing your world to fix this issue. \n" +
 								"World optimization can be done from the singleplayer world selection screen.\n" +
@@ -735,8 +750,10 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, level.registryAccess().registryOrThrow(Registries.BIOME), null);
 		#elif MC_VER < MC_1_21_3
 		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, level.registryAccess().registryOrThrow(Registries.BIOME), null);
-		#else
+		#elif MC_VER < MC_1_21_9
 		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, level.registryAccess().lookupOrThrow(Registries.BIOME), null);
+		#else
+		return new ProtoChunk(chunkPos, UpgradeData.EMPTY, level, PalettedContainerFactory.create(level.registryAccess()), null);
 		#endif
 	}
 	
@@ -772,12 +789,12 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 							
 							if (throwable != null)
 							{
-								LOAD_LOGGER.warn("DistantHorizons: Couldn't load chunk [" + chunkPos + "] from server, error: [" + actualThrowable.getMessage() + "].", actualThrowable);
+								CHUNK_LOAD_LOGGER.warn("DistantHorizons: Couldn't load chunk [" + chunkPos + "] from server, error: [" + actualThrowable.getMessage() + "].", actualThrowable);
 							}
 							
 							if (chunk != null)
 							{
-								ChunkWrapper chunkWrapper = new ChunkWrapper(chunk, this.serverlevel.getLevelWrapper());
+								ChunkWrapper chunkWrapper = new ChunkWrapper(chunk, this.serverLevel.getLevelWrapper());
 								chunkWrappersByDhPos.put(new DhChunkPos(chunkPos.x, chunkPos.z), chunkWrapper);
 							}
 						}, runnableQueue::add);
@@ -791,7 +808,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 				{
 					// generate chunk lighting using DH's lighting engine
 					genEvent.timer.nextEvent("light");
-					int maxSkyLight = this.serverlevel.getServerLevelWrapper().hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT;
+					int maxSkyLight = this.serverLevel.getServerLevelWrapper().hasSkyLight() ? LodUtil.MAX_MC_LIGHT : LodUtil.MIN_MC_LIGHT;
 					
 					ArrayList<IChunkWrapper> generatedChunks = new ArrayList<>(chunkWrappersByDhPos.values());
 					for (IChunkWrapper iChunkWrapper : generatedChunks)
@@ -804,7 +821,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 							DhLightingEngine.INSTANCE.bakeChunkBlockLighting(iChunkWrapper, generatedChunks, maxSkyLight);
 						}
 						
-						this.serverlevel.updateBeaconBeamsForChunk(iChunkWrapper, generatedChunks);
+						this.serverLevel.updateBeaconBeamsForChunk(iChunkWrapper, generatedChunks);
 					}
 					
 					genEvent.timer.nextEvent("cleanup");
@@ -827,10 +844,10 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 					
 					genEvent.timer.complete();
 					genEvent.refreshTimeout();
-					if (PREF_LOGGER.canMaybeLog())
+					if (PREF_LOGGER.canLog())
 					{
 						genEvent.threadedParam.perf.recordEvent(genEvent.timer);
-						PREF_LOGGER.debugInc(genEvent.timer.toString());
+						PREF_LOGGER.debug(genEvent.timer.toString());
 					}
 				});
 		
@@ -1035,7 +1052,7 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 			
 			// generate lighting using DH's lighting engine
 				
-			int maxSkyLight = this.serverlevel.getServerLevelWrapper().hasSkyLight() ? 15 : 0;
+			int maxSkyLight = this.serverLevel.getServerLevelWrapper().hasSkyLight() ? 15 : 0;
 			
 			// only light generated chunks,
 			// attempting to light un-generated chunks will cause lighting issues on bordering generated chunks
@@ -1071,15 +1088,15 @@ public final class BatchGenerationEnvironment extends AbstractBatchGenerationEnv
 					DhLightingEngine.INSTANCE.bakeChunkBlockLighting(centerChunk, iChunkWrapperList, maxSkyLight);
 				}
 				
-				this.serverlevel.updateBeaconBeamsForChunk(centerChunk, iChunkWrapperList);
+				this.serverLevel.updateBeaconBeamsForChunk(centerChunk, iChunkWrapperList);
 			}
 			
 			genEvent.refreshTimeout();
 		}
 	}
 	private static <T> ArrayGridList<T> GetCutoutFrom(ArrayGridList<T> total, int border) { return new ArrayGridList<>(total, border, total.gridSize - border); }
-	//private static <T> ArrayGridList<T> GetCutoutFrom(ArrayGridList<T> total, EDhApiWorldGenerationStep step) { return GetCutoutFrom(total, MaxBorderNeeded - WORLD_GEN_CHUNK_BORDER_NEEDED_BY_GEN_STEP.get(step)); }
-	private static <T> ArrayGridList<T> GetCutoutFrom(ArrayGridList<T> total, EDhApiWorldGenerationStep step) { return GetCutoutFrom(total, 0); }
+	private static <T> ArrayGridList<T> GetCutoutFrom(ArrayGridList<T> total, EDhApiWorldGenerationStep step) { return GetCutoutFrom(total, WORLD_GEN_CHUNK_BORDER_NEEDED_BY_GEN_STEP.get(step)); }
+	//private static <T> ArrayGridList<T> GetCutoutFrom(ArrayGridList<T> total, EDhApiWorldGenerationStep step) { return GetCutoutFrom(total, 0); }
 	
 	
 	@Override

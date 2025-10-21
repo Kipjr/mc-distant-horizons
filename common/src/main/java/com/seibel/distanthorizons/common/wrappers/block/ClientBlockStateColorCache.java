@@ -20,6 +20,7 @@
 package com.seibel.distanthorizons.common.wrappers.block;
 
 import com.seibel.distanthorizons.common.wrappers.McObjectConverter;
+import com.seibel.distanthorizons.core.dataObjects.fullData.sources.FullDataSourceV2;
 import com.seibel.distanthorizons.core.logging.DhLoggerBuilder;
 import com.seibel.distanthorizons.core.pos.blockPos.DhBlockPos;
 import com.seibel.distanthorizons.core.util.ColorUtil;
@@ -39,7 +40,7 @@ import net.minecraft.util.RandomSource;
 import java.util.Random;
 #endif
 import net.minecraft.world.level.block.state.BlockState;
-import org.apache.logging.log4j.Logger;
+import com.seibel.distanthorizons.core.logging.DhLogger;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -61,8 +62,10 @@ import net.minecraft.client.renderer.block.model.BlockModelPart;
  */
 public class ClientBlockStateColorCache
 {
-	private static final Logger LOGGER = DhLoggerBuilder.getLogger();
+	private static final DhLogger LOGGER = new DhLoggerBuilder().build();
 	
+	// TODO it isn't that we need the level, but that we need the adjacent data
+	//  maybe we can pass in the full data source?
 	private static final HashSet<BlockState> BLOCK_STATES_THAT_NEED_LEVEL = new HashSet<>();
 	private static final HashSet<BlockState> BROKEN_BLOCK_STATES = new HashSet<>();
 	
@@ -92,6 +95,8 @@ public class ClientBlockStateColorCache
 	#endif
 	
 	private final IClientLevelWrapper clientLevelWrapper;
+	private final BlockStateWrapper blockStateWrapper;
+	
 	private final BlockState blockState;
 	private final LevelReader level;
 	
@@ -176,6 +181,8 @@ public class ClientBlockStateColorCache
 		this.blockState = blockState;
 		this.clientLevelWrapper = samplingLevel;
 		this.level = (LevelReader) samplingLevel.getWrappedMcObject();
+		this.blockStateWrapper = BlockStateWrapper.fromBlockState(this.blockState, this.clientLevelWrapper);
+		
 		this.resolveColors();
 	}
 	
@@ -266,6 +273,14 @@ public class ClientBlockStateColorCache
 				this.tintIndex = 0;
 				this.baseColor = this.getParticleIconColor();
 			}
+			
+			
+			//String serialString = this.blockStateWrapper.getSerialString();
+			//if (serialString.contains("minecraft:water")
+			//		|| serialString.contains("grass"))
+			//{
+			//	BLOCK_STATES_THAT_NEED_LEVEL.add(this.blockState);
+			//}
 			
 			this.isColorResolved = true;
 		}
@@ -414,16 +429,18 @@ public class ClientBlockStateColorCache
 	 * This method was suggested by IMS from the Iris/Sodium team. 
 	 * That's where the numbers and code are based.
 	 */
-	private static int linearToSrgb(float c)
+	private static int linearToSrgb(float color)
 	{
-		if (!(c > MIN_SRGB_BOUND)) {
-			c = MIN_SRGB_BOUND;
+		if (!(color > MIN_SRGB_BOUND)) 
+		{
+			color = MIN_SRGB_BOUND;
 		}
 		
-		if (c > MAX_SRGB_BOUND) {
-			c = MAX_SRGB_BOUND;
+		if (color > MAX_SRGB_BOUND) 
+		{
+			color = MAX_SRGB_BOUND;
 		}
-		int inputBits = Float.floatToRawIntBits(c);
+		int inputBits = Float.floatToRawIntBits(color);
 		int entry = linearToSrgbTable[((inputBits - MIN_SRGB_BITS) >> 20)];
 		
 		int bias = (entry >>> 16) << 9;
@@ -446,7 +463,7 @@ public class ClientBlockStateColorCache
 	// public getter //
 	//===============//
 	
-	public int getColor(BiomeWrapper biome, DhBlockPos pos)
+	public int getColor(BiomeWrapper biomeWrapper, FullDataSourceV2 fullDataSource, DhBlockPos pos)
 	{
 		// only get the tint if the block needs to be tinted
 		if (!this.needPostTinting)
@@ -471,12 +488,15 @@ public class ClientBlockStateColorCache
 				try
 				{
 					tintColor = Minecraft.getInstance().getBlockColors()
-							.getColor(this.blockState, new TintWithoutLevelOverrider(biome, this.clientLevelWrapper), McObjectConverter.Convert(pos), this.tintIndex);
+							.getColor(this.blockState, 
+									new TintWithoutLevelOverrider(biomeWrapper, fullDataSource, this.clientLevelWrapper), // TODO can this object be cached?
+									McObjectConverter.Convert(pos), 
+									this.tintIndex);
 				}
 				catch (UnsupportedOperationException e)
 				{
 					// this exception generally occurs if the tint requires other blocks besides itself
-					LOGGER.debug("Unable to use ["+TintWithoutLevelOverrider.class.getSimpleName()+"] to get the block tint for block: [" + this.blockState + "] and biome: [" + biome + "] at pos: " + pos + ". Error: [" + e.getMessage() + "]. Attempting to use backup method...", e);
+					LOGGER.debug("Unable to use ["+ TintWithoutLevelOverrider.class.getSimpleName()+"] to get the block tint for block: [" + this.blockState + "] and biome: [" + biomeWrapper + "] at pos: " + pos + ". Error: [" + e.getMessage() + "]. Attempting to use backup method...", e);
 					BLOCK_STATES_THAT_NEED_LEVEL.add(this.blockState);
 				}
 			}
@@ -487,7 +507,10 @@ public class ClientBlockStateColorCache
 				// this logic can't be used all the time due to it breaking some blocks tinting
 				// specifically oceans don't render correctly
 				tintColor = Minecraft.getInstance().getBlockColors()
-						.getColor(this.blockState, new TintGetterOverrideFast(this.level), McObjectConverter.Convert(pos), this.tintIndex);
+						.getColor(this.blockState, 
+								new TintGetterOverride(this.level, biomeWrapper, fullDataSource, this.clientLevelWrapper), // TODO can this object be cached?
+								McObjectConverter.Convert(pos), 
+								this.tintIndex);
 			}
 		}
 		catch (Exception e)
@@ -495,7 +518,7 @@ public class ClientBlockStateColorCache
 			// only display the error once per block/biome type to reduce log spam
 			if (!BROKEN_BLOCK_STATES.contains(this.blockState))
 			{
-				LOGGER.warn("Failed to get block color for block: [" + this.blockState + "] and biome: [" + biome + "] at pos: " + pos + ". Error: ["+e.getMessage() + "]. Note: future errors for this block/biome will be ignored.", e);
+				LOGGER.warn("Failed to get block color for block: [" + this.blockState + "] and biome: [" + biomeWrapper + "] at pos: " + pos + ". Error: ["+e.getMessage() + "]. Note: future errors for this block/biome will be ignored.", e);
 				BROKEN_BLOCK_STATES.add(this.blockState);
 			}
 		}
